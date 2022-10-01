@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Random NDE</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/dripicons/2.0.0/webfont.min.css" />
+    <link rel="icon" type="image/x-icon" href="faviconNde.ico">
+    <link href='http://fonts.googleapis.com/css?family=Lato:300,700' rel='stylesheet' type='text/css'>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/github-fork-ribbon-css/0.2.3/gh-fork-ribbon.min.css" />
+    <style>
+    .github-fork-ribbon:before {
+        background-color: #55C0DB;
+    }
+
+    .github-fork-ribbon {
+        transition: all .5s ease;
+    }
+
+    body {
+        font-family: 'Lato', sans-serif;
+        text-align: center;
+        font-size: 15px;
+        font-weight: 300;
+        transition: all .5s ease;
+    }
+
+    div {
+        margin: 15px;
+        line-height: 25px;
+    }
+
+    .adlib {
+        border-radius: 6px;
+        padding: 3px;
+        border: 1px solid black;
+    }
+
+    button {
+        transition: all .5s ease;
+        font-family: 'Lato', sans-serif;
+        text-align: center;
+        font-size: 15px;
+        font-weight: 700;
+        background: #55c0db;
+        border-color: #55c0db;
+        color: #FFFFFF;
+        padding-top: 19px;
+        padding-bottom: 20px;
+
+        border-radius: 4px;
+        border-width: 1px;
+        border-style: solid;
+
+        padding-left: 29px;
+        padding-right: 29px;
+
+        margin: 10px;
+
+        text-transform: uppercase;
+
+        cursor: pointer;
+        display: inline-block;
+        text-decoration: none;
+    }
+
+    button:hover {
+        color: #55c0db;
+        background: transparent;
+    }
+
+    ::selection {
+        background: #41bedd;
+        color: #fff;
+        border-color: #55c0db;
+    }
+
+    @media (max-width: 1000px) {
+        .github-fork-ribbon {
+            opacity: 0;
+        }
+    }
+
+    @media (min-width: 1000px) {
+        body {
+            font-size: 20px;
+        }
+
+        button {
+            font-size: 30px;
+        }
+    }
+    </style>
+</head>
+
+<body>
+    <a class="github-fork-ribbon" href="https://github.com/Jesse-Hufstetler/Jesse-Hufstetler.github.io" data-ribbon="Fork me on GitHub" title="Fork me on GitHub">Fork me on GitHub</a>
+    <div style="font-size: 26px;margin-bottom: 24px;font-weight: 700;">✨ Random NDE Finder 🌌</div>
+    <div>At <span id="scrapeDate" class="adlib">{some point}</span> I scraped data from <a href="https://www.nderf.org/">NDERF<img src="link.svg" style=""></a> and gathered all their <span id="ndeCount" class="adlib">{many}</span> NDE reports.</div>
+    <div>Click the buttons below to open one of them at random! Each report has identical probability.</div>
+    <button class="button" id="rando" target="_blank" onauxclick="GetRandom()" onclick="GetRandom()">Random NDE</button><br>
+    <button class="button" id="rando" target="_blank" onauxclick="GetRandomSpecial()" onclick="GetRandomSpecial()">Random NDE<span style="font-size:10px"><br>Exclude "Probable", "Possible", "NDE-Like"</span></button>
+    <div style="font-style: italic;">This page is not associated with NDERF.</div>
+    <script>
+    fetch('NDEs.json')
+        .then((response) => response.json())
+        .then((data) => {
+            list = data.list;
+            scraped = new Date((data.scraped - 621355968000000000) / 10000);
+            document.getElementById("ndeCount").innerText = list.length.toLocaleString();
+            document.getElementById("scrapeDate").innerText = scraped.toLocaleString();
+        })
+        .catch((err) => console.error(err));
+
+    function GetRandom() {
+        var item = list[Math.floor(Math.random() * list.length)];
+        window.open(item, '_blank').focus();
+    }
+
+    function GetRandomSpecial() {
+        var item;
+        let badWords = ["probable", "possible", "ndelike"];
+        do {
+            item = list[Math.floor(Math.random() * list.length)];
+        } while (badWords.some((baddy) => item.toUpperCase().indexOf(baddy.toUpperCase()) >= 0));
+        window.open(item, '_blank').focus();
+    }
+    </script>
+</body>
+
+</html>
