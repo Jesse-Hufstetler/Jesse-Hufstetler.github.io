@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="icon" type="image/x-icon" href="faviconBible.ico">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/github-fork-ribbon-css/0.2.3/gh-fork-ribbon.min.css" />
+    <title>Random Bible Verse</title>
+    <style>
+    .github-fork-ribbon:before {
+        background-color: hsl(0, 0%, 30%);
+    }
+
+    .github-fork-ribbon {
+        transition: all .5s ease;
+    }
+
+    #friendlyName {
+        font-size: 55px;
+        margin: 35px;
+    }
+
+    body {
+        font-family: sans-serif;
+        text-align: center;
+        font-size: 15px;
+        transition: all .5s ease;
+    }
+
+    div {
+        margin: 15px;
+    }
+
+    button {
+        transition: all .5s ease;
+        cursor: pointer;
+    }
+
+    table {
+        transition: all .5s ease;
+        border-collapse: collapse;
+        margin: 0px auto;
+        font-size: 22px;
+    }
+
+    th,
+    td {
+        transition: all .5s ease;
+        border: 1px solid black;
+        padding: 5px;
+    }
+
+
+
+    @media (max-width: 800px) {
+        .github-fork-ribbon {
+            opacity: 0;
+        }
+
+        #friendlyName {
+            font-size: 9vw;
+        }
+
+        table {
+            font-size: 6vw;
+        }
+
+        th,
+        td {
+            padding: 1vw;
+        }
+
+        button {
+            font-size: 6vw;
+        }
+    }
+
+    @media (min-width: 800px) {
+        body {
+            font-size: 20px;
+        }
+
+        button {
+            font-size: 30px;
+        }
+
+        th,
+        td {
+            font-size: 30px;
+            padding: 15px 15px 15px 15px;
+        }
+
+    }
+
+
+
+    .button-85 {
+        padding: 0.6em 2em;
+        border: none;
+        outline: none;
+        color: rgb(255, 255, 255);
+        background: #111;
+        cursor: pointer;
+        position: relative;
+        z-index: 0;
+        border-radius: 10px;
+        user-select: none;
+        -webkit-user-select: none;
+        touch-action: manipulation;
+    }
+
+    .button-85:before {
+        content: "";
+        background: linear-gradient(45deg,
+            hsl(0, 0%, 50%),
+            hsl(22.438, 87.5%, 70%),
+            hsl(0, 0%, 50%),
+            hsl(22.438, 59%, 70%),
+            hsl(0, 0%, 100%),
+            hsl(0, 0%, 70%));
+        position: absolute;
+        top: -2px;
+        left: -2px;
+        background-size: 400%;
+        z-index: -1;
+        filter: blur(5px);
+        -webkit-filter: blur(50px);
+        width: calc(100% + 4px);
+        height: calc(100% + 4px);
+        animation: glowing-button-85 20s linear infinite;
+        transition: opacity 0.3s ease-in-out;
+        border-radius: 10px;
+    }
+
+    @keyframes glowing-button-85 {
+        0% {
+            background-position: 0 0;
+        }
+
+        50% {
+            background-position: 400% 0;
+        }
+
+        100% {
+            background-position: 0 0;
+        }
+    }
+
+    .button-85:after {
+        z-index: -1;
+        content: "";
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        background: #222;
+        left: 0;
+        top: 0;
+        border-radius: 10px;
+    }
+    </style>
+</head>
+
+<body>
+    <a class="github-fork-ribbon" href="https://github.com/Jesse-Hufstetler/Jesse-Hufstetler.github.io" data-ribbon="Fork me on GitHub" title="Fork me on GitHub">Fork me on GitHub</a>
+    <h1 style="">Random Bible Verse Chooser</h1>
+    <div>Click the button below to come up with a random Bible verse.</div>
+    <div>Each of the 31,101 verses in the Bible has equal probability.</div>
+    <br>
+    <button class="button-85" id="rando" onauxclick="GetRandom()" onclick="GetRandom()">Random Verse</button><br>
+    <div id="friendlyName"></div>
+    <div id="urls"></div>
+    <script>
+    fetch('bibleContents.json')
+        .then((response) => response.json())
+        .then((data) => {
+            verses = [];
+            for (var book of data) {
+                var chapterNumber = 1;
+                for (var chapter of book.Chapters) {
+                    for (var verse = 1; verse <= chapter; verse++) {
+                        var verseInfo = {
+                            book: book.Name,
+                            chapter: chapterNumber,
+                            verse: verse
+                        };
+                        verses.push(verseInfo);
+                    }
+                    chapterNumber++;
+                }
+            }
+            GetRandom();
+        })
+        .catch((err) => console.error(err));
+
+    function GetRandom() {
+        item = verses[Math.floor(Math.random() * verses.length)];
+        document.getElementById("friendlyName").innerText = `${item.book.replace("Psalms", "Psalm")} ${item.chapter}:${item.verse}`;
+        let innerHTML = ``;
+        innerHTML += `<table>`;
+        innerHTML += `<th style="">Site:</th>`;
+        innerHTML += `<th style="background: hsla(12, 95%, 90%, 1);">BG</th>`;
+        innerHTML += `<th style="background: hsla(209, 74%, 90%, 1);">LS</th>`;
+        innerHTML += `<th style="background: hsla(48, 96%, 83%, 1);">BT</th>`;
+        innerHTML += `<th style="background: hsla(1, 47%, 87%, 1);">YV</th>`;
+        innerHTML += `</tr>`;
+
+        for (const translation of [
+                { acronym: 'NLT', yvn: 116 },
+                { acronym: 'ESV', yvn: 59 },
+                { acronym: 'NIV', yvn: 111 },
+                { acronym: 'KJV', yvn: 1 },
+                { acronym: 'NASB', yvn: 2692 }
+            ]) {
+
+            innerHTML += `<tr>`;
+            innerHTML += `<td>${translation.acronym}</td>`;
+            innerHTML += `<td><a href="https://www.biblegateway.com/passage/?search=${item.book}+${item.chapter}&version=${translation.acronym}&verse=${item.verse}">link</a></td>`;
+            innerHTML += `<td><a href="https://ref.ly/logosres/${translation.acronym}?ref=Bible${translation.acronym}.${item.book.replace(' ', '')}${item.chapter}.${item.verse}">link</a></td>`;
+            innerHTML += `<td><a href="https://www.biblestudytools.com/${translation.acronym.toLowerCase().replace('nasb', 'nas')}/${item.book.replace(' ', '-').toLowerCase()}/${item.chapter}.html?verse=${item.verse}">link</a></td>`;
+            innerHTML += `<td><a href="https://www.bible.com/bible/${translation.yvn}/${ToYvb(item.book)}.${item.chapter}?verse=${item.verse}">link</a></td>`;
+            innerHTML += `</tr>`;
+        }
+
+
+
+
+
+
+
+
+
+        innerHTML += `</table>`;
+        document.getElementById("urls").innerHTML = innerHTML;
+    }
+
+    function ToYvb(input) {
+        if (input.toLowerCase() === `judges`) return `jdg`;
+        if (input.toLowerCase() === `song of solomon`) return `sng`;
+        if (input.toLowerCase() === `ezekiel`) return `ezk`;
+        if (input.toLowerCase() === `joel`) return `jol`;
+        if (input.toLowerCase() === `nahum`) return `nam`;
+        if (input.toLowerCase() === `mark`) return `mrk`;
+        if (input.toLowerCase() === `john`) return `jhn`;
+        if (input.toLowerCase() === `philippians`) return `php`;
+        if (input.toLowerCase() === `philemon`) return `phm`;
+        if (input.toLowerCase() === `james`) return `jas`;
+        if (isNumeric(input.substr(0, 1)))
+            return `${input.substr(0, 1)}${input.replace("ohn","n").substr(2, 2)}`;
+        return input.substr(0, 3).toLowerCase();
+    }
+
+    function isNumeric(n) {
+        return !isNaN(parseFloat(n)) && isFinite(n);
+    }
+    </script>
+</body>
+
+</html>

@@ -28,7 +28,7 @@
 
     div {
         margin: 15px;
-        line-height: 25px;
+        line-height: 2;
     }
 
     .adlib {
@@ -41,7 +41,6 @@
         transition: all .5s ease;
         font-family: 'Lato', sans-serif;
         text-align: center;
-        font-size: 15px;
         font-weight: 700;
         background: #55c0db;
         border-color: #55c0db;
@@ -76,9 +75,26 @@
         border-color: #55c0db;
     }
 
+    h1 {
+        transition: all .5s ease;
+        font-size: 34px;
+    }
+
     @media (max-width: 1000px) {
         .github-fork-ribbon {
             opacity: 0;
+        }
+
+        body {
+            font-size: 3vw;
+        }
+
+        button {
+            font-size: 5vw;
+        }
+
+        h1 {
+            font-size: 7vw;
         }
     }
 
@@ -96,7 +112,7 @@
 
 <body>
     <a class="github-fork-ribbon" href="https://github.com/Jesse-Hufstetler/Jesse-Hufstetler.github.io" data-ribbon="Fork me on GitHub" title="Fork me on GitHub">Fork me on GitHub</a>
-    <div style="font-size: 26px;margin-bottom: 24px;font-weight: 700;">✨ Random NDE Finder 🌌</div>
+    <h1 style="margin-bottom: 24px;font-weight: 700;">✨ Random NDE Finder 🌌</h1>
     <div>At <span id="scrapeDate" class="adlib">{some point}</span> I scraped data from <a href="https://www.nderf.org/">NDERF<img src="link.svg" style=""></a> and gathered all their <span id="ndeCount" class="adlib">{many}</span> NDE reports.</div>
     <div>Click the buttons below to open one of them at random! Each report has identical probability.</div>
     <button class="button" id="rando" target="_blank" onauxclick="GetRandom()" onclick="GetRandom()">Random NDE</button><br>
