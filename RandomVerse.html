@@ -220,7 +220,7 @@
 
             innerHTML += `<tr>`;
             innerHTML += `<td>${translation.acronym}</td>`;
-            innerHTML += `<td><a href="https://www.biblegateway.com/passage/?search=${item.book}+${item.chapter}&version=${translation.acronym}&verse=${item.verse}">link</a></td>`;
+            innerHTML += `<td><a href="https://www.biblegateway.com/passage/?search=${item.book}+${item.chapter}%3A${item.verse}%2C${item.book}+${item.chapter}&version=${translation.acronym}&verse=${item.verse}">link</a></td>`;
             innerHTML += `<td><a href="https://ref.ly/logosres/${translation.acronym}?ref=Bible${translation.acronym}.${item.book.replace(' ', '')}${item.chapter}.${item.verse}">link</a></td>`;
             innerHTML += `<td><a href="https://www.biblestudytools.com/${translation.acronym.toLowerCase().replace('nasb', 'nas')}/${item.book.replace(' ', '-').toLowerCase()}/${item.chapter}.html?verse=${item.verse}">link</a></td>`;
             innerHTML += `<td><a href="https://www.bible.com/bible/${translation.yvn}/${ToYvb(item.book)}.${item.chapter}?verse=${item.verse}">link</a></td>`;
