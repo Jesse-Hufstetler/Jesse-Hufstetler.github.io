@@ -27,17 +27,22 @@
         goodies += "<h5>Default Rendering</h5>";
         for (var i = parseInt(from, 16); i <= parseInt(to, 16); i++)
             goodies += "&#" + i + ";";
+        goodies += "<br><br>";
         goodies += "<h5>Segoe UI Symbol</h5>";
         goodies += "<div style=\"font-family: &quot;Segoe UI Symbol&quot;;\">";
         for (var i = parseInt(from, 16); i <= parseInt(to, 16); i++)
             goodies += "&#" + i + ";";
         goodies += "</div>";
+        goodies += "<br>";
         goodies += "<h5>Variation Selector 15</h5>";
         for (var i = parseInt(from, 16); i <= parseInt(to, 16); i++)
             goodies += "&#" + i + ";&#65038;";
+        goodies += "<br><br>";
         goodies += "<h5>Variation Selector 16</h5>";
         for (var i = parseInt(from, 16); i <= parseInt(to, 16); i++)
             goodies += "&#" + i + ";&#65039;";
+        goodies += "<br>";
+        goodies += "<br><br>";
         outE.innerHTML += goodies;
     }
 
@@ -50,6 +55,7 @@
         showUnicode("1F650", "1F67F", "Ornamental Dingbats");
         showUnicode("2100", "214F", "Letterlike Symbols");
         showUnicode("1F680", "1F6FF", "Transport and Map Symbols");
+        showUnicode("1F780", "1F7FF", "Geometric Shapes Extended");
     }
     go();
     </script>
