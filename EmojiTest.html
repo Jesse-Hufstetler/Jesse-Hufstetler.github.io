@@ -1,0 +1,58 @@
+<html>
+
+<head>
+    <title>Emoji Test Page</title>
+</head>
+
+<body style="font-family: sans-serif;">
+    <style type="text/css">
+    h4 {
+        background: lightgray;
+        margin: 3px 0;
+    }
+
+    h5 {
+        background: antiquewhite;
+        margin: 3px 0;
+    }
+    </style>
+    <h1>Emoji Test Page</h1>
+    <div id="output"></div>
+    <script type="text/javascript">
+    var outE = document.getElementById("output");
+
+    function showUnicode(from, to, description) {
+        outE.innerHTML += "<h4>" + from + " to " + to + " - " + description + "</h4>";
+        var goodies = "";
+        goodies += "<h5>Default Rendering</h5>";
+        for (var i = parseInt(from, 16); i <= parseInt(to, 16); i++)
+            goodies += "&#" + i + ";";
+        goodies += "<h5>Segoe UI Symbol</h5>";
+        goodies += "<div style=\"font-family: &quot;Segoe UI Symbol&quot;;\">";
+        for (var i = parseInt(from, 16); i <= parseInt(to, 16); i++)
+            goodies += "&#" + i + ";";
+        goodies += "</div>";
+        goodies += "<h5>Variation Selector 15</h5>";
+        for (var i = parseInt(from, 16); i <= parseInt(to, 16); i++)
+            goodies += "&#" + i + ";&#65038;";
+        goodies += "<h5>Variation Selector 16</h5>";
+        for (var i = parseInt(from, 16); i <= parseInt(to, 16); i++)
+            goodies += "&#" + i + ";&#65039;";
+        outE.innerHTML += goodies;
+    }
+
+    function go() {
+        showUnicode("2300", "23FF", "Miscellaneous Technical");
+        showUnicode("2600", "26FF", "Miscellaneous Symbols");
+        showUnicode("2700", "27BF", "Dingbats");
+        showUnicode("1F300", "1F5FF", "Miscellaneous Symbols and Pictographs");
+        showUnicode("1F600", "1F64F", "Emoticons");
+        showUnicode("1F650", "1F67F", "Ornamental Dingbats");
+        showUnicode("2100", "214F", "Letterlike Symbols");
+        showUnicode("1F680", "1F6FF", "Transport and Map Symbols");
+    }
+    go();
+    </script>
+    <br>
+    <a style="font-size: 200%;font-weight: bold;" href="index.html">MY OTHER STUFF</a>
+</body>
