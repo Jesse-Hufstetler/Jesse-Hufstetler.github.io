@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html style="height: 100%;margin: 0;padding: 0;">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- <script type="text/javascript" src="https://livejs.com/live.js"></script> -->
+    <link href="http://fonts.cdnfonts.com/css/droid-sans-mono-2" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/suncalc/1.9.0/suncalc.min.js"></script>
+    <title>Josh & Sadie Dashboard</title>
+    <style>
+    html,
+    body {
+        height: 100%;
+        margin: 0;
+        padding: 0;
+        background: hsla(0, 0%, 80%, 1);
+        font-family: 'Droid Sans Mono', monospace;
+    }
+    </style>
+</head>
+
+<body>
+    <div style="display: flex; justify-content: center; height: 100%;">
+        <svg id="svgContent" style="max-width: 100%;max-height: 100%;" version="1.1" viewBox="0 0 1600 900" xmlns="http://www.w3.org/2000/svg">
+            <rect width="100%" height="100%" fill="hsla(0, 0%, 0%, 1)" />
+            <svg x=0 y=0 width="900" height="900" viewBox="0 0 900 900">
+                <circle cx="450" cy="450" r="600" fill="hsla(38, 0%, 15%, 1)" />
+                <circle cx="450" cy="450" r="550" fill="hsla(38, 0%, 25%, 1)" />
+                <circle cx="450" cy="450" r="500" fill="hsla(38, 0%, 50%, 1)" />
+                <circle cx="450" cy="450" r="450" fill="hsla(38, 0%, 100%, 1)" />
+                <path id="sun" fill="none" stroke="hsla(194, 0%, 50%, 0.5)" stroke-width="450" />
+                <line x1="450" y1="450" x2="450" y2="0" stroke="hsla(200, 100%, 50%, 1)" stroke-width="3" stroke-linecap="round" />
+                <path id="nightSleep" fill="none" stroke="hsla(194, 100%, 50%, 0.2)" stroke-width="200" />
+                <path id="napSleep" fill="none" stroke="hsla(194, 100%, 50%, 0.2)" stroke-width="200" />
+                <path id="preschool" fill="none" stroke="hsla(32, 100%, 50%, 0.3)" stroke-width="50" />
+                <line id="timeBar2" x1="-10" y1="-10" x2="-10" y2="-10" stroke="hsla(356, 100%, 50%, 0.2)" stroke-width="18" stroke-linecap="round" />
+                <line id="timeBar" x1="-10" y1="-10" x2="-10" y2="-10" stroke="hsla(0, 0%, 0%, 1)" stroke-width="1" stroke-linecap="round" />
+            </svg>
+            <svg x=900 y=0 width="700" height="900" viewBox="0 0 700 900">
+                <rect width="100%" height="100%" fill="white" stroke="black" stroke-width="1px" />
+                <svg id="calendar1Svg" x="0" y="0" width="100%" height="100%" viewBox="0 0 245 595" preserveAspectRatio="xMinYMin meet" />
+                <svg id="calendar2Svg" x="0" y="0" width="100%" height="100%" viewBox="0 0 245 400" preserveAspectRatio="xMinYMin meet" />
+            </svg>
+        </svg>
+    </div>
+    <script>
+    window.addEventListener("error", handleError, true);
+
+    function handleError(evt) {
+        if (evt.message) { // Chrome sometimes provides this
+            alert("error: " + evt.message + " at linenumber: " + evt.lineno + " of file: " + evt.filename);
+        } else {
+            alert("error: " + evt.type + " from element: " + (evt.srcElement || evt.target));
+        }
+    }
+    var svgc = document.getElementById("svgContent");
+
+
+    for (var i = 0; i < 24; i++) {
+        var angle = i * 15;
+        var textl = polarToCartesian(450, 450, 430, angle);
+        svgc.innerHTML += `<text fill="hsla(0, 0%, 0%, 1)" x="${textl.x}" y="${textl.y}" dominant-baseline="middle" text-anchor="middle" style="font-size: 17px;">${(i+11)%12+1}${i>=12&&i<24?"PM":"AM"}</text>`;
+
+        var lineStartl = polarToCartesian(450, 450, 50, angle);
+        var lineEndl = polarToCartesian(450, 450, 400, angle);
+        svgc.innerHTML += `<line x1="${lineStartl.x}" y1="${lineStartl.y}" x2="${lineEndl.x}" y2="${lineEndl.y}" stroke="hsla(0, 0%, 0%, 0.42)" />`;
+    }
+    document.getElementById("nightSleep")
+        .setAttribute("d", describeArc(450, 450, 350, -4.25 * 15, 7 * 15));
+    document.getElementById("napSleep")
+        .setAttribute("d", describeArc(450, 450, 350, 12.25 * 15, 15.25 * 15));
+    document.getElementById("preschool")
+        .setAttribute("d", describeArc(450, 450, 350, 8.75 * 15, 17 * 15));
+
+    function getTime() {
+        let now = momentProxy();
+        let thruDay = now.hour() + now.minute() / 60 + now.second() / 60 / 60;
+        let angle = thruDay * 15;
+        var lineStartl = polarToCartesian(450, 450, 0, angle);
+        var lineEndl = polarToCartesian(450, 450, 445, angle);
+        let tb = document.getElementById("timeBar");
+        let tb2 = document.getElementById("timeBar2");
+        tb.setAttribute('x1', lineStartl.x);
+        tb.setAttribute('y1', lineStartl.y);
+        tb.setAttribute('x2', lineEndl.x);
+        tb.setAttribute('y2', lineEndl.y);
+        tb2.setAttribute('x1', lineStartl.x);
+        tb2.setAttribute('y1', lineStartl.y);
+        tb2.setAttribute('x2', lineEndl.x);
+        tb2.setAttribute('y2', lineEndl.y);
+    }
+    getTime();
+    setInterval(getTime, 400);
+
+    //function markTime(start, stop);
+    function getTextColors(dayToDraw) {
+        let color = `transparent`;
+        let textColor = `hsla(0, 0%, 0%, .4)`;
+        switch (dayToDraw.month()) {
+            case 0: //january
+                color = `hsla(10, 0%, 50%, 0.1)`;
+                break;
+            case 1: //february
+                color = `hsla(250, 20%, 50%, 0.2)`;
+                break;
+            case 2: //march
+                color = `hsla(40, 40%, 50%, 0.2)`;
+                break;
+            case 3: //april
+                color = `hsla(83, 50%, 50%, 0.3)`;
+                break;
+            case 4: //may
+                color = `hsla(208, 60%, 50%, 0.2)`;
+                break;
+            case 5: //june
+                color = `hsla(60, 100%, 50%, 0.4)`;
+                break;
+            case 6: //july
+                color = `hsla(50, 100%, 50%, 0.5)`;
+                break;
+            case 7: //august
+                color = `hsla(40, 80%, 50%, 0.5)`;
+                break;
+            case 8: //september
+                color = `hsla(200, 50%, 50%, 0.2)`;
+                break;
+            case 9: //october
+                color = `hsla(25, 100%, 50%, 0.42)`;
+                break;
+            case 10: //november
+                color = `hsla(330, 50%, 50%, 0.3)`;
+                break;
+            case 11: //december
+                color = `hsla(355, 100%, 50%, 0.3)`;
+                break;
+            default:
+                // code block
+        }
+
+        if (dayToDraw.dayOfYear() === momentProxy().dayOfYear()) {
+            textColor = "hsla(0, 0%, 100%, 1)";
+            color = "hsla(0, 0%, 0%, 1)";
+        }
+        return {
+            color: color,
+            textColor: textColor
+        };
+    }
+
+    function drawCalendar() {
+        let innerHTML = "";
+        let dayToDraw = momentProxy().clone().startOf('week').add(-(7 * 1), 'days');
+        let weeks = 9;
+        let sunTimes = SunCalc.getTimes(new Date(), 40.910345, -81.399921);
+        let ss = sunTimes.sunset;
+        let sunsetHour = ss.getHours() + ss.getMinutes() / 60 + ss.getSeconds() / 60 / 60;
+        let sunsetAngle = (24 - sunsetHour) * -15;
+        let sr = sunTimes.sunrise;
+        let sunriseHour = sr.getHours() + sr.getMinutes() / 60 + sr.getSeconds() / 60 / 60;
+        let sunriseAngle = (sunriseHour) * 15;
+        document.getElementById("sun")
+            .setAttribute("d", describeArc(450, 450, 225, sunsetAngle, sunriseAngle));
+
+
+
+        for (let i = 0; i < (7 * weeks); i++) {
+            let colors = getTextColors(dayToDraw);
+            let color = colors.color;
+            let textColor = colors.textColor;
+
+            innerHTML += `<rect x="${(i * 35) % (7*35)}" y="${Math.floor(i/7)*35}" width="35" height="35" fill="${color}" stroke="black" stroke-width=".1px" />`;
+            innerHTML += `<text fill="${textColor}" x="${((i * 35) % (7*35))+17.5}" y="${(Math.floor(i/7)*35)+17.5}" dominant-baseline="middle" text-anchor="middle" style="font-size: 20px;">${dayToDraw.date()}</text>`;
+            dayToDraw.add(1, 'days');
+        }
+        document.getElementById(`calendar2Svg`).innerHTML = innerHTML;
+        document.getElementById(`calendar2Svg`).setAttribute(`viewBox`, `0 0 245 ${weeks*35}`);
+
+
+
+    }
+    drawCalendar();
+
+    function polarToCartesian(centerX, centerY, radius, angleInDegrees) {
+        var angleInRadians = (angleInDegrees - 90) * Math.PI / 180.0;
+
+        return {
+            x: centerX + (radius * Math.cos(angleInRadians)),
+            y: centerY + (radius * Math.sin(angleInRadians))
+        };
+    }
+
+    function momentProxy(arg1) {
+        return moment(arg1);
+    }
+
+    function describeArc(x, y, radius, startAngle, endAngle) {
+
+        var start = polarToCartesian(x, y, radius, endAngle);
+        var end = polarToCartesian(x, y, radius, startAngle);
+
+        var largeArcFlag = endAngle - startAngle <= 180 ? "0" : "1";
+
+        var d = [
+            "M", start.x, start.y,
+            "A", radius, radius, 0, largeArcFlag, 0, end.x, end.y
+        ].join(" ");
+
+        return d;
+    }
+    </script>
+</body>
+
+</html>
