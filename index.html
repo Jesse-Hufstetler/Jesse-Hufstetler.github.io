@@ -10,11 +10,17 @@
     html {
         font-family: sans-serif;
     }
+
     .personal {
-        opacity: .25;
+        opacity: .4;
+        filter: blur(10px);
+        transition: .5s;
+        transition-timing-function: cubic-bezier(0, 0, 0, 1);
     }
+
     .personal:hover {
-        opacity: 1;
+        opacity: .5;
+        filter: blur(0);
     }
     </style>
 </head>
