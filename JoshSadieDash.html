@@ -99,41 +99,66 @@
         let color = `transparent`;
         let textColor = `hsla(0, 0%, 0%, .4)`;
         switch (dayToDraw.month()) {
-            case 0: //january
+            case 0: //January
                 color = `hsla(10, 0%, 50%, 0.1)`;
                 break;
-            case 1: //february
+            case 1: //February
                 color = `hsla(250, 20%, 50%, 0.2)`;
                 break;
-            case 2: //march
+            case 2: //March
                 color = `hsla(40, 40%, 50%, 0.2)`;
                 break;
-            case 3: //april
+            case 3: //April
                 color = `hsla(83, 50%, 50%, 0.3)`;
                 break;
-            case 4: //may
+            case 4: //May
                 color = `hsla(208, 60%, 50%, 0.2)`;
                 break;
-            case 5: //june
+            case 5: //June
                 color = `hsla(60, 100%, 50%, 0.4)`;
                 break;
-            case 6: //july
+            case 6: //July
                 color = `hsla(50, 100%, 50%, 0.5)`;
                 break;
-            case 7: //august
+            case 7: //August
                 color = `hsla(40, 80%, 50%, 0.5)`;
                 break;
-            case 8: //september
+            case 8: //September
                 color = `hsla(200, 50%, 50%, 0.2)`;
                 break;
-            case 9: //october
+            case 9: //October
                 color = `hsla(25, 100%, 50%, 0.42)`;
                 break;
-            case 10: //november
+            case 10: //November
                 color = `hsla(330, 50%, 50%, 0.3)`;
                 break;
-            case 11: //december
+            case 11: //December
                 color = `hsla(355, 100%, 50%, 0.3)`;
+                break;
+            default:
+                // code block
+        }
+        switch (dayToDraw.day()) {
+            case 0: //Sunday hsl(17deg 31% 76%)
+                color = `hsla(23, 37%, 70%, 0.5)`;
+                break;
+            case 1: //Monday
+                color = `hsla(250, 20%, 100%, 0.2)`;
+                break;
+            case 2: //Tuesday
+                color = `hsla(200, 100%, 50%, 0.2)`;
+                break;
+            case 3: //Wednesday
+                color = `hsla(83, 50%, 100%, 0.3)`;
+                break;
+            case 4: //Thursday
+                color = `hsla(208, 0%, 100%, 0.2)`;
+                break;
+            case 5: //Friday
+                color = `hsla(60, 100%, 50%, 0.4)`;
+                break;
+            case 6: //Saturday
+                color = `hsla(23, 0%, 70%, 0.5)`;
                 break;
             default:
                 // code block
@@ -170,8 +195,31 @@
             let color = colors.color;
             let textColor = colors.textColor;
 
+            var cellText = dayToDraw.date();
+            if (dayToDraw.month() == 10 &&
+                dayToDraw.date() > 21 &&
+                dayToDraw.date() < 29 &&
+                dayToDraw.day() === 4) cellText = "🦃";
+            if (dayToDraw.month() == 9 &&
+                dayToDraw.date() == 31) cellText = "🎃";
+            if (dayToDraw.month() == 11 &&
+                dayToDraw.date() == 25) cellText = "🎄";
+            if (dayToDraw.month() == 6 &&
+                dayToDraw.date() == 4) cellText = "🇺🇸";
+            if (dayToDraw.month() == 11 &&
+                dayToDraw.date() == 31) cellText = "🎂";
+            if (dayToDraw.month() == 4 &&
+                dayToDraw.date() > 24 &&
+                dayToDraw.day() === 1) cellText = "🌷";
+            if (dayToDraw.month() == 0 &&
+                dayToDraw.date() == 1) cellText = "🍷";
+            if (dayToDraw.month() == 8 &&
+                dayToDraw.date() > 0 &&
+                dayToDraw.date() < 8 &&
+                dayToDraw.day() === 1) cellText = "🍉";
+
             innerHTML += `<rect x="${(i * 35) % (7*35)}" y="${Math.floor(i/7)*35}" width="35" height="35" fill="${color}" stroke="black" stroke-width=".1px" />`;
-            innerHTML += `<text fill="${textColor}" x="${((i * 35) % (7*35))+17.5}" y="${(Math.floor(i/7)*35)+17.5}" dominant-baseline="middle" text-anchor="middle" style="font-size: 20px;">${dayToDraw.date()}</text>`;
+            innerHTML += `<text fill="${textColor}" x="${((i * 35) % (7*35))+17.5}" y="${(Math.floor(i/7)*35)+17.5}" dominant-baseline="middle" text-anchor="middle" style="font-size: 20px;">${cellText}</text>`;
             dayToDraw.add(1, 'days');
         }
         document.getElementById(`calendar2Svg`).innerHTML = innerHTML;
@@ -192,7 +240,7 @@
     }
 
     function momentProxy(arg1) {
-        return moment(arg1);
+        return moment(arg1).add(0, 'days');
     }
 
     function describeArc(x, y, radius, startAngle, endAngle) {
