@@ -278,7 +278,7 @@
             if (dayToDraw.month() !== dayToDraw.clone().add(7, 'days').month())
                 innerHTML += `<line x1="${(i * 35) % (7*35)}" y1="${Math.floor(i/7)*35+35}" x2="${(i * 35) % (7*35) + 35}" y2="${Math.floor(i/7)*35+35}" stroke-width="3" stroke="black" stroke-linecap="round" />`;
 
-            if (dayToDraw.month() !== dayToDraw.clone().add(1, 'days').month())
+            if (dayToDraw.month() !== dayToDraw.clone().add(1, 'days').month() && dayToDraw.day() !== 6)
                 innerHTML += `<line x1="${(i * 35) % (7*35) + 35}" y1="${Math.floor(i/7)*35+35}" x2="${(i * 35) % (7*35) + 35}" y2="${Math.floor(i/7)*35}" stroke-width="3" stroke="black" stroke-linecap="round" />`;
             dayToDraw.add(1, 'days');
         }
