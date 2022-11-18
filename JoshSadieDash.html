@@ -280,7 +280,7 @@
     const appid = urlParams.get('appid');
 
     function getWeather() {
-        fetch(`http://api.openweathermap.org/data/2.5/weather?zip=44720,US&appid=${appid}&units=imperial`)
+        fetch(`https://api.openweathermap.org/data/2.5/weather?zip=44720,US&appid=${appid}&units=imperial`)
             .then(response => response.json())
             .then(data => {
                 var merc = document.getElementById("merc");
