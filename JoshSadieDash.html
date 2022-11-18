@@ -29,7 +29,7 @@
     <div style="display: flex; justify-content: center; height: 100%;">
         <svg id="svgContent" style="max-width: 100%;max-height: 100%;" version="1.1" viewBox="0 0 1600 900" xmlns="http://www.w3.org/2000/svg">
             <rect width="100%" height="100%" fill="hsla(0, 0%, 0%, 1)" />
-            <svg x=0 y=0 width="900" height="900" viewBox="0 0 900 900">
+            <svg id="clok" x=0 y=0 width="890" height="890" viewBox="0 0 900 900">
                 <circle cx="450" cy="450" r="600" fill="hsla(38, 0%, 15%, 1)" />
                 <circle cx="450" cy="450" r="550" fill="hsla(38, 0%, 25%, 1)" />
                 <circle cx="450" cy="450" r="500" fill="hsla(38, 0%, 50%, 1)" />
@@ -47,6 +47,32 @@
                 <svg id="calendar1Svg" x="0" y="0" width="100%" height="100%" viewBox="0 0 245 595" preserveAspectRatio="xMinYMin meet" />
                 <svg id="calendar2Svg" x="0" y="0" width="100%" height="100%" viewBox="0 0 245 400" preserveAspectRatio="xMinYMin meet" />
             </svg>
+            <svg x=0 y="886" width="1600" height="14" viewBox="0 0 1200 10">
+                <rect x="0" y="0" width="100" height="10" fill="hsla(194, 100%, 45%, 1)" /> <!-- -10 -->
+                <rect x="100" y="0" width="100" height="10" fill="hsla(194, 100%, 50%, 1)" /> <!-- 00 -->
+                <rect x="200" y="0" width="100" height="10" fill="hsla(194, 100%, 55%, 1)" /> <!-- 10 -->
+                <rect x="300" y="0" width="100" height="10" fill="hsla(194, 100%, 60%, 1)" /> <!-- 20 -->
+                <rect x="400" y="0" width="100" height="10" fill="hsla(194, 100%, 70%, 1)" /> <!-- 30 -->
+                <rect x="500" y="0" width="100" height="10" fill="hsla(194, 100%, 80%, 1)" /> <!-- 40 -->
+                <rect x="600" y="0" width="100" height="10" fill="hsla(194, 100%, 90%, 1)" /> <!-- 50 -->
+                <rect x="700" y="0" width="100" height="10" fill="hsla(194, 100%, 95%, 1)" /> <!-- 60 -->
+                <rect x="800" y="0" width="100" height="10" fill="hsla(194, 100%, 100%, 1)" /> <!-- 70 -->
+                <rect x="900" y="0" width="100" height="10" fill="hsla(0, 100%, 90%, 1)" /> <!-- 70 -->
+                <rect x="1000" y="0" width="100" height="10" fill="hsla(0, 100%, 80%, 1)" />
+                <rect x="1100" y="0" width="100" height="10" fill="hsla(0, 100%, 70%, 1)" />
+                <text fill="black" x="100" y="5" dominant-baseline="middle" text-anchor="middle" style="font-size: 10px;">0</text>
+                <text fill="black" x="200" y="5" dominant-baseline="middle" text-anchor="middle" style="font-size: 10px;">10</text>
+                <text fill="black" x="300" y="5" dominant-baseline="middle" text-anchor="middle" style="font-size: 10px;">20</text>
+                <text fill="black" x="400" y="5" dominant-baseline="middle" text-anchor="middle" style="font-size: 10px;">30</text>
+                <text fill="black" x="500" y="5" dominant-baseline="middle" text-anchor="middle" style="font-size: 10px;">40</text>
+                <text fill="black" x="600" y="5" dominant-baseline="middle" text-anchor="middle" style="font-size: 10px;">50</text>
+                <text fill="black" x="700" y="5" dominant-baseline="middle" text-anchor="middle" style="font-size: 10px;">60</text>
+                <text fill="black" x="800" y="5" dominant-baseline="middle" text-anchor="middle" style="font-size: 10px;">70</text>
+                <text fill="black" x="900" y="5" dominant-baseline="middle" text-anchor="middle" style="font-size: 10px;">80</text>
+                <text fill="black" x="1000" y="5" dominant-baseline="middle" text-anchor="middle" style="font-size: 10px;">90</text>
+                <text fill="black" x="1100" y="5" dominant-baseline="middle" text-anchor="middle" style="font-size: 10px;">100</text>
+                <rect id="merc" x="0" y="2" width="0" height="5" fill="hsla(296, 100%, 50%, .5)" />
+            </svg>
         </svg>
     </div>
     <script>
@@ -59,7 +85,7 @@
             alert("error: " + evt.type + " from element: " + (evt.srcElement || evt.target));
         }
     }
-    var svgc = document.getElementById("svgContent");
+    var svgc = document.getElementById("clok");
 
 
     for (var i = 0; i < 24; i++) {
@@ -180,7 +206,8 @@
 
     function drawCalendar() {
         let innerHTML = "";
-        let dayToDraw = momentProxy().clone().startOf('week').add(-(7 * 1), 'days');
+        let startDate = momentProxy().clone().startOf('week').add(-(7 * 1), 'days');
+        let dayToDraw = startDate.clone();
         let weeks = 9;
         let sunTimes = SunCalc.getTimes(new Date(), 40.910345, -81.399921);
         let ss = sunTimes.sunset;
@@ -222,10 +249,26 @@
                 dayToDraw.date() < 8 &&
                 dayToDraw.day() === 1) cellText = "🍉";
 
-            innerHTML += `<rect x="${(i * 35) % (7*35)}" y="${Math.floor(i/7)*35}" width="35" height="35" fill="${color}" stroke="black" stroke-width=".1px" />`;
+
+            innerHTML += `<rect x="${(i * 35) % (7*35)}" y="${Math.floor(i/7)*35}" width="35" height="35" fill="${color}" stroke="black" stroke-width=".1" />`;
             innerHTML += `<text fill="${textColor}" x="${((i * 35) % (7*35))+17.5}" y="${(Math.floor(i/7)*35)+17.5}" dominant-baseline="middle" text-anchor="middle" style="font-size: 20px;">${cellText}</text>`;
             dayToDraw.add(1, 'days');
         }
+
+        dayToDraw = startDate.clone();
+
+        for (let i = 0; i < (7 * weeks); i++) {
+
+            if (dayToDraw.month() !== dayToDraw.clone().add(7, 'days').month())
+                innerHTML += `<line x1="${(i * 35) % (7*35)}" y1="${Math.floor(i/7)*35+35}" x2="${(i * 35) % (7*35) + 35}" y2="${Math.floor(i/7)*35+35}" stroke-width="3" stroke="black" />`;
+
+            if (dayToDraw.month() !== dayToDraw.clone().add(1, 'days').month())
+                innerHTML += `<line x1="${(i * 35) % (7*35) + 35}" y1="${Math.floor(i/7)*35+35}" x2="${(i * 35) % (7*35) + 35}" y2="${Math.floor(i/7)*35}" stroke-width="3" stroke="black" />`;
+            dayToDraw.add(1, 'days');
+        }
+
+
+
         document.getElementById(`calendar2Svg`).innerHTML = innerHTML;
         document.getElementById(`calendar2Svg`).setAttribute(`viewBox`, `0 0 245 ${weeks*35}`);
 
@@ -233,6 +276,22 @@
 
     }
     drawCalendar();
+    const urlParams = new URLSearchParams(window.location.search);
+    const appid = urlParams.get('appid');
+
+    function getWeather() {
+        fetch(`http://api.openweathermap.org/data/2.5/weather?zip=44720,US&appid=${appid}&units=imperial`)
+            .then(response => response.json())
+            .then(data => {
+                var merc = document.getElementById("merc");
+                var feelsLike = Math.round(data.main.feels_like);
+                console.log(feelsLike);
+                merc.setAttribute('width', feelsLike*10+100);
+
+            });
+    }
+    getWeather();
+    setInterval(getWeather, 1000 * 60 * 20);
 
     function polarToCartesian(centerX, centerY, radius, angleInDegrees) {
         var angleInRadians = (angleInDegrees - 90) * Math.PI / 180.0;
