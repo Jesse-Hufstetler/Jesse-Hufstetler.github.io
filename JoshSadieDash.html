@@ -38,7 +38,8 @@
                 <line x1="450" y1="450" x2="450" y2="0" stroke="hsla(200, 100%, 50%, 1)" stroke-width="3" stroke-linecap="round" />
                 <path id="nightSleep" fill="none" stroke="hsla(194, 100%, 50%, 0.2)" stroke-width="200" />
                 <path id="napSleep" fill="none" stroke="hsla(194, 100%, 50%, 0.2)" stroke-width="200" />
-                <path id="preschool" fill="none" stroke="hsla(32, 100%, 50%, 0.3)" stroke-width="50" />
+                <path id="activities" fill="none" stroke="hsla(32, 100%, 50%, 0.3)" stroke-width="50" />
+                <path id="activities2" fill="none" stroke="hsla(32, 100%, 50%, 0.3)" stroke-width="50" />
                 <line id="timeBar2" x1="-10" y1="-10" x2="-10" y2="-10" stroke="hsla(356, 100%, 50%, 0.2)" stroke-width="18" stroke-linecap="round" />
                 <line id="timeBar" x1="-10" y1="-10" x2="-10" y2="-10" stroke="hsla(0, 0%, 0%, 1)" stroke-width="1" stroke-linecap="round" />
             </svg>
@@ -97,12 +98,23 @@
         var lineEndl = polarToCartesian(450, 450, 400, angle);
         svgc.innerHTML += `<line x1="${lineStartl.x}" y1="${lineStartl.y}" x2="${lineEndl.x}" y2="${lineEndl.y}" stroke="hsla(0, 0%, 0%, 0.42)" />`;
     }
+    var fridayOffset = momentProxy().day() == 5 ? 0.9 : 0;
     document.getElementById("nightSleep")
-        .setAttribute("d", describeArc(450, 450, 350, -4.25 * 15, 7 * 15));
+        .setAttribute("d", describeArc(450, 450, 350, (-4.25 + fridayOffset) * 15, 7 * 15));
     document.getElementById("napSleep")
         .setAttribute("d", describeArc(450, 450, 350, 12.25 * 15, 15.25 * 15));
-    document.getElementById("preschool")
-        .setAttribute("d", describeArc(450, 450, 350, 8.75 * 15, 17 * 15));
+    if (momentProxy().day() != 0 && momentProxy().day() != 6)
+        document.getElementById("activities")
+            .setAttribute("d", describeArc(450, 450, 350, 8.75 * 15, 17 * 15));
+
+    if (momentProxy().day() === 0)
+    {
+
+    document.getElementById("activities")
+        .setAttribute("d", describeArc(450, 450, 350, 8.75 * 15, 11 * 15));
+    document.getElementById("activities2")
+        .setAttribute("d", describeArc(450, 450, 350, 16.25 * 15, 19.75 * 15));
+    }
 
     var oldTime = momentProxy().hour();
     function getTime() {
@@ -123,7 +135,7 @@
         tb2.setAttribute('y2', lineEndl.y);
         var nowTime = momentProxy().hour();
         if (nowTime < oldTime) location.reload();
-        oldTime = nowTime;
+        oldTime = nowTime; 
     }
     getTime();
     setInterval(getTime, 400);
