@@ -78,6 +78,7 @@
     </div>
     <script>
     window.addEventListener("error", handleError, true);
+    const momentProxy = (arg1) => moment(arg1).add(0, 'days');
 
     function handleError(evt) {
         if (evt.message) { // Chrome sometimes provides this
@@ -105,18 +106,18 @@
         .setAttribute("d", describeArc(450, 450, 350, 12.25 * 15, 15.25 * 15));
     if (momentProxy().day() != 0 && momentProxy().day() != 6)
         document.getElementById("activities")
-            .setAttribute("d", describeArc(450, 450, 350, 8.75 * 15, 17 * 15));
+        .setAttribute("d", describeArc(450, 450, 350, 8.75 * 15, 17 * 15));
 
-    if (momentProxy().day() === 0)
-    {
+    if (momentProxy().day() === 0) {
 
-    document.getElementById("activities")
-        .setAttribute("d", describeArc(450, 450, 350, 8.75 * 15, 11 * 15));
-    document.getElementById("activities2")
-        .setAttribute("d", describeArc(450, 450, 350, 16.25 * 15, 19.75 * 15));
+        document.getElementById("activities")
+            .setAttribute("d", describeArc(450, 450, 350, 8.75 * 15, 11 * 15));
+        document.getElementById("activities2")
+            .setAttribute("d", describeArc(450, 450, 350, 16.25 * 15, 19.75 * 15));
     }
 
     var oldTime = momentProxy().hour();
+
     function getTime() {
         let now = momentProxy();
         let thruDay = now.hour() + now.minute() / 60 + now.second() / 60 / 60;
@@ -135,7 +136,7 @@
         tb2.setAttribute('y2', lineEndl.y);
         var nowTime = momentProxy().hour();
         if (nowTime < oldTime) location.reload();
-        oldTime = nowTime; 
+        oldTime = nowTime;
     }
     getTime();
     setInterval(getTime, 400);
@@ -143,7 +144,7 @@
     //function markTime(start, stop);
     function getTextColors(dayToDraw) {
         let color = `transparent`;
-        let textColor = `hsla(0, 0%, 0%, 1)`;
+        let textColor = `hsla(0, 0%, 0%, .1)`;
         switch (dayToDraw.month()) {
             case 0: //January
                 color = `hsla(10, 0%, 50%, 0.1)`;
@@ -198,7 +199,7 @@
                 color = `hsla(83, 50%, 100%, 0.3)`;
                 break;
             case 4: //Thursday
-                color = `hsla(200, 100%, 50%, 0.2)`;
+                color = `hsla(83, 50%, 100%, 0.3)`;
                 break;
             case 5: //Friday
                 color = `hsla(60, 100%, 50%, 0.4)`;
@@ -268,6 +269,7 @@
                 dayToDraw.date() > 0 &&
                 dayToDraw.date() < 8 &&
                 dayToDraw.day() === 1) cellText = "🍉";
+            if (!isNumeric(cellText)) textColor = `hsla(0, 0%, 0%, 1)`;
 
 
             innerHTML += `<rect x="${(i * 35) % (7*35)}" y="${Math.floor(i/7)*35}" width="35" height="35" fill="${color}" stroke="black" stroke-width=".1" />`;
@@ -307,7 +309,7 @@
                 console.log(feelsLike);
                 var merc = document.getElementById("merc");
                 document.getElementById("tempy").setAttribute("display", "inline");
-                merc.setAttribute('width', feelsLike*10+100);
+                merc.setAttribute('width', feelsLike * 10 + 100);
 
             });
     }
@@ -323,9 +325,11 @@
         };
     }
 
-    function momentProxy(arg1) {
-        return moment(arg1).add(0, 'days');
+
+    function isNumeric(n) {
+        return !isNaN(parseFloat(n)) && isFinite(n);
     }
+
 
     function describeArc(x, y, radius, startAngle, endAngle) {
 
