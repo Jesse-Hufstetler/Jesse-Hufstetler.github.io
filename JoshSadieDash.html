@@ -96,7 +96,7 @@
     for (var i = 0; i < 24; i++) {
         var angle = i * 15;
         var textl = polarToCartesian(450, 450, 430, angle);
-        svgc.innerHTML += `<text fill="hsla(0, 0%, 0%, 1)" x="${textl.x}" y="${textl.y}" dominant-baseline="middle" text-anchor="middle" style="font-size: 17px;">${(i+11)%12+1}${i>=12&&i<24?"PM":"AM"}</text>`;
+        svgc.innerHTML += `<text fill="hsla(0, 0%, 0%, 1)" x="${textl.x}" y="${textl.y}" dominant-baseline="middle" text-anchor="middle" style="font-size: 17px;">${(i+11)%12+1}</text>`;
 
         var lineStartl = polarToCartesian(450, 450, 50, angle);
         var lineEndl = polarToCartesian(450, 450, 400, angle);
