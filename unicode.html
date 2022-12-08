@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Unicode Fun</title>
+    <style>
+    html,
+    body {
+        font-family: monospace;
+        font-size: 12px;
+    }
+
+    table,
+    td {
+        border-collapse: collapse;
+    }
+    </style>
+</head>
+
+<body>
+    <button onclick="back();back();back();back();back();back();back();back();">Back x8</button>
+    <button onclick="back();back();back();back();">Back x4</button>
+    <button onclick="back();back();">Back x2</button>
+    <button onclick="back();">Back</button>
+    <button onclick="next();">Next</button>
+    <button onclick="next();next();">Next x2</button>
+    <button onclick="next();next();next();next();">Next x4</button>
+    <button onclick="next();next();next();next();next();next();next();next();">Next x8</button>
+    <br>
+    <button onclick="start = 64;dump();">64</button>
+    <button onclick="start = 9728;dump();">9728</button>
+    <button onclick="start = 57344;dump();">57344</button>
+    <button onclick="start = 127744;dump();">127744</button>
+    <table id="theTable">
+    </table>
+    <script>
+    start = 0;
+    var wide = 4;
+    var perPage = 64
+    addEventListener('wheel', (event) => {
+    	start += event.deltaY/100 * perPage;
+    	dump();
+    });
+    function back() {
+    	start -= perPage;
+    	dump();
+    }
+    function next() {
+    	start += perPage;
+    	dump();
+    }
+
+    function dump() {
+        var innerHTML = ``;
+        for (var r = start; r < (perPage + start); r += wide) {
+            innerHTML += `<tr>`;
+            for (var c = 0; c < wide; c++) {
+                var i = r + c;
+                innerHTML += `<td>&${i.toString(16)};</td>`;
+                innerHTML += `<td>&amp;#${i};</td>`;
+                innerHTML += `<td style="font-size:22px;">&#${i};</td>`;
+                innerHTML += `<td style="font-size:22px;">&#${i};&#65038;</td>`;
+                innerHTML += `<td style="font-size:22px;">&#${i};&#65039;</td>`;
+                innerHTML += `<td style="font-size:22px;font-family: &quot;Segoe UI Symbol&quot;;">&#${i};</td>`;
+                innerHTML += `<td >&nbsp;&nbsp;&nbsp;&nbsp;</td>`;
+            }
+            innerHTML += `</tr>`;
+        }
+        document.getElementById('theTable').innerHTML = innerHTML;
+    }
+    dump();
+    </script>
+    <br/><br/><br/>
+    <a style="font-size: 200%;font-weight: bold;" href="index.html">MY OTHER STUFF</a>
+</body>
+
+</html>
