@@ -40,8 +40,9 @@
     var wide = 4;
     var perPage = 64
     addEventListener('wheel', (event) => {
-    	if (event.deltaY > 30) start += perPage;
-    	if (event.deltaY < 30) start -= perPage;
+    	console.log(event.deltaY)
+    	if (event.deltaY > 9) start += perPage;
+    	if (event.deltaY < -9) start -= perPage;
     	dump();
     });
     function back() {
