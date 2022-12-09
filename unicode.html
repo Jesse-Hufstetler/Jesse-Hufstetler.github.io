@@ -55,6 +55,7 @@
     }
 
     function dump() {
+        if (start < 0) start = 0;
         var innerHTML = ``;
         for (var r = start; r < (perPage + start); r += wide) {
             innerHTML += `<tr>`;
