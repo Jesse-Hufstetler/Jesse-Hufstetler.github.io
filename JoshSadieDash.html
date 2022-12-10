@@ -44,7 +44,7 @@
                 <path id="activities2" fill="none" stroke="hsla(32, 100%, 50%, 0.3)" stroke-width="50" />
                 <line id="timeBar2" x1="-10" y1="-10" x2="-10" y2="-10" stroke="hsla(356, 100%, 50%, 0.2)" stroke-width="18" stroke-linecap="round" />
                 <line id="timeBar" x1="-10" y1="-10" x2="-10" y2="-10" stroke="hsla(0, 0%, 0%, 1)" stroke-width="1" stroke-linecap="round" />
-                <text id="timey" fill="black" x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" style="font-size: 140px;font-weight: bold;"></text>
+                <text id="timey" fill="hsla(0, 0%, 0%, .9)" x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" style="font-size: 220px;font-weight: bold;"></text>
             </svg>
             <svg id="calBox" x=900 y=0 width="700" height="900" viewBox="0 0 700 900" style="overflow: visible;">
                 <rect width="100%" height="100%" fill="white" stroke="black" stroke-width="1px" />
@@ -146,7 +146,7 @@
     for (var i = 0; i < 24; i++) {
         var angle = i * 15;
         var textl = polarToCartesian(450, 450, 430, angle);
-        clok.innerHTML += `<text fill="hsla(0, 0%, 0%, 1)" x="${textl.x}" y="${textl.y}" dominant-baseline="middle" text-anchor="middle" style="font-size: 17px;">${(i+11)%12+1}</text>`;
+        clok.innerHTML += `<text fill="hsla(0, 0%, 0%, .5)" x="${textl.x}" y="${textl.y}" dominant-baseline="middle" text-anchor="middle" style="font-size: 17px;">${(i+11)%12+1}</text>`;
 
         var lineStartl = polarToCartesian(450, 450, 50, angle);
         var lineEndl = polarToCartesian(450, 450, 400, angle);
@@ -196,50 +196,10 @@
     getTime();
     setInterval(getTime, 400);
 
-    //function markTime(start, stop);
     function getTextColors(dayToDraw) {
         let color = `transparent`;
-        let textColor = `hsla(0, 0%, 0%, .1)`;
-        switch (dayToDraw.month()) {
-            case 0: //January
-                color = `hsla(10, 0%, 50%, 0.1)`;
-                break;
-            case 1: //February
-                color = `hsla(250, 20%, 50%, 0.2)`;
-                break;
-            case 2: //March
-                color = `hsla(40, 40%, 50%, 0.2)`;
-                break;
-            case 3: //April
-                color = `hsla(83, 50%, 50%, 0.3)`;
-                break;
-            case 4: //May
-                color = `hsla(208, 60%, 50%, 0.2)`;
-                break;
-            case 5: //June
-                color = `hsla(60, 100%, 50%, 0.4)`;
-                break;
-            case 6: //July
-                color = `hsla(50, 100%, 50%, 0.5)`;
-                break;
-            case 7: //August
-                color = `hsla(40, 80%, 50%, 0.5)`;
-                break;
-            case 8: //September
-                color = `hsla(200, 50%, 50%, 0.2)`;
-                break;
-            case 9: //October
-                color = `hsla(25, 100%, 50%, 0.42)`;
-                break;
-            case 10: //November
-                color = `hsla(330, 50%, 50%, 0.3)`;
-                break;
-            case 11: //December
-                color = `hsla(355, 100%, 50%, 0.3)`;
-                break;
-            default:
-                // code block
-        }
+        let textColor = `hsla(0, 0%, 0%, .3)`;
+        color = monthColor(dayToDraw.month());
         switch (dayToDraw.day()) {
             case 0: //Sunday hsl(17deg 31% 76%)
                 color = `hsla(23, 0%, 70%, 0.5)`;
@@ -279,6 +239,37 @@
             color: color,
             textColor: textColor
         };
+    }
+
+    function monthColor(monthNumber) {
+        switch (monthNumber) {
+            case 0: //January
+                return `hsla(10, 0%, 50%, .5)`;
+            case 1: //February
+                return `hsla(250, 20%, 50%, .5)`;
+            case 2: //March
+                return `hsla(40, 40%, 50%, .5)`;
+            case 3: //April
+                return `hsla(83, 50%, 50%, .5)`;
+            case 4: //May
+                return `hsla(208, 60%, 50%, .5)`;
+            case 5: //June
+                return `hsla(60, 100%, 50%, .5)`;
+            case 6: //July
+                return `hsla(50, 100%, 50%, .5)`;
+            case 7: //August
+                return `hsla(40, 80%, 50%, .5)`;
+            case 8: //September
+                return `hsla(200, 50%, 50%, .5)`;
+            case 9: //October
+                return `hsla(25, 100%, 50%, .5)`;
+            case 10: //November
+                return `hsla(330, 50%, 50%, .5)`;
+            case 11: //December
+                return `hsla(355, 100%, 50%, .5)`;
+            default:
+                return `hsla(10, 0%, 50%, 0.1)`;
+        }
     }
 
     function drawCalendar() {
@@ -333,64 +324,32 @@
             dayToDraw.add(1, 'days');
         }
 
-        dayToDraw = startDate.clone();
 
-        for (let i = 0; i < (7 * weeks); i++) {
+        for (var i = -1; i < 10; i++) {
 
-            if (dayToDraw.month() !== dayToDraw.clone().add(7, 'days').month())
-                innerHTML += `<line x1="${(i * 35) % (7*35)}" y1="${Math.floor(i/7)*35+35}" x2="${(i * 35) % (7*35) + 35}" y2="${Math.floor(i/7)*35+35}" stroke-width="3" stroke="black" stroke-linecap="round" />`;
+            dayToDraw = momentProxy().clone().add(i, 'months');
 
-            if (dayToDraw.month() !== dayToDraw.clone().add(1, 'days').month() && dayToDraw.day() !== 6)
-                innerHTML += `<line x1="${(i * 35) % (7*35) + 35}" y1="${Math.floor(i/7)*35+35}" x2="${(i * 35) % (7*35) + 35}" y2="${Math.floor(i/7)*35}" stroke-width="3" stroke="black" stroke-linecap="round" />`;
+            var pad = 2;
+            var mStart = dayToDraw.clone().startOf('month');
+            var mswEnd = mStart.clone().endOf('week').startOf('day');
+            var mewEnd = mswEnd.clone().endOf('month').startOf('day');
+            var mowbld = mewEnd.clone().add(-7, 'days');
+            var mslwEnd = mowbld.clone().endOf('week').startOf('day');
+            var mewStart = mewEnd.clone().startOf('week');
+            var mowaStart = mStart.clone().add(7, 'days');
+            var mowawStart = mowaStart.clone().startOf('week');
 
-            if (dayToDraw.day() === 0) {
-                let color = `hsla(10, 0%, 50%, 0.1)`;
-                switch (dayToDraw.month()) {
-                    case 0: //January
-                        color = `hsla(10, 0%, 50%, 1)`;
-                        break;
-                    case 1: //February
-                        color = `hsla(250, 20%, 50%, 1)`;
-                        break;
-                    case 2: //March
-                        color = `hsla(40, 40%, 50%, 1)`;
-                        break;
-                    case 3: //April
-                        color = `hsla(83, 50%, 50%, 1)`;
-                        break;
-                    case 4: //May
-                        color = `hsla(208, 60%, 50%, 1)`;
-                        break;
-                    case 5: //June
-                        color = `hsla(60, 100%, 50%, 1)`;
-                        break;
-                    case 6: //July
-                        color = `hsla(50, 100%, 50%, 1)`;
-                        break;
-                    case 7: //August
-                        color = `hsla(40, 80%, 50%, 1)`;
-                        break;
-                    case 8: //September
-                        color = `hsla(200, 50%, 50%, 1)`;
-                        break;
-                    case 9: //October
-                        color = `hsla(25, 100%, 50%, 1)`;
-                        break;
-                    case 10: //November
-                        color = `hsla(330, 50%, 50%, 1)`;
-                        break;
-                    case 11: //December
-                        color = `hsla(355, 100%, 50%, 1)`;
-                        break;
-                    default:
-                        // code block
-                }
-                innerHTML += `<line x1="${(i * 35) % (7*35) - 1}" y1="${Math.floor(i/7)*35+35}" x2="${(i * 35) % (7*35) - 1}" y2="${Math.floor(i/7)*35}" stroke-width="4" stroke="${color}" />`;
-            }
-            dayToDraw.add(1, 'days');
+
+            innerHTML += `<path d="M ${mStart.day()*35 + pad} ${35 * Math.floor(mStart.diff(startDate, "days") / 7) + pad} ` +
+                `L ${mswEnd.day()*35 + 35 - pad} ${35 * Math.floor(mswEnd.diff(startDate, "days") / 7) + pad} ` +
+                `L ${mslwEnd.day()*35+35-pad} ${35 * Math.floor(mslwEnd.diff(startDate, "days") / 7)+35 - pad} ` +
+                `L ${mowbld.day()*35+35-pad} ${35 * Math.floor(mowbld.diff(startDate, "days") / 7)+35 - pad} ` +
+                `L ${mewEnd.day()*35+35-pad} ${35 * Math.floor(mewEnd.diff(startDate, "days") / 7)+35 - pad} ` +
+                `L ${mewStart.day()*35+pad} ${35 * Math.floor(mewStart.diff(startDate, "days") / 7)+35 - pad} ` +
+                `L ${mowawStart.day()*35+pad} ${35 * Math.floor(mowawStart.diff(startDate, "days") / 7) + pad} ` +
+                `L ${mowaStart.day()*35+pad} ${35 * Math.floor(mowaStart.diff(startDate, "days") / 7) + pad} ` +
+                `Z" fill="transparent" stroke-width="2" stroke-linejoin="round" stroke="${monthColor(mewStart.month())}"/>`;
         }
-
-
 
         document.getElementById(`calendar2Svg`).innerHTML = innerHTML;
         document.getElementById(`calendar2Svg`).setAttribute(`viewBox`, `0 0 245 ${weeks*35}`);
@@ -403,7 +362,7 @@
     const appid = urlParams.get('appid');
 
     function getWeather() {
-        fetch(`https://api.openweathermap.org/data/2.5/weather?zip=44720,US&appid=${appid}&units=imperial`)
+        if (appid) fetch(`https://api.openweathermap.org/data/2.5/weather?zip=44720,US&appid=${appid}&units=imperial`)
             .then(response => response.json())
             .then(data => {
                 var feelsLike = Math.round(data.main.feels_like);
