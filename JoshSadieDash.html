@@ -150,7 +150,7 @@
 
         var lineStartl = polarToCartesian(450, 450, 50, angle);
         var lineEndl = polarToCartesian(450, 450, 400, angle);
-        clok.innerHTML += `<line x1="${lineStartl.x}" y1="${lineStartl.y}" x2="${lineEndl.x}" y2="${lineEndl.y}" stroke="hsla(0, 0%, 0%, 0.42)" />`;
+        clok.innerHTML += `<line stroke-width="1" x1="${lineStartl.x}" y1="${lineStartl.y}" x2="${lineEndl.x}" y2="${lineEndl.y}" stroke="hsla(0, 0%, 0%, 1)" />`;
     }
     var fridayOffset = momentProxy().day() == 5 ? 0.9 : 0;
     document.getElementById("nightSleep")
@@ -177,6 +177,7 @@
         let angle = thruDay * 15;
         var lineStartl = polarToCartesian(450, 450, 0, angle);
         var lineEndl = polarToCartesian(450, 450, 445, angle);
+        var lineEnd2 = polarToCartesian(450, 450, 300, angle);
         let tb = document.getElementById("timeBar");
         let tb2 = document.getElementById("timeBar2");
         tb.setAttribute('x1', lineStartl.x);
@@ -185,8 +186,8 @@
         tb.setAttribute('y2', lineEndl.y);
         tb2.setAttribute('x1', lineStartl.x);
         tb2.setAttribute('y1', lineStartl.y);
-        tb2.setAttribute('x2', lineEndl.x);
-        tb2.setAttribute('y2', lineEndl.y);
+        tb2.setAttribute('x2', lineEnd2.x);
+        tb2.setAttribute('y2', lineEnd2.y);
         let timey = document.getElementById("timey");
         timey.textContent = now.format('h:mm');
         var nowTime = momentProxy().hour();
