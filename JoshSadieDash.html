@@ -31,7 +31,7 @@
     <div style="display: flex; justify-content: center; height: 100%;">
         <svg id="svgContent" height="100%" width="100%" style="max-width: 100%;max-height: 100%;" version="1.1" viewBox="0 0 1600 900" xmlns="http://www.w3.org/2000/svg">
             <rect width="100%" height="100%" fill="hsla(0, 0%, 0%, 1)" />
-            <svg id="clok" x=0 y=0 width="890" height="890" viewBox="0 0 900 900">
+            <svg id="clok" x=0 y=0 width="900" height="900" viewBox="0 0 900 900">
                 <circle cx="450" cy="450" r="600" fill="hsla(38, 0%, 15%, 1)" />
                 <circle cx="450" cy="450" r="550" fill="hsla(38, 0%, 25%, 1)" />
                 <circle cx="450" cy="450" r="500" fill="hsla(38, 0%, 50%, 1)" />
@@ -46,9 +46,8 @@
                 <line id="timeBar" x1="-10" y1="-10" x2="-10" y2="-10" stroke="hsla(0, 0%, 0%, 1)" stroke-width="1" stroke-linecap="round" />
                 <text id="timey" fill="black" x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" style="font-size: 140px;font-weight: bold;"></text>
             </svg>
-            <svg x=900 y=0 width="700" height="900" viewBox="0 0 700 900" style="overflow: visible;">
+            <svg id="calBox" x=900 y=0 width="700" height="900" viewBox="0 0 700 900" style="overflow: visible;">
                 <rect width="100%" height="100%" fill="white" stroke="black" stroke-width="1px" />
-                <svg id="calendar1Svg" style="overflow: visible;" x="0" y="0" width="100%" height="100%" viewBox="0 0 245 595" preserveAspectRatio="xMinYMin meet" />
                 <svg id="calendar2Svg" style="overflow: visible;" x="0" y="0" width="100%" height="100%" viewBox="0 0 245 400" preserveAspectRatio="xMinYMin meet" />
             </svg>
             <svg id="tempy" x=0 y="886" width="1600" height="14" viewBox="0 0 1200 10" display="none">
@@ -82,6 +81,38 @@
     <script>
     //window.addEventListener("error", handleError, true);
     const momentProxy = (arg1) => moment(arg1).add(0, 'days');
+    var svgcon = document.getElementById("svgContent");
+    var calBox = document.getElementById("calBox");
+    var clok = document.getElementById("clok");
+    var tempy = document.getElementById("tempy");
+    let weeks = 31;
+
+    addEventListener("resize", resize);
+
+    function resize() {
+        var natW = 1600;
+        var natH = 900;
+        var natR = natW / natH;
+
+        var newR = window.innerWidth / window.innerHeight;
+        var wider = newR > natR;
+        var newW = wider ? natW * ((window.innerWidth / window.innerHeight) / (natW / natH)) : natW;
+        var newH = !wider ? natH * ((window.innerHeight / window.innerWidth) / (natH / natW)) : natH;
+        svgcon.setAttribute("viewBox", `0 0 ${newW} ${newH}`);
+
+        var clockScale = newH / 900;
+        clok.setAttribute("width", 900 * clockScale);
+        clok.setAttribute("height", 900 * clockScale);
+        calBox.setAttribute("x", newH);
+
+        var calScale = (newW - newH) / 700;
+        calBox.setAttribute("width", 700 * calScale);
+        calBox.setAttribute("height", 100 * calScale * weeks);
+        calBox.setAttribute("viewBox", `0 0 700 ${weeks * 100}`);
+
+        tempy.setAttribute("y", newH - 14);
+    }
+    resize();
 
     function handleError(evt) {
         if (evt.message) { // Chrome sometimes provides this
@@ -90,7 +121,6 @@
             alert("error: " + evt.type + " from element: " + (evt.srcElement || evt.target));
         }
     }
-    var svgc = document.getElementById("clok");
     (function() {
         var mouseTimer = null,
             cursorVisible = true;
@@ -116,11 +146,11 @@
     for (var i = 0; i < 24; i++) {
         var angle = i * 15;
         var textl = polarToCartesian(450, 450, 430, angle);
-        svgc.innerHTML += `<text fill="hsla(0, 0%, 0%, 1)" x="${textl.x}" y="${textl.y}" dominant-baseline="middle" text-anchor="middle" style="font-size: 17px;">${(i+11)%12+1}</text>`;
+        clok.innerHTML += `<text fill="hsla(0, 0%, 0%, 1)" x="${textl.x}" y="${textl.y}" dominant-baseline="middle" text-anchor="middle" style="font-size: 17px;">${(i+11)%12+1}</text>`;
 
         var lineStartl = polarToCartesian(450, 450, 50, angle);
         var lineEndl = polarToCartesian(450, 450, 400, angle);
-        svgc.innerHTML += `<line x1="${lineStartl.x}" y1="${lineStartl.y}" x2="${lineEndl.x}" y2="${lineEndl.y}" stroke="hsla(0, 0%, 0%, 0.42)" />`;
+        clok.innerHTML += `<line x1="${lineStartl.x}" y1="${lineStartl.y}" x2="${lineEndl.x}" y2="${lineEndl.y}" stroke="hsla(0, 0%, 0%, 0.42)" />`;
     }
     var fridayOffset = momentProxy().day() == 5 ? 0.9 : 0;
     document.getElementById("nightSleep")
@@ -255,7 +285,6 @@
         let innerHTML = "";
         let startDate = momentProxy().clone().startOf('week').add(-(7 * 1), 'days');
         let dayToDraw = startDate.clone();
-        let weeks = 9;
         let sunTimes = SunCalc.getTimes(new Date(), 40.910345, -81.399921);
         let ss = sunTimes.sunset;
         let sunsetHour = ss.getHours() + ss.getMinutes() / 60 + ss.getSeconds() / 60 / 60;
@@ -380,7 +409,7 @@
                 var feelsLike = Math.round(data.main.feels_like);
                 console.log(feelsLike);
                 var merc = document.getElementById("merc");
-                document.getElementById("tempy").setAttribute("display", "inline");
+                tempy.setAttribute("display", "inline");
                 merc.setAttribute('width', feelsLike * 10 + 100);
 
             });
