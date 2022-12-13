@@ -42,7 +42,8 @@
                 <path id="napSleep" fill="none" stroke="hsla(194, 100%, 50%, 0.2)" stroke-width="200" />
                 <path id="activities" fill="none" stroke="hsla(32, 100%, 50%, 0.3)" stroke-width="50" />
                 <path id="activities2" fill="none" stroke="hsla(32, 100%, 50%, 0.3)" stroke-width="50" />
-                <line id="timeBar2" x1="-10" y1="-10" x2="-10" y2="-10" stroke="hsla(356, 100%, 50%, 0.2)" stroke-width="18" stroke-linecap="round" />
+                <line id="timeBar3" x1="-10" y1="-10" x2="-10" y2="-10" stroke="hsla(356, 0%, 0%, 1)" stroke-width="24" stroke-linecap="round" />
+                <line id="timeBar2" x1="-10" y1="-10" x2="-10" y2="-10" stroke="hsla(356, 100%, 50%, 0.5)" stroke-width="18" stroke-linecap="round" />
                 <line id="timeBar" x1="-10" y1="-10" x2="-10" y2="-10" stroke="hsla(356, 100%, 50%, 1)" stroke-width="1" stroke-linecap="round" />
                 <text id="timey" fill="hsla(0, 0%, 0%, .9)" x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" style="font-size: 220px;font-weight: bold;"></text>
             </svg>
@@ -200,6 +201,7 @@
         var lineEnd2 = polarToCartesian(450, 450, 300, angle);
         let tb = document.getElementById("timeBar");
         let tb2 = document.getElementById("timeBar2");
+        let tb3 = document.getElementById("timeBar3");
         tb.setAttribute('x1', lineStartl.x);
         tb.setAttribute('y1', lineStartl.y);
         tb.setAttribute('x2', lineEndl.x);
@@ -208,6 +210,10 @@
         tb2.setAttribute('y1', lineStartl.y);
         tb2.setAttribute('x2', lineEnd2.x);
         tb2.setAttribute('y2', lineEnd2.y);
+        tb3.setAttribute('x1', lineStartl.x);
+        tb3.setAttribute('y1', lineStartl.y);
+        tb3.setAttribute('x2', lineEnd2.x);
+        tb3.setAttribute('y2', lineEnd2.y);
         let timey = document.getElementById("timey");
         timey.textContent = now.format('h:mm');
         var nowTime = momentProxy().hour();
