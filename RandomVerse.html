@@ -221,8 +221,8 @@
             innerHTML += `<tr>`;
             innerHTML += `<td>${translation.acronym}</td>`;
             innerHTML += `<td><a href="https://www.biblegateway.com/passage/?search=${item.book}+${item.chapter}%3A${item.verse}%2C${item.book}+${item.chapter}&version=${translation.acronym}&verse=${item.verse}" target="_blank" rel="noopener noreferrer">link</a></td>`;
-            innerHTML += `<td><a href="https://ref.ly/logosres/${translation.acronym}?ref=Bible${translation.acronym}.${item.book.replace(' ', '')}${item.chapter}.${item.verse}" target="_blank" rel="noopener noreferrer">link</a></td>`;
-            innerHTML += `<td><a href="https://www.biblestudytools.com/${translation.acronym.toLowerCase().replace('nasb', 'nas')}/${item.book.replace(' ', '-').toLowerCase()}/${item.chapter}.html?verse=${item.verse}" target="_blank" rel="noopener noreferrer">link</a></td>`;
+            innerHTML += `<td><a href="https://ref.ly/logosres/${translation.acronym}?ref=Bible${translation.acronym}.${item.book.replaceAll(' ', '')}${item.chapter}.${item.verse}" target="_blank" rel="noopener noreferrer">link</a></td>`;
+            innerHTML += `<td><a href="https://www.biblestudytools.com/${translation.acronym.toLowerCase().replace('nasb', 'nas')}/${item.book.replaceAll(' ', '-').toLowerCase()}/${item.chapter}.html?verse=${item.verse}" target="_blank" rel="noopener noreferrer">link</a></td>`;
             innerHTML += `<td><a href="https://www.bible.com/bible/${translation.yvn}/${ToYvb(item.book)}.${item.chapter}?verse=${item.verse}" target="_blank" rel="noopener noreferrer">link</a></td>`;
             innerHTML += `</tr>`;
         }
@@ -236,6 +236,15 @@
 
 
         innerHTML += `</table>`;
+        innerHTML += `<p>`;
+        innerHTML += `<td rowspan="5" style="writing-mode: tb-rl; transform: rotate(-180deg);"><a href="https://biblehub.com/${item.book.replaceAll("Song of Solomon","songs").replaceAll(' ', '_').toLowerCase()}/${item.chapter}-${item.verse}.htm" target="_blank" rel="noopener noreferrer">BibleHub</a></td>`;
+        innerHTML += ` &middot; `;
+        innerHTML += `<a href="https://www.google.com/search?q=${item.book.replaceAll(' ', '+')}+${item.chapter}%3A${item.verse}" target="_blank" rel="noopener noreferrer">Google</a>`;
+        innerHTML += ` &middot; `;
+        innerHTML += `<a href="https://www.youtube.com/results?search_query=BibleProject+${item.book.replaceAll(' ', '+')}+${item.chapter}%3A${item.verse}" target="_blank" rel="noopener noreferrer">BibleProject YT</a>`;
+        innerHTML += ` &middot; `;
+        innerHTML += `<a href="https://bibleproject.com/search/#?cludoquery=${encodeURIComponent(`${item.book} ${item.chapter}:${item.verse}`)}" target="_blank" rel="noopener noreferrer">BibleProject OG</a>`;
+        innerHTML += `</p>`;
         document.getElementById("urls").innerHTML = innerHTML;
     }
 
