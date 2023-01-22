@@ -342,6 +342,10 @@
                 dayToDraw.date() > 0 &&
                 dayToDraw.date() < 8 &&
                 dayToDraw.day() === 1) cellText = "🍉";
+            if (dayToDraw.month() === 2 && dayToDraw.date() > 7 && dayToDraw.date() < 15 && dayToDraw.day() === 0)
+                cellText = "🕖";
+            if (dayToDraw.month() === 10 && dayToDraw.date() < 8 && dayToDraw.day() === 0)
+                cellText = "🕖";
             if (dayToDraw.isSame("2022-12-30")) cellText = "🦘";
             if (!isNumeric(cellText)) textColor = `hsla(0, 0%, 0%, 1)`;
 
