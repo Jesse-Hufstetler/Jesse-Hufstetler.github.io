@@ -67,7 +67,7 @@
                 <line stroke-width="1" x1="414.6446609406726" y1="414.6446609406726" x2="167.15728752538092" y2="167.15728752538104" stroke="hsla(0, 0%, 0%, 1)"></line><text fill="hsla(0, 0%, 0%, .5)" x="234.9999999999998" y="77.6090763726915" dominant-baseline="middle" text-anchor="middle" style="font-size: 17px;">10</text>
                 <line stroke-width="1" x1="425" y1="406.6987298107781" x2="249.99999999999983" y2="103.58983848622466" stroke="hsla(0, 0%, 0%, 1)"></line><text fill="hsla(0, 0%, 0%, .5)" x="338.7078106059161" y="34.651894695700605" dominant-baseline="middle" text-anchor="middle" style="font-size: 17px;">11</text>
                 <line stroke-width="1" x1="437.05904774487396" y1="401.7037086855466" x2="346.4723819589917" y2="63.6296694843727" stroke="hsla(0, 0%, 0%, 1)"></line>
-                <path id="ptime" d="" fill="red" />
+                <path id="ptime" d="" fill="hsla(0, 100%, 40%, .9)" />
                 <text id="timey" fill="hsla(0, 0%, 0%, .9)" x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" style="font-size: 220px;font-weight: bold;"></text>
             </svg>
             <svg id="calBox" x=900 y=0 width="700" height="900" viewBox="0 0 700 900" style="overflow: visible;">
@@ -234,11 +234,11 @@
         let now = momentProxy();
         let thruDay = now.hour() + now.minute() / 60 + now.second() / 60 / 60;
         let angle = thruDay * 15;
-        var lineEnd = polarToCartesian(450, 450, 405, angle);
-        var lineb1 = polarToCartesian(450, 450, 40, angle + 15);
-        var lineb2 = polarToCartesian(450, 450, 40, angle + 15);
-        var lineb3 = polarToCartesian(450, 450, 40, angle - 15);
-        var lineb4 = polarToCartesian(450, 450, 40, angle - 15);
+        var lineEnd = polarToCartesian(450, 450, 440, angle);
+        var lineb1 = polarToCartesian(450, 450, 10, angle + 55);
+        var lineb2 = polarToCartesian(450, 450, 20, angle + 55);
+        var lineb3 = polarToCartesian(450, 450, 20, angle - 55);
+        var lineb4 = polarToCartesian(450, 450, 10, angle - 55);
         document.getElementById("ptime").setAttribute('d', `M 450 450 C ${lineb1.x} ${lineb1.y}, ${lineb2.x} ${lineb2.y}, ${lineEnd.x} ${lineEnd.y} C ${lineb3.x} ${lineb3.y}, ${lineb4.x} ${lineb4.y}, 450 450`);
 
         let timey = document.getElementById("timey");
