@@ -51,31 +51,53 @@
                 <rect width="100%" height="100%" fill="white" stroke="black" stroke-width="1px" />
                 <svg id="calendar2Svg" style="overflow: visible;" x="0" y="0" width="100%" height="100%" viewBox="0 0 245 400" preserveAspectRatio="xMinYMin meet" />
             </svg>
-            <svg id="tempy" x=0 y="886" width="1600" height="14" viewBox="0 0 1200 10" display="none">
-                <rect x="0" y="0" width="100" height="10" fill="hsla(194, 100%, 45%, 1)" /> <!-- -10 -->
-                <rect x="100" y="0" width="100" height="10" fill="hsla(194, 100%, 50%, 1)" /> <!-- 00 -->
-                <rect x="200" y="0" width="100" height="10" fill="hsla(194, 100%, 55%, 1)" /> <!-- 10 -->
-                <rect x="300" y="0" width="100" height="10" fill="hsla(194, 100%, 60%, 1)" /> <!-- 20 -->
-                <rect x="400" y="0" width="100" height="10" fill="hsla(194, 100%, 70%, 1)" /> <!-- 30 -->
-                <rect x="500" y="0" width="100" height="10" fill="hsla(194, 100%, 80%, 1)" /> <!-- 40 -->
-                <rect x="600" y="0" width="100" height="10" fill="hsla(194, 100%, 90%, 1)" /> <!-- 50 -->
-                <rect x="700" y="0" width="100" height="10" fill="hsla(194, 100%, 95%, 1)" /> <!-- 60 -->
-                <rect x="800" y="0" width="100" height="10" fill="hsla(194, 100%, 100%, 1)" /> <!-- 70 -->
-                <rect x="900" y="0" width="100" height="10" fill="hsla(0, 100%, 90%, 1)" /> <!-- 70 -->
-                <rect x="1000" y="0" width="100" height="10" fill="hsla(0, 100%, 80%, 1)" />
-                <rect x="1100" y="0" width="100" height="10" fill="hsla(0, 100%, 70%, 1)" />
-                <text fill="black" x="100" y="5" dominant-baseline="middle" text-anchor="middle" style="font-size: 10px;">0</text>
-                <text fill="black" x="200" y="5" dominant-baseline="middle" text-anchor="middle" style="font-size: 10px;">10</text>
-                <text fill="black" x="300" y="5" dominant-baseline="middle" text-anchor="middle" style="font-size: 10px;">20</text>
-                <text fill="black" x="400" y="5" dominant-baseline="middle" text-anchor="middle" style="font-size: 10px;">30</text>
-                <text fill="black" x="500" y="5" dominant-baseline="middle" text-anchor="middle" style="font-size: 10px;">40</text>
-                <text fill="black" x="600" y="5" dominant-baseline="middle" text-anchor="middle" style="font-size: 10px;">50</text>
-                <text fill="black" x="700" y="5" dominant-baseline="middle" text-anchor="middle" style="font-size: 10px;">60</text>
-                <text fill="black" x="800" y="5" dominant-baseline="middle" text-anchor="middle" style="font-size: 10px;">70</text>
-                <text fill="black" x="900" y="5" dominant-baseline="middle" text-anchor="middle" style="font-size: 10px;">80</text>
-                <text fill="black" x="1000" y="5" dominant-baseline="middle" text-anchor="middle" style="font-size: 10px;">90</text>
-                <text fill="black" x="1100" y="5" dominant-baseline="middle" text-anchor="middle" style="font-size: 10px;">100</text>
-                <rect id="merc" x="0" y="2" width="0" height="5" fill="hsla(296, 100%, 50%, .5)" />
+            <svg id="tempy" x="900" y="886" width="1000" height="30" viewBox="0 0 1200 30" display="none" style="overflow: visible;">
+                <defs>
+                    <linearGradient id="Gradient2" x1="0" x2="0" y1="0" y2="1">
+                        <stop offset="0%" stop-color="white" stop-opacity="0" />
+                        <stop offset="50%" stop-color="white" />
+                        <stop offset="100%" stop-color="white" />
+                    </linearGradient>
+                </defs>
+                <rect x="0" y="-300" width="1200" height="300" fill="url(#Gradient2)" />
+                <rect x="600" y="-425" width="580" height="600" rx="15" fill="hsla(0, 0%, 100%, .75)" />
+                <text id="tempt" fill="black" x="900" y="-250" dominant-baseline="middle" text-anchor="middle" style="font-size: 200px;"></text>
+                <rect x="0" y="-30" width="100" height="300" fill="hsla(194, 100%, 45%, 1)" /> <!-- -10 -->
+                <rect x="100" y="-30" width="100" height="300" fill="hsla(194, 100%, 50%, 1)" /> <!-- 00 -->
+                <rect x="200" y="-30" width="100" height="300" fill="hsla(194, 100%, 55%, 1)" /> <!-- 10 -->
+                <rect x="300" y="-30" width="100" height="300" fill="hsla(194, 100%, 60%, 1)" /> <!-- 20 -->
+                <rect x="400" y="-30" width="100" height="300" fill="hsla(194, 100%, 70%, 1)" /> <!-- 30 -->
+                <rect x="500" y="-30" width="100" height="300" fill="hsla(194, 100%, 80%, 1)" /> <!-- 40 -->
+                <rect x="600" y="-30" width="100" height="300" fill="hsla(194, 100%, 90%, 1)" /> <!-- 50 -->
+                <rect x="700" y="-30" width="100" height="300" fill="hsla(194, 100%, 95%, 1)" /> <!-- 60 -->
+                <rect x="800" y="-30" width="100" height="300" fill="hsla(194, 100%, 100%, 1)" /> <!-- 70 -->
+                <rect x="900" y="-30" width="100" height="300" fill="hsla(0, 100%, 90%, 1)" /> <!-- 70 -->
+                <rect x="1000" y="-30" width="100" height="300" fill="hsla(0, 100%, 80%, 1)" />
+                <rect x="1100" y="-30" width="100" height="300" fill="hsla(0, 100%, 70%, 1)" />
+                <text fill="#00000055" x="100" y="25" dominant-baseline="middle" text-anchor="middle" style="font-size: 35px;">0</text>
+                <text fill="#00000055" x="200" y="25" dominant-baseline="middle" text-anchor="middle" style="font-size: 35px;">10</text>
+                <text fill="#00000055" x="300" y="25" dominant-baseline="middle" text-anchor="middle" style="font-size: 35px;">20</text>
+                <text fill="#00000055" x="400" y="25" dominant-baseline="middle" text-anchor="middle" style="font-size: 35px;">30</text>
+                <text fill="#00000055" x="500" y="25" dominant-baseline="middle" text-anchor="middle" style="font-size: 35px;">40</text>
+                <text fill="#00000055" x="600" y="25" dominant-baseline="middle" text-anchor="middle" style="font-size: 35px;">50</text>
+                <text fill="#00000055" x="700" y="25" dominant-baseline="middle" text-anchor="middle" style="font-size: 35px;">60</text>
+                <text fill="#00000055" x="800" y="25" dominant-baseline="middle" text-anchor="middle" style="font-size: 35px;">70</text>
+                <text fill="#00000055" x="900" y="25" dominant-baseline="middle" text-anchor="middle" style="font-size: 35px;">80</text>
+                <text fill="#00000055" x="1000" y="25" dominant-baseline="middle" text-anchor="middle" style="font-size: 35px;">90</text>
+                <text fill="#00000055" x="1100" y="25" dominant-baseline="middle" text-anchor="middle" style="font-size: 35px;">100</text>
+                <rect id="merc" x="0" y="-110" width="0" height="100" fill="hsla(296, 100%, 50%, .85)" />
+                <text id="tin10" fill="black" x="050" y="-45" dominant-baseline="middle" text-anchor="middle" style="font-size: 80px;">&#x1f976;&#xfe0f;</text>
+                <text id="ti0" fill="black" x="150" y="-45" dominant-baseline="middle" text-anchor="middle" style="font-size: 80px;">&#x2744;&#xfe0f;</text>
+                <text id="ti10" fill="black" x="250" y="-45" dominant-baseline="middle" text-anchor="middle" style="font-size: 80px;">&#x2744;&#xfe0f;</text>
+                <text id="ti20" fill="black" x="350" y="-45" dominant-baseline="middle" text-anchor="middle" style="font-size: 80px;">&#x2744;&#xfe0f;</text>
+                <text id="ti30" fill="black" x="450" y="-45" dominant-baseline="middle" text-anchor="middle" style="font-size: 80px;">&#x1f9e3;&#xfe0f;</text>
+                <text id="ti40" fill="black" x="550" y="-45" dominant-baseline="middle" text-anchor="middle" style="font-size: 80px;">&#x1f9e3;&#xfe0f;</text>
+                <text id="ti50" fill="black" x="650" y="-45" dominant-baseline="middle" text-anchor="middle" style="font-size: 80px;">&#x1f9e3;&#xfe0f;</text>
+                <text id="ti60" fill="black" x="750" y="-45" dominant-baseline="middle" text-anchor="middle" style="font-size: 80px;">&#x1f9e5;&#xfe0f;</text>
+                <text id="ti70" fill="black" x="850" y="-45" dominant-baseline="middle" text-anchor="middle" style="font-size: 80px;">&#x2600;&#xfe0f;</text>
+                <text id="ti80" fill="black" x="950" y="-45" dominant-baseline="middle" text-anchor="middle" style="font-size: 80px;">&#x1f335;&#xfe0f;</text>
+                <text id="ti90" fill="black" x="1050" y="-45" dominant-baseline="middle" text-anchor="middle" style="font-size: 80px;">&#x1f975;&#xfe0f;</text>
+                <text id="ti100" fill="black" x="1150" y="-45" dominant-baseline="middle" text-anchor="middle" style="font-size: 80px;">&#x1f525;&#xfe0f;</text>
             </svg>
         </svg>
     </div>
@@ -131,7 +153,9 @@
         calBox.setAttribute("height", 100 * calScale * weeks);
         calBox.setAttribute("viewBox", `0 0 700 ${weeks * 100}`);
 
-        tempy.setAttribute("y", newH - 14);
+        tempy.setAttribute("y", newH - 34);
+        tempy.setAttribute("x", newH);
+        tempy.setAttribute("width", 700 * calScale);
     }
     resize();
 
@@ -401,7 +425,19 @@
                 var merc = document.getElementById("merc");
                 tempy.setAttribute("display", "inline");
                 merc.setAttribute('width', feelsLike * 10 + 100);
-
+                document.getElementById("tin10").style.visibility = feelsLike < 0 ? "visible" : "hidden";
+                document.getElementById("ti0").style.visibility = feelsLike < 10 ? "visible" : "hidden";
+                document.getElementById("ti10").style.visibility = feelsLike < 20 ? "visible" : "hidden";
+                document.getElementById("ti20").style.visibility = feelsLike < 30 ? "visible" : "hidden";
+                document.getElementById("ti30").style.visibility = feelsLike < 40 ? "visible" : "hidden";
+                document.getElementById("ti40").style.visibility = feelsLike < 50 ? "visible" : "hidden";
+                document.getElementById("ti50").style.visibility = feelsLike < 60 ? "visible" : "hidden";
+                document.getElementById("ti60").style.visibility = feelsLike < 70 ? "visible" : "hidden";
+                document.getElementById("ti70").style.visibility = feelsLike > 70 ? "visible" : "hidden";
+                document.getElementById("ti80").style.visibility = feelsLike > 80 ? "visible" : "hidden";
+                document.getElementById("ti90").style.visibility = feelsLike > 90 ? "visible" : "hidden";
+                document.getElementById("ti100").style.visibility = feelsLike > 100 ? "visible" : "hidden";
+                document.getElementById("tempt").textContent = `${feelsLike}°`;
             });
     }
     getWeather();
