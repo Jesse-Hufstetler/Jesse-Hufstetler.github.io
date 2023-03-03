@@ -82,7 +82,7 @@
                         <stop offset="100%" stop-color="white" />
                     </linearGradient>
                 </defs>
-                <rect x="0" y="-300" width="1200" height="300" fill="url(#Gradient2)" />
+                <rect x="0" y="-100" width="1200" height="200" fill="url(#Gradient2)" />
                 <rect x="600" y="-425" width="580" height="600" rx="15" fill="hsla(0, 0%, 100%, .75)" />
                 <text id="tempt" fill="black" x="900" y="-250" dominant-baseline="middle" text-anchor="middle" style="font-size: 200px;"></text>
                 <rect x="0" y="-30" width="100" height="300" fill="hsla(194, 100%, 45%, 1)" /> <!-- -10 -->
@@ -177,9 +177,10 @@
         calBox.setAttribute("height", 100 * calScale * weeks);
         calBox.setAttribute("viewBox", `0 0 700 ${weeks * 100}`);
 
+        var temptx = newH*.83
+        tempy.setAttribute("x", temptx);
         tempy.setAttribute("y", newH - 34);
-        tempy.setAttribute("x", newH);
-        tempy.setAttribute("width", 700 * calScale);
+        tempy.setAttribute("width", newW - temptx);
     }
     resize();
 
