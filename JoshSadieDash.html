@@ -235,11 +235,11 @@
         let now = momentProxy();
         let thruDay = now.hour() + now.minute() / 60 + now.second() / 60 / 60;
         let angle = thruDay * 15;
-        var lineEnd = polarToCartesian(450, 450, 440, angle);
-        var lineb1 = polarToCartesian(450, 450, 10, angle + 55);
-        var lineb2 = polarToCartesian(450, 450, 20, angle + 55);
-        var lineb3 = polarToCartesian(450, 450, 20, angle - 55);
-        var lineb4 = polarToCartesian(450, 450, 10, angle - 55);
+        var lineEnd = polarToCartesian(450, 450, 450, angle);
+        var lineb1 = polarToCartesian(450, 450, 100, angle + 25);
+        var lineb2 = polarToCartesian(450, 450, 20, angle + 5);
+        var lineb3 = polarToCartesian(450, 450, 20, angle - 5);
+        var lineb4 = polarToCartesian(450, 450, 100, angle - 25);
         document.getElementById("ptime").setAttribute('d', `M 450 450 C ${lineb1.x} ${lineb1.y}, ${lineb2.x} ${lineb2.y}, ${lineEnd.x} ${lineEnd.y} C ${lineb3.x} ${lineb3.y}, ${lineb4.x} ${lineb4.y}, 450 450`);
 
         let timey = document.getElementById("timey");
