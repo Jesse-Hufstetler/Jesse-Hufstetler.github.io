@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+</style>
+</head>
+<body>
+
+<h1>Custom Range Slider</h1>
+<p>Drag the slider to display the current value.</p>
+
+  <input type="range" min="-10" max="110" value="50" class="slider" id="myRange" style="width:100%">
+  <div style="font-size: 40px;padding: 100px;" id="demo"></div>
+
+<script>
+var slider = document.getElementById("myRange");
+var output = document.getElementById("demo");
+output.innerHTML = slider.value;
+slider.oninput = function() {
+  var temper = this.value;
+  var hue = 6+Math.abs(temper-70)/15;
+  if (temper < 70) hue = 220 - (Math.abs(temper-70)/2);
+  var sat = 100-Math.abs(temper-70)/2;
+  if (temper < 70) sat = 100-Math.abs(temper-70)/3;
+  output.style.backgroundColor = `hsl(${hue}, 100%, ${sat}%)`;
+  output.innerHTML = `${temper} ${hue}`;
+}
+</script>
+
+</body>
+</html>
