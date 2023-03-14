@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Randy Restaurant</title>
+</head>
+
+<body style="text-align: center;font-family: sans-serif;">
+    Here's a random restaurant you could eat at:
+    <br>
+    <div id="bigResult" style="font-family: sans-serif;font-size: 36px;"></div>
+    <br>
+    <br>
+    <br>
+    <br>
+    <br>
+    <a href="index.html">(My Other Stuff)</a>
+    <script>
+    var options = [
+//Random
+  "Mall Food Court",
+//North American
+  //American
+    //Oddballs
+      "Arby's",
+      "DQ",
+    //Chicken
+      "Chick-Fil-A",
+      "Raising Cane's",
+      "(Most burger places or variety places)",
+    //Burgers
+      "Menches",
+      "Red Robin",
+      "Five Guys",
+      "Mc Donalds",
+      "Burger King",
+      "Wendy's",
+      "TD's Tailgate",
+    //Sandwiches
+      "Subway",
+      "Jimmy John's",
+      "Penn Station",
+      "Charleys Cheesesteaks",
+    //Breakfast
+      "Twisted Citrus",
+      "Sunrise Social",
+      "Waffle House",
+      "Bob Evans",
+      "IHOP",
+    //Variety
+      "Grinder's",
+      "Friday's",
+      "Applebees",
+      "Cracker Barrel",
+      "BJ's Restaurant",
+      "Quaker Steak",
+  //Mexican
+    "Panchos",
+    "El Rincon",
+    "Chipotle",
+    "Hothead",
+    "Taco Bell",
+    "Moe's",
+    "Mi Casa",
+    "Tlaquepaque",
+//Asia
+  //Chinese
+    "Lucky Star",
+    "Hang Yuen",
+    "Katana Buffet",
+    "Buffet Dynasty",
+  //Indian
+    "Bombay Sitar",
+    "Kabab & Curry",
+  //Middle East
+    "Aladdin's",
+//Europe
+  //Italian
+    //Pizza
+      "Pizza Oven",
+      "Little Caeser's",
+    //General
+      "Papa Bear's",
+      "Piada",
+  //Greek
+    "Papa Gyro's",
+    "Euro Gyro",
+];
+
+    var item = options[Math.floor(Math.random() * options.length)];
+    document.getElementById("bigResult").innerText = item;
+    </script>
+</body>
+
+</html>
