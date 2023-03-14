@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title>Audio Formulas</title>
+    <style>
+    table,
+    th,
+    td {
+        border: 1px solid black;
+        border-collapse: collapse;
+        padding: 5px;
+    }
+
+    input {
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    table {
+        width: 100%;
+    }
+
+    html {
+        font-family: sans-serif;
+    }
+    </style>
+</head>
+
+<body>
+    <table id="theTable">
+        <tr>
+            <th style="width: 250px;">Name</th>
+            <th style="width: 150px;">Value</th>
+            <th>Slider</th>
+        </tr>
+    </table>
+    <br>
+    <br>
+    <a href="index.html">(My Other Stuff)</a>
+    <script>
+    const values = [
+        { friendlyName: "Midi Note", min: 0, max: 128, default: 69 },
+        { friendlyName: "Frequency", min: 0, max: 20000, default: 440 },
+        { friendlyName: "Wavelenth In Samples", min: 0, max: 6000, default: 44100/440 },
+        { friendlyName: "Wavelenth In ms", min: 0, max: 100, default: (44100/440/44100) * 1000 },
+        { friendlyName: "Sample Rate", min: 0, max: 192000, default: 44100 },
+        { friendlyName: "Audio Buffer Size", min: 0, max: 2048, default: 128 },
+        { friendlyName: "Audio Buffer Size 2 Exponent", min: 0, max: 11, default: 7 },
+        { friendlyName: "Audio Buffer Latency ms", min: 0, max: 50, default: 128/44100*1000 },
+        { friendlyName: "Decibels", min: -100, max: 0, default: -6 },
+        { friendlyName: "Gain", min: 0, max: 1, default: Math.pow(10, -6/20) },
+    ]
+    for (item of values)
+        item.name = item.friendlyName.replaceAll(" ","");
+
+    const table = document.querySelector("#theTable");
+    for (item of values) {
+        table.innerHTML += `
+        <tr>
+            <td>${item.friendlyName}</td>
+            <td><input type="number" id="${item.name}Box" step="any" value="${item.default}" min="${item.min}" max="${item.max}" data-value-name="${item.name}"></td>
+            <td>
+                <input type="range" id="${item.name}Slider" step="any" value="${item.default}" min="${item.min}" max="${item.max}" data-value-name="${item.name}">
+            </td>
+        </tr>`;
+    }
+    for (item of values) {
+        let box = document.querySelector(`#${item.name}Box`);
+        let slider = document.querySelector(`#${item.name}Slider`);
+        slider.addEventListener("input", (event) => {
+            box.value = event.target.value;
+            UpdateThings(event.target);
+        });
+        box.addEventListener("input", (event) => {
+            slider.value = event.target.value;
+            UpdateThings(event.target);
+        });
+    }
+
+    function UpdateThings(target) {
+        var state = {};
+        for (item of values) {
+            state[item.name] = document.querySelector(`#${item.name}Slider`).value;
+        }
+
+        if (target.dataset.valueName == `Frequency`) {
+            state.MidiNote = Math.log2(state.Frequency/440)*12+69;
+        }
+        if (target.dataset.valueName == `WavelenthInSamples`) {
+            state.Frequency = state.SampleRate / state.WavelenthInSamples;
+            state.MidiNote = Math.log2(state.Frequency/440)*12+69;
+        }
+        if (target.dataset.valueName == `MidiNote`) {
+            state.Frequency = Math.pow(2, (state.MidiNote-69)/12)*440;
+        }
+        if (target.dataset.valueName == `AudioBufferSize2Exponent`) {
+            state.AudioBufferSize = Math.pow(2, state.AudioBufferSize2Exponent);
+        }
+        if (target.dataset.valueName == `AudioBufferSize`) {
+            state.AudioBufferLatencyms = state.AudioBufferSize/state.SampleRate*1000;
+            state.AudioBufferSize2Exponent = Math.log2(state.AudioBufferSize);
+        }
+        if (target.dataset.valueName == `AudioBufferLatencyms`) {
+            state.AudioBufferSize = state.AudioBufferLatencyms/1000*state.SampleRate;
+            state.AudioBufferSize2Exponent = Math.log2(state.AudioBufferSize);
+        }
+        if (target.dataset.valueName == `Decibels`) {
+            state.Gain = Math.pow(10, state.Decibels/20);
+        }
+        if (target.dataset.valueName == `Gain`) {
+            state.Decibels = Math.log10(state.Gain)*20;
+        }
+        if (target.dataset.valueName == `WavelenthInms`) {
+            state.WavelenthInSamples = state.WavelenthInms * state.SampleRate / 1000;
+            state.MidiNote = Math.log2(state.Frequency/440)*12+69;
+            state.Frequency = state.SampleRate / state.WavelenthInSamples;
+        }
+
+        state.AudioBufferLatencyms = state.AudioBufferSize/state.SampleRate*1000;
+        state.WavelenthInSamples = state.SampleRate / state.Frequency;
+        state.WavelenthInms = state.WavelenthInSamples / state.SampleRate * 1000;
+
+        for (item of values) {
+            document.querySelector(`#${item.name}Slider`).value = state[item.name];
+            document.querySelector(`#${item.name}Box`).value = state[item.name];
+        }
+    }
+    </script>
+</body>
+
+</html>
