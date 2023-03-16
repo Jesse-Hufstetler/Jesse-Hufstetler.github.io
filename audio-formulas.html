@@ -43,28 +43,32 @@
     const values = [
         { friendlyName: "Midi Note", min: 0, max: 128, default: 69 },
         { friendlyName: "Frequency", min: 0, max: 20000, default: 440 },
-        { friendlyName: "Wavelenth In Samples", min: 0, max: 6000, default: 44100/440 },
-        { friendlyName: "Wavelenth In ms", min: 0, max: 100, default: (44100/440/44100) * 1000 },
+        { friendlyName: "Wavelenth In Samples", min: 0, max: 6000, default: 44100 / 440 },
+        { friendlyName: "Wavelenth In ms", min: 0, max: 100, default: (44100 / 440 / 44100) * 1000 },
         { friendlyName: "Sample Rate", min: 0, max: 192000, default: 44100 },
         { friendlyName: "Audio Buffer Size", min: 0, max: 2048, default: 128 },
         { friendlyName: "Audio Buffer Size 2 Exponent", min: 0, max: 11, default: 7 },
-        { friendlyName: "Audio Buffer Latency ms", min: 0, max: 50, default: 128/44100*1000 },
-        { friendlyName: "Decibels", min: -100, max: 0, default: -6 },
-        { friendlyName: "Gain", min: 0, max: 1, default: Math.pow(10, -6/20) },
+        { friendlyName: "Audio Buffer Latency ms", min: 0, max: 50, default: 128 / 44100 * 1000 },
+        { friendlyName: "Decibels", min: -100, max: 0, default: -20 },
+        { friendlyName: "Gain", min: 0, max: 1, default: Math.pow(10, -20 / 20) },
     ]
     for (item of values)
-        item.name = item.friendlyName.replaceAll(" ","");
+        item.name = item.friendlyName.replaceAll(" ", "");
 
     const table = document.querySelector("#theTable");
     for (item of values) {
+        var mn = item.name === `MidiNote`;
         table.innerHTML += `
         <tr>
-            <td>${item.friendlyName}</td>
+            <td ${mn?"rowspan=2":""} >${item.friendlyName}</td>
             <td><input type="number" id="${item.name}Box" step="any" value="${item.default}" min="${item.min}" max="${item.max}" data-value-name="${item.name}"></td>
-            <td>
+            <td ${mn?"rowspan=2":""}>
                 <input type="range" id="${item.name}Slider" step="any" value="${item.default}" min="${item.min}" max="${item.max}" data-value-name="${item.name}">
             </td>
-        </tr>`;
+        </tr>${mn?`
+        <tr>
+            <td style="height: 25px;vertical-align:bottom;"><span id="midiout"></span></td>
+        </tr>`:""}`;
     }
     for (item of values) {
         let box = document.querySelector(`#${item.name}Box`);
@@ -78,6 +82,7 @@
             UpdateThings(event.target);
         });
     }
+    UpdateThings(document.querySelector(`#MidiNoteSlider`));
 
     function UpdateThings(target) {
         var state = {};
@@ -86,46 +91,79 @@
         }
 
         if (target.dataset.valueName == `Frequency`) {
-            state.MidiNote = Math.log2(state.Frequency/440)*12+69;
+            state.MidiNote = Math.log2(state.Frequency / 440) * 12 + 69;
         }
         if (target.dataset.valueName == `WavelenthInSamples`) {
             state.Frequency = state.SampleRate / state.WavelenthInSamples;
-            state.MidiNote = Math.log2(state.Frequency/440)*12+69;
+            state.MidiNote = Math.log2(state.Frequency / 440) * 12 + 69;
         }
         if (target.dataset.valueName == `MidiNote`) {
-            state.Frequency = Math.pow(2, (state.MidiNote-69)/12)*440;
+            state.Frequency = Math.pow(2, (state.MidiNote - 69) / 12) * 440;
         }
         if (target.dataset.valueName == `AudioBufferSize2Exponent`) {
             state.AudioBufferSize = Math.pow(2, state.AudioBufferSize2Exponent);
         }
         if (target.dataset.valueName == `AudioBufferSize`) {
-            state.AudioBufferLatencyms = state.AudioBufferSize/state.SampleRate*1000;
+            state.AudioBufferLatencyms = state.AudioBufferSize / state.SampleRate * 1000;
             state.AudioBufferSize2Exponent = Math.log2(state.AudioBufferSize);
         }
         if (target.dataset.valueName == `AudioBufferLatencyms`) {
-            state.AudioBufferSize = state.AudioBufferLatencyms/1000*state.SampleRate;
+            state.AudioBufferSize = state.AudioBufferLatencyms / 1000 * state.SampleRate;
             state.AudioBufferSize2Exponent = Math.log2(state.AudioBufferSize);
         }
         if (target.dataset.valueName == `Decibels`) {
-            state.Gain = Math.pow(10, state.Decibels/20);
+            state.Gain = Math.pow(10, state.Decibels / 20);
         }
         if (target.dataset.valueName == `Gain`) {
-            state.Decibels = Math.log10(state.Gain)*20;
+            state.Decibels = Math.log10(state.Gain) * 20;
         }
         if (target.dataset.valueName == `WavelenthInms`) {
             state.WavelenthInSamples = state.WavelenthInms * state.SampleRate / 1000;
-            state.MidiNote = Math.log2(state.Frequency/440)*12+69;
+            state.MidiNote = Math.log2(state.Frequency / 440) * 12 + 69;
             state.Frequency = state.SampleRate / state.WavelenthInSamples;
         }
 
-        state.AudioBufferLatencyms = state.AudioBufferSize/state.SampleRate*1000;
+        state.AudioBufferLatencyms = state.AudioBufferSize / state.SampleRate * 1000;
         state.WavelenthInSamples = state.SampleRate / state.Frequency;
         state.WavelenthInms = state.WavelenthInSamples / state.SampleRate * 1000;
+
+        var intNote = Math.floor(state.MidiNote);
+        document.querySelector(`#midiout`).innerText = `Note ${intNote} is ${NoteName(intNote)}`;
 
         for (item of values) {
             document.querySelector(`#${item.name}Slider`).value = state[item.name];
             document.querySelector(`#${item.name}Box`).value = state[item.name];
         }
+    }
+
+    function NoteName(argument) {
+        switch (argument % 12) {
+            case 0:
+                return `C`;
+            case 1:
+                return `C♯/D♭`;
+            case 2:
+                return `D`;
+            case 3:
+                return `D♯/E♭`;
+            case 4:
+                return `E`;
+            case 5:
+                return `F`;
+            case 6:
+                return `F♯/G♭`;
+            case 7:
+                return `G`;
+            case 8:
+                return `G♯/A♭`;
+            case 9:
+                return `A`;
+            case 10:
+                return `A♯/B♭`;
+            case 11:
+                return `B`;
+        }
+        return ``;
     }
     </script>
 </body>
