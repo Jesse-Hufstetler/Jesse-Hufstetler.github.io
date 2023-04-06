@@ -51,6 +51,8 @@
         { friendlyName: "Audio Buffer Latency ms", min: 0, max: 50, default: 128 / 44100 * 1000 },
         { friendlyName: "Decibels", min: -100, max: 0, default: -20 },
         { friendlyName: "Gain", min: 0, max: 1, default: Math.pow(10, -20 / 20) },
+        { friendlyName: "Q", min: 0.2, max: 144, default: 0.707106781186548 },
+        { friendlyName: "Bandwidth", min: 0.01, max: 4, default: 1.8999686269529905 },
     ]
     for (item of values)
         item.name = item.friendlyName.replaceAll(" ", "");
@@ -121,6 +123,12 @@
             state.WavelenthInSamples = state.WavelenthInms * state.SampleRate / 1000;
             state.MidiNote = Math.log2(state.Frequency / 440) * 12 + 69;
             state.Frequency = state.SampleRate / state.WavelenthInSamples;
+        }
+        if (target.dataset.valueName == `Q`) {
+            state.Bandwidth = Math.log((2*state.Q*state.Q+1)/(2*state.Q*state.Q) + Math.sqrt(Math.pow(2*(2*state.Q*state.Q+1)/(2*state.Q*state.Q),2)/4-1))/Math.log(2);
+        }
+        if (target.dataset.valueName == `Bandwidth`) {
+            state.Q = Math.pow(2, state.Bandwidth/2)/(Math.pow(2, state.Bandwidth)-1);
         }
 
         state.AudioBufferLatencyms = state.AudioBufferSize / state.SampleRate * 1000;
