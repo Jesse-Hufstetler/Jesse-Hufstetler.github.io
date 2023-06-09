@@ -49,6 +49,7 @@
         { friendlyName: "Audio Buffer Size", min: 0, max: 2048, default: 128 },
         { friendlyName: "Audio Buffer Size 2 Exponent", min: 0, max: 11, default: 7 },
         { friendlyName: "Audio Buffer Latency ms", min: 0, max: 50, default: 128 / 44100 * 1000 },
+        { friendlyName: "Audio Buffer Latency Feet", min: 0, max: 50, default: (128 / 44100) * 1116.437 },
         { friendlyName: "Decibels", min: -100, max: 0, default: -20 },
         { friendlyName: "Gain", min: 0, max: 1, default: Math.pow(10, -20 / 20) },
         { friendlyName: "Q", min: 0.2, max: 144, default: 0.707106781186548 },
@@ -91,25 +92,46 @@
         for (item of values) {
             state[item.name] = document.querySelector(`#${item.name}Slider`).value;
         }
+        if (target.dataset.valueName == `SampleRate`) {
+            state.WavelenthInSamples = state.SampleRate / state.Frequency;
+            state.AudioBufferLatencyms = state.AudioBufferSize / state.SampleRate * 1000;
+            state.AudioBufferLatencyFeet = state.AudioBufferLatencyms / 1000 * 1116.437;
+        }
 
         if (target.dataset.valueName == `Frequency`) {
             state.MidiNote = Math.log2(state.Frequency / 440) * 12 + 69;
+            state.WavelenthInSamples = state.SampleRate / state.Frequency;
+            state.WavelenthInms = state.WavelenthInSamples / state.SampleRate * 1000;
         }
         if (target.dataset.valueName == `WavelenthInSamples`) {
             state.Frequency = state.SampleRate / state.WavelenthInSamples;
             state.MidiNote = Math.log2(state.Frequency / 440) * 12 + 69;
+            state.WavelenthInSamples = state.SampleRate / state.Frequency;
+            state.WavelenthInms = state.WavelenthInSamples / state.SampleRate * 1000;
         }
         if (target.dataset.valueName == `MidiNote`) {
             state.Frequency = Math.pow(2, (state.MidiNote - 69) / 12) * 440;
+            state.WavelenthInSamples = state.SampleRate / state.Frequency;
+            state.WavelenthInms = state.WavelenthInSamples / state.SampleRate * 1000;
         }
         if (target.dataset.valueName == `AudioBufferSize2Exponent`) {
             state.AudioBufferSize = Math.pow(2, state.AudioBufferSize2Exponent);
+            state.AudioBufferLatencyms = state.AudioBufferSize / state.SampleRate * 1000;
+            state.AudioBufferSize2Exponent = Math.log2(state.AudioBufferSize);
+            state.AudioBufferLatencyFeet = state.AudioBufferLatencyms / 1000 * 1116.437;
         }
         if (target.dataset.valueName == `AudioBufferSize`) {
             state.AudioBufferLatencyms = state.AudioBufferSize / state.SampleRate * 1000;
             state.AudioBufferSize2Exponent = Math.log2(state.AudioBufferSize);
+            state.AudioBufferLatencyFeet = state.AudioBufferLatencyms / 1000 * 1116.437;
         }
         if (target.dataset.valueName == `AudioBufferLatencyms`) {
+            state.AudioBufferSize = state.AudioBufferLatencyms / 1000 * state.SampleRate;
+            state.AudioBufferSize2Exponent = Math.log2(state.AudioBufferSize);
+            state.AudioBufferLatencyFeet = state.AudioBufferLatencyms / 1000 * 1116.437;
+        }
+        if (target.dataset.valueName == `AudioBufferLatencyFeet`) {
+            state.AudioBufferLatencyms = state.AudioBufferLatencyFeet/1116.437*1000;
             state.AudioBufferSize = state.AudioBufferLatencyms / 1000 * state.SampleRate;
             state.AudioBufferSize2Exponent = Math.log2(state.AudioBufferSize);
         }
@@ -130,10 +152,6 @@
         if (target.dataset.valueName == `Bandwidth`) {
             state.Q = Math.pow(2, state.Bandwidth/2)/(Math.pow(2, state.Bandwidth)-1);
         }
-
-        state.AudioBufferLatencyms = state.AudioBufferSize / state.SampleRate * 1000;
-        state.WavelenthInSamples = state.SampleRate / state.Frequency;
-        state.WavelenthInms = state.WavelenthInSamples / state.SampleRate * 1000;
 
         var intNote = Math.floor(state.MidiNote);
         document.querySelector(`#midiout`).innerText = `Note ${intNote} is ${NoteName(intNote)}`;
