@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Stamping out crime</title>
+</head>
+<body style="font-family: sans-serif;">
+Stamp em' here there and everywhere
+<div id="stamps" style="white-space: pre;"></div>
+<script>
+var now = new Date();
+const zeroPad = (num, places) => String(num).padStart(places, '0');
+var year = now.getFullYear();
+var month = zeroPad(now.getMonth() + 1, 2);
+var day = zeroPad(now.getDate(), 2);
+var amPm = now.getHours() >= 12 ? `PM` : `AM`;
+var h12 = zeroPad((now.getHours() + 11) % 12 + 1, 2);
+var mins = zeroPad(now.getMinutes(), 2);
+var secs = zeroPad(now.getSeconds(), 2);
+document.getElementById('stamps').innerText = `
+${now}
+${year}_${month}_${day}_${amPm}_${h12}_${mins}_${secs}
+`;
+</script>
+</body>
+</html>
