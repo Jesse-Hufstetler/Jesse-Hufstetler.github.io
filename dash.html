@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script type="text/javascript" src="https://livejs.com/live.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
+    <title>A Dash Of Fun</title>
+    <style>
+    @font-face {
+        font-family: 'Droid Sans Mono';
+        src: url(DroidSansMono.ttf);
+    }
+
+    html,
+    body {
+        height: 100%;
+        margin: 0;
+        padding: 0;
+        font-family: 'Droid Sans Mono', monospace;
+        text-align: center;
+    }
+
+    div.outer-div {
+        height: 100%;
+        width: 100%;
+    }
+
+    div.middle-div {
+        position: relative;
+        top: 50%;
+        -webkit-transform: translateY(-50%);
+        -ms-transform: translateY(-50%);
+        transform: translateY(-50%);
+    }
+    </style>
+</head>
+
+<body>
+    <div class='outer-div'>
+        <div class='middle-div'>
+            <div id="time" style="font-size: 10.3vw;"></div>
+            <div id="day" style="font-size: 5vw;"></div>
+            <div id="temp" style="font-size: 20vw;"></div>
+        </div>
+    </div>
+    <script>
+    const momentProxy = (arg1) => moment(arg1);
+    const urlParams = new URLSearchParams(window.location.search);
+    const appid = urlParams.get('appid');
+    setInterval(() => document.getElementById("time").innerText = momentProxy().format('h:mm:ss:SSS A'), 16);
+    var fToC = (input) => (input - 32) * 5 / 9;
+    var cToF = (input) => (input * 9 / 5) + 32;
+    var dp = (h, t) => Math.pow(h / 100, 1 / 8) * (112 + 0.9 * t) + 0.1 * t - 112;
+    var dpF = (h, t) => cToF(dp(h, fToC(t)));
+    (function() {
+        var mouseTimer = null,
+            cursorVisible = true;
+
+        function disappearCursor() {
+            mouseTimer = null;
+            document.body.style.cursor = "none";
+            cursorVisible = false;
+        }
+
+        document.onmousemove = function() {
+            if (mouseTimer) {
+                window.clearTimeout(mouseTimer);
+            }
+            if (!cursorVisible) {
+                document.body.style.cursor = "default";
+                cursorVisible = true;
+            }
+            mouseTimer = window.setTimeout(disappearCursor, 500);
+        };
+    })();
+
+    function getWeather() {
+        document.getElementById("day").innerText = momentProxy().format('dddd, MMMM Do YYYY')
+        if (appid) fetch(`https://api.openweathermap.org/data/2.5/weather?zip=44720,US&appid=${appid}&units=imperial`)
+            .then(response => response.json())
+            .then(data => {
+                var feelsLike = Math.round(data.main.feels_like);
+                console.log(data);
+                document.getElementById("temp").innerText = `${feelsLike}° ${Math.round(dpF(data.main.humidity, data.main.temp))}°`
+            });
+    }
+    getWeather();
+    setInterval(getWeather, 1000 * 60 * 20);
+    </script>
+</body>
+
+</html>
