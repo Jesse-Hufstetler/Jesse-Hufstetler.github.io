@@ -20,14 +20,16 @@
 </head>
 
 <body>
-    <button onclick="back();back();back();back();back();back();back();back();">Back x8</button>
-    <button onclick="back();back();back();back();">Back x4</button>
-    <button onclick="back();back();">Back x2</button>
+    <button onclick="backx(256);">Back x256</button>
+    <button onclick="backx(8);">Back x8</button>
+    <button onclick="backx(4);">Back x4</button>
+    <button onclick="backx(2);">Back x2</button>
     <button onclick="back();">Back</button>
     <button onclick="next();">Next</button>
-    <button onclick="next();next();">Next x2</button>
-    <button onclick="next();next();next();next();">Next x4</button>
-    <button onclick="next();next();next();next();next();next();next();next();">Next x8</button>
+    <button onclick="nextx(2);">Next x2</button>
+    <button onclick="nextx(4);">Next x4</button>
+    <button onclick="nextx(8);">Next x8</button>
+    <button onclick="nextx(256);">Next x256</button>
     <br>
     <button onclick="start = 0;dump();">Beginning</button>
     <button onclick="start = 9728;dump();">Miscellaneous Symbols 2600</button>
@@ -40,18 +42,30 @@
     var wide = 4;
     var perPage = 64
     addEventListener('wheel', (event) => {
-    	console.log(event.deltaY)
-    	if (event.deltaY > 9) start += perPage;
-    	if (event.deltaY < -9) start -= perPage;
-    	dump();
+        console.log(event.deltaY)
+        if (event.deltaY > 9) start += perPage;
+        if (event.deltaY < -9) start -= perPage;
+        dump();
     });
+
     function back() {
-    	start -= perPage;
-    	dump();
+        start -= perPage;
+        dump();
     }
+
+    function backx(x) {
+        start -= perPage * x;
+        dump();
+    }
+
     function next() {
-    	start += perPage;
-    	dump();
+        start += perPage;
+        dump();
+    }
+
+    function nextx(x) {
+        start += perPage * x;
+        dump();
     }
 
     function dump() {
@@ -75,7 +89,7 @@
     }
     dump();
     </script>
-    <br/><br/><br/>
+    <br /><br /><br />
     <a style="font-size: 200%;font-weight: bold;" href="index.html">MY OTHER STUFF</a>
 </body>
 
