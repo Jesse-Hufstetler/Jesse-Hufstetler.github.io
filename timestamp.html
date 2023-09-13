@@ -14,13 +14,12 @@ const zeroPad = (num, places) => String(num).padStart(places, '0');
 var year = now.getFullYear();
 var month = zeroPad(now.getMonth() + 1, 2);
 var day = zeroPad(now.getDate(), 2);
-var amPm = now.getHours() >= 12 ? `PM` : `AM`;
-var h12 = zeroPad((now.getHours() + 11) % 12 + 1, 2);
+var h = zeroPad(now.getHours(), 2);
 var mins = zeroPad(now.getMinutes(), 2);
 var secs = zeroPad(now.getSeconds(), 2);
 document.getElementById('stamps').innerText = `
 ${now}
-${year}_${month}_${day}_${amPm}_${h12}_${mins}_${secs}
+${year}_${month}_${day}__${h}_${mins}_${secs}
 `;
 </script>
 </body>
