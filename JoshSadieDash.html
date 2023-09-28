@@ -36,7 +36,7 @@
                 <circle cx="450" cy="450" r="550" fill="hsla(38, 0%, 25%, 1)" />
                 <circle cx="450" cy="450" r="500" fill="hsla(38, 0%, 50%, 1)" />
                 <circle cx="450" cy="450" r="450" fill="hsla(38, 0%, 100%, 1)" />
-                <text id="timey" fill="hsla(0, 0%, 0%, .9)" x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" style="font-size: 220px;font-weight: bold;"></text>
+                <text id="timey" fill="hsla(0, 0%, 0%, .9)" x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" style="font-size: 130px;font-weight: bold;"></text>
                 <path id="sun" fill="none" stroke="hsla(194, 0%, 50%, 0.5)" stroke-width="450" />
                 <line x1="450" y1="450" x2="450" y2="0" stroke="hsla(200, 100%, 50%, 1)" stroke-width="3" stroke-linecap="round" />
                 <path id="nightSleep" fill="none" stroke="hsla(194, 100%, 50%, 0.2)" stroke-width="200" />
@@ -126,7 +126,7 @@
     </div>
     <script>
     //window.addEventListener("error", handleError, true);
-    const momentProxy = (arg1) => moment(arg1).add(0, 'days');
+    const momentProxy = (arg1) => moment(arg1).add(0, 'hour');
     var svgcon = document.getElementById("svgContent");
     var calBox = document.getElementById("calBox");
     var clok = document.getElementById("clok");
@@ -160,6 +160,7 @@
         var natW = 1600;
         var natH = 900;
         var natR = natW / natH;
+        var now = momentProxy();
 
         var newR = window.innerWidth / window.innerHeight;
         var wider = newR > natR;
@@ -167,9 +168,15 @@
         var newH = !wider ? natH * ((window.innerHeight / window.innerWidth) / (natH / natW)) : natH;
         svgcon.setAttribute("viewBox", `0 0 ${newW} ${newH}`);
 
-        var clockScale = newH / 900;
+        var clockZoom = 1.4;
+        var clockScale = newH / 900 * clockZoom;
+        var shiftOff = (900 * clockZoom - 900)/clockZoom;
+        var leftSide = now.hour() >= 12;
+        var top = now.hour() < 6 || now.hour() > 17;
         clok.setAttribute("width", 900 * clockScale);
         clok.setAttribute("height", 900 * clockScale);
+        clok.setAttribute("x", -(leftSide ? 0 : shiftOff) * clockScale);
+        clok.setAttribute("y", -(top ? 0 : shiftOff) * clockScale);
         calBox.setAttribute("x", newH);
 
         var calScale = (newW - newH) / 700;
@@ -432,6 +439,7 @@
     const appid = urlParams.get('appid');
 
     function getWeather() {
+        resize();
         if (appid) fetch(`https://api.openweathermap.org/data/2.5/weather?zip=44720,US&appid=${appid}&units=imperial`)
             .then(response => response.json())
             .then(data => {
