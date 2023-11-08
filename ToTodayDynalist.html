@@ -1,0 +1,44 @@
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <link rel="shortcut icon" href="https://dynalist.io/favicon.ico">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>To Today!</title>
+    <style>
+        html{
+    		font-family: sans-serif;
+    		font-size: 30px;
+    	}
+    </style>
+</head>
+
+<body>
+    This webpage will redirect you to the first instance of today's date in a Dynalist file. You have to pass in a file_id and token like this: http://Jesse-Hufstetler.github.io/ToTodayDynalist.html?file_id=HereIsWhereYouPutTheFlId&token=HereIsWhereYouPutYourTokenThatYouHaveToGoGetFromDynalistAndIfYouDontKnowHowThereAreInstructionsYouCanSearchForHoorayItsNeatYayyy
+    <script type="text/javascript">
+    const queryString = window.location.search;
+    const urlParams = new URLSearchParams(queryString);
+    const token = urlParams.get('token')
+    const file_id = urlParams.get('file_id')
+    console.log(file_id);
+    (
+        function() {
+            fetch('https://dynalist.io/api/v1/doc/read', {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        "token": token,
+                        "file_id": file_id
+                    })
+                })
+                .then(response => response.json())
+                .then(response => location.href = `https://dynalist.io/d/${file_id}#z=` + response.nodes.filter((item) => item.content.includes(`!(${new Date().getFullYear()}-${(new Date().getMonth()+1).toString().padStart(2, "0")}-${new Date().getDate().toString().padStart(2, "0")})`))[0].id)
+        }
+    )();
+    </script>
+</body>
+
+</html>
