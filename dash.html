@@ -22,18 +22,24 @@
         text-align: center;
         font-size: 7vw;
         overflow: hidden;
-        text-shadow: #ffffff 0 0 10px;
+        background: #333;
+        color: #777;
     }
 
     div.outer-div {
         height: 100%;
         width: 100%;
-        animation-name: example;
+        animation-name: inoutbg;
         animation-duration: 120s;
         animation-iteration-count: infinite;
     }
+    #time {
+        animation-name: inoutsm;
+        animation-duration: 1s;
+        animation-iteration-count: infinite;
+    }
 
-    @keyframes example {
+    @keyframes inoutbg {
         0% {
             transform: scale(0.9, 0.9);
         }
@@ -46,6 +52,19 @@
             transform: scale(0.9, 0.9);
         }
     }
+    @keyframes inoutsm {
+        0% {
+            transform: scale(1, 1);
+        }
+
+        50% {
+            transform: scale(1.02, 1.02);
+        }
+
+        100% {
+            transform: scale(1, 1);
+        }
+    }
 
     div.middle-div {
         position: relative;
@@ -56,47 +75,14 @@
     }
 
 
-    .bg {
-        animation: slide 3s ease-in-out infinite alternate;
-        background-image: linear-gradient(-60deg, #e0ff00 50%, #0099ff 50%);
-        bottom: 0;
-        left: -50%;
-        opacity: .5;
-        position: fixed;
-        right: -50%;
-        top: 0;
-        z-index: -1;
-    }
-
-    .bg2 {
-        animation-direction: alternate-reverse;
-        animation-duration: 4s;
-    }
-
-    .bg3 {
-        animation-duration: 5s;
-    }
-
-    @keyframes slide {
-        0% {
-            transform: translateX(-25%);
-        }
-
-        100% {
-            transform: translateX(25%);
-        }
-    }
     </style>
 </head>
 
 <body>
-    <div class="bg"></div>
-    <div class="bg bg2"></div>
-    <div class="bg bg3"></div>
     <div class='outer-div'>
         <div class='middle-div'>
             <div id="time" style="font-size: 20vw;"></div>
-            <div style="font-size:12vw">
+            <div id="minfo" style="font-size:12vw">
                 <span id="wday"></span>
                 <span id="temp"></span><span id="dp" style="opacity: .15;"></span>
             </div>
