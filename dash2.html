@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script type="text/javascript" src="https://livejs.com/live.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
+    <title>sfafder</title>
+    <style>
+    * {
+        color: #fff;
+        text-shadow: .5vw .5vw 1vw #000, -.5vw -.5vw 1vw #000;
+        overflow: hidden;
+    }
+
+    .background {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: -1;
+        pointer-events: none;
+    }
+
+    iframe {
+        position: relative;
+        width: 100%;
+    }
+
+    content {}
+
+
+    @font-face {
+        font-family: 'Droid Sans Mono';
+        src: url(DroidSansMono.ttf);
+    }
+    html,
+    body {
+/*        height: 100%;
+        margin: 0;
+        padding: 0;*/
+        font-family: 'Droid Sans Mono', monospace;
+        text-align: center;
+        font-size: 7vw;
+/*        overflow: hidden;
+        background: #333;
+        color: #777;
+        text-shadow: 0.1em 0em .1em #0000004d, -0.03em -0.02em 0.03em white;*/
+    }
+
+
+    div.outer-div {
+        height: 100%;
+        width: 100%;
+        animation-name: inoutbg;
+        animation-duration: 120s;
+        animation-iteration-count: infinite;
+    }
+
+
+
+    #time {
+        animation-name: inoutsm;
+        animation-duration: 1s;
+        animation-iteration-count: infinite;
+    }
+
+    @keyframes inoutbg {
+        0% {
+            transform: scale(0.9, 0.9);
+        }
+
+        50% {
+            transform: scale(1.05, 1.05);
+        }
+
+        100% {
+            transform: scale(0.9, 0.9);
+        }
+    }
+
+    @keyframes inoutsm {
+        0% {
+            transform: scale(1, 1);
+        }
+
+        50% {
+            transform: scale(1.02, 1.02);
+        }
+
+        100% {
+            transform: scale(1, 1);
+        }
+    }
+
+    div.middle-div {
+        position: relative;
+    }
+
+
+
+    </style>
+</head>
+
+<body>
+    <div class="page">
+        <div class="background">
+            <iframe allowtransparence="true" width="640" height="360" frameborder="0" src="https://www.shadertoy.com/embed/4f2SWz?gui=false&t=10&paused=false&muted=false" frameborder="0" style="overflow:hidden;height:100%;width:100%" height="100%" width="100%"></iframe>
+        </div>
+        <content>
+            <div class='outer-div'>
+                <div class='middle-div'>
+                    <div style="font-size: 12vh; padding: 0;margin: 0;">
+                    <span >&nbsp;</span>
+                    </div>
+                    <div id="minfo" style="font-size:12vw">
+                        <span id="wday"></span>
+                        <span id="temp"></span><span id="dp" style="opacity: .15;"></span>
+                    </div>
+                    <div id="day" style=""></div>
+                    <div id="time" style="font-size: 20vw;"></div>
+                </div>
+            </div>
+
+    <script>
+    const momentProxy = (arg1) => moment(arg1);
+    const urlParams = new URLSearchParams(window.location.search);
+    const appid = urlParams.get('appid');
+    setInterval(() => document.getElementById("time").innerText = momentProxy().format('h:mm:ss'), 250);
+    var fToC = (input) => (input - 32) * 5 / 9;
+    var cToF = (input) => (input * 9 / 5) + 32;
+    var dp = (h, t) => Math.pow(h / 100, 1 / 8) * (112 + 0.9 * t) + 0.1 * t - 112;
+    var dpF = (h, t) => cToF(dp(h, fToC(t)));
+    (function() {
+        var mouseTimer = null,
+            cursorVisible = true;
+
+        function disappearCursor() {
+            mouseTimer = null;
+            document.body.style.cursor = "none";
+            cursorVisible = false;
+        }
+
+        document.onmousemove = function() {
+            if (mouseTimer) {
+                window.clearTimeout(mouseTimer);
+            }
+            if (!cursorVisible) {
+                document.body.style.cursor = "default";
+                cursorVisible = true;
+            }
+            mouseTimer = window.setTimeout(disappearCursor, 500);
+        };
+    })();
+    var dformat = 'dddd';
+
+    function getWeather() {
+        document.getElementById("day").innerText = momentProxy().format('MMMM Do YYYY')
+        document.getElementById("wday").innerText = momentProxy().format(dformat)
+        if (appid) fetch(`https://api.openweathermap.org/data/2.5/weather?zip=44720,US&appid=${appid}&units=imperial`)
+            .then(response => response.json())
+            .then(data => {
+                var feelsLike = Math.round(data.main.feels_like);
+                var dp = Math.round(dpF(data.main.humidity, data.main.temp));
+                console.log(data);
+                dformat = 'ddd';
+                document.getElementById("temp").innerText = `${feelsLike}°`;
+                document.getElementById("dp").innerText = `/${dp}°`;
+                document.getElementById("wday").innerText = momentProxy().format(dformat)
+            });
+    }
+    document.onclick = function() {
+        document.documentElement.requestFullscreen();
+    }
+    getWeather();
+    setInterval(getWeather, 1000 * 60 * 20);
+
+
+
+
+
+
+
+
+
+
+
+
+var w = window.innerWidth,
+    h = window.innerHeight,
+    canvas = document.getElementById('test'),
+    ctx = canvas.getContext('2d'),
+    rate = 60,
+    arc = 100,
+    time,
+    count,
+    size = 7,
+    speed = 20,
+    parts = new Array,
+    colors = ['red','#f57900','yellow','#ce5c00','#5c3566'];
+var mouse = { x: 0, y: 0 };
+
+canvas.setAttribute('width',w);
+canvas.setAttribute('height',h);
+
+function create() {
+  time = 0;
+  count = 0;
+
+  for(var i = 0; i < arc; i++) {
+    parts[i] = {
+      x: Math.ceil(Math.random() * w),
+      y: Math.ceil(Math.random() * h),
+      toX: Math.random() * 5 - 1,
+      toY: Math.random() * 2 - 1,
+      c: colors[Math.floor(Math.random()*colors.length)],
+      size: Math.random() * size
+    }
+  }
+}
+
+function particles() {
+  ctx.clearRect(0,0,w,h);
+   canvas.addEventListener('mousemove', MouseMove, false);
+  for(var i = 0; i < arc; i++) {
+    var li = parts[i];
+    var distanceFactor = DistanceBetween( mouse, parts[i] );
+    var distanceFactor = Math.max( Math.min( 15 - ( distanceFactor / 10 ), 10 ), 1 );
+    ctx.beginPath();
+    ctx.arc(li.x,li.y,li.size*distanceFactor,0,Math.PI*2,false);
+    ctx.fillStyle = li.c;
+    ctx.strokeStyle=li.c;
+    if(i%2==0)
+      ctx.stroke();
+    else
+      ctx.fill();
+    
+    li.x = li.x + li.toX * (time * 0.05);
+    li.y = li.y + li.toY * (time * 0.05);
+    
+    if(li.x > w){
+       li.x = 0; 
+    }
+    if(li.y > h) {
+       li.y = 0; 
+    }
+    if(li.x < 0) {
+       li.x = w; 
+    }
+    if(li.y < 0) {
+       li.y = h; 
+    }
+   
+     
+  }
+  if(time < speed) {
+    time++;
+  }
+  setTimeout(particles,1000/rate);
+}
+function MouseMove(e) {
+   mouse.x = e.layerX;
+   mouse.y = e.layerY;
+
+   //context.fillRect(e.layerX, e.layerY, 5, 5);
+   //Draw( e.layerX, e.layerY );
+}
+function DistanceBetween(p1,p2) {
+   var dx = p2.x-p1.x;
+   var dy = p2.y-p1.y;
+   return Math.sqrt(dx*dx + dy*dy);
+}
+create();
+particles();
+
+
+
+
+
+
+
+    </script>
+
+
+        </content>
+    </div>
+</body>
+
+</html>
