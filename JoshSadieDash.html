@@ -168,7 +168,7 @@
         var newH = !wider ? natH * ((window.innerHeight / window.innerWidth) / (natH / natW)) : natH;
         svgcon.setAttribute("viewBox", `0 0 ${newW} ${newH}`);
 
-        var clockZoom = 1.4;
+        var clockZoom = 1.0;
         var clockScale = newH / 900 * clockZoom;
         var shiftOff = (900 * clockZoom - 900)/clockZoom;
         var leftSide = now.hour() >= 12;
