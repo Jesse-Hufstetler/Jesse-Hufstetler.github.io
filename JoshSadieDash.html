@@ -371,7 +371,8 @@
                 dayToDraw.date() == 4) cellText = "🇺🇸";
             if (dayToDraw.month() == 11 &&
                 dayToDraw.date() == 31) cellText = "🎂";
-            if (dayToDraw.isSame(moment("2023-4-16")))  cellText = "🎂";
+            if (dayToDraw.month() == 3 &&
+                dayToDraw.date() == 20) cellText = "🎂";
             if (dayToDraw.month() == 4 &&
                 dayToDraw.date() > 24 &&
                 dayToDraw.day() === 1) cellText = "🌷";
