@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html style="background: #35363A;">
+
+<head>
+    <meta charset="utf-8">
+    <link rel="shortcut icon" href="https://dynalist.io/favicon.ico">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>To Today!</title>
+    <style>
+        html {
+            font-family: sans-serif;
+            font-size: 30px;
+        }
+
+    </style>
+</head>
+
+<body style="text-align: center;">
+    <button onclick="Go()" style="width: 80vw;height: 80vh;font-size: 22vw;border-radius: 4vw;">Go</button>
+    <script type="text/javascript">
+    function Go(argument) {
+        const queryString = window.location.search;
+        const urlParams = new URLSearchParams(queryString);
+        const token = urlParams.get('token')
+        const file_id = urlParams.get('file_id')
+        console.log(file_id);
+        (
+            function() {
+                fetch('https://dynalist.io/api/v1/doc/read', {
+                        method: 'POST',
+                        headers: {
+                            'Accept': 'application/json',
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            "token": token,
+                            "file_id": file_id
+                        })
+                    })
+                    .then(response => response.json())
+                    .then(response => location.href = `https://dynalist.io/d/${file_id}#z=` + response.nodes.filter((item) => item.content.includes(`!(${new Date().getFullYear()}-${(new Date().getMonth() + 1).toString().padStart(2, "0")}-${new Date().getDate().toString().padStart(2, "0")})`))[0].id)
+            }
+        )();
+    }
+    </script>
+</body>
+
+</html>
