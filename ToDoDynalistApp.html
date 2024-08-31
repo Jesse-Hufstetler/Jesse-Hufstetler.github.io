@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8" />
+  <link rel="shortcut icon" href="https://dynalist.io/favicon.ico" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/dayjs/1.11.10/dayjs.min.js"
+    integrity="sha512-FwNWaxyfy2XlEINoSnZh1JQ5TRRtGow0D6XcmAWmYCRgvqOUTnzCxPc9uF35u5ZEpirk1uhlPVA19tflhvnW1g=="
+    crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/dayjs/1.11.10/plugin/relativeTime.min.js"
+    integrity="sha512-MVzDPmm7QZ8PhEiqJXKz/zw2HJuv61waxb8XXuZMMs9b+an3LoqOqhOEt5Nq3LY1e4Ipbbd/e+AWgERdHlVgaA=="
+    crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <title>To Do</title>
+  <style>
+    html {
+      font-family: sans-serif;
+    }
+
+    table,
+    th,
+    td {
+      border: 1px solid black;
+      border-collapse: collapse;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="output">
+  </div>
+  <script type="text/javascript">
+    dayjs.extend(window.dayjs_plugin_relativeTime)
+    var toDos;
+    const queryString = window.location.search;
+    const dayMs = 1000 * 60 * 60 * 24;
+    const urlParams = new URLSearchParams(queryString);
+    const token = urlParams.get("token");
+    const file_id = urlParams.get("file_id");
+    const node_id = urlParams.get("node_id");
+
+
+    var topNodeDate = (nodeId) => (async () => {
+      var self = toDos.filter((item) => item.id === nodeId)[0];
+      self.dated = new Date().getTime();
+      sortGrid();
+      await saveData(toDos);
+      redrawGrid();
+    })();
+    var shiftNodeDate = (nodeId, ms) => (async () => {
+      var self = toDos.filter((item) => item.id === nodeId)[0];
+      self.dated += ms;
+      sortGrid();
+      await saveData(toDos);
+      redrawGrid();
+    })();
+    var deleteNode = (nodeId) => (async () => {
+      toDos = toDos.filter((item) => item.id !== nodeId);
+      await saveData(toDos);
+      redrawGrid();
+    })();
+
+    var updateNode = (nodeId) => (async () => {
+      var self = toDos.filter((item) => item.id === nodeId)[0];
+      self.text = prompt("Edit Text", self.text);
+      await saveData(toDos);
+      redrawGrid();
+    })();
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+    async function getJsonString() {
+      const response = await fetch("https://dynalist.io/api/v1/doc/read", {
+        method: "POST",
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          token: token,
+          file_id: file_id,
+        }),
+      });
+      const rObject = await response.json();
+      const rawNodeText = (rObject).nodes.filter((item) => item.id === node_id)[0].content;
+      return rawNodeText.substring(1, rawNodeText.length - 1);
+    }
+    async function saveJsonString(jsonString) {
+      const response = await fetch("https://dynalist.io/api/v1/doc/edit", {
+        method: "POST",
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          token: token,
+          file_id: file_id,
+          changes: [{
+            action: "edit",
+            node_id: node_id,
+            content: "`" + jsonString + "`",
+          }],
+        }),
+      });
+    }
+    const getData = async () => JSON.parse(await getJsonString());
+    const saveData = async (data) => await saveJsonString(JSON.stringify(data));
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    function redrawGrid() {
+      var newInnerHtml = `<table style="width: 100%">`;
+      newInnerHtml += `<tr>`;
+      newInnerHtml += `<td colspan="4"><input type="text" style="width: 100%; box-sizing: border-box;" onkeypress="inputKeypress(this)"/></td>`;
+      newInnerHtml += `</tr>`;
+      var nowStamp = new Date().getTime();
+      for (const toDo of toDos) {
+        var fontvw = (2.5 / (((nowStamp - toDo.dated) / (dayMs/2)) + 1)) + 0.3;
+        var styleType = `style="font-size: ${fontvw}vw;" type="button"`
+        newInnerHtml += `<tr>`;
+        newInnerHtml += `<td><button ${styleType} onclick="updateNode(${toDo.id})">${toDo.text}</button></td>`;
+        newInnerHtml += `<td style="font-size: ${fontvw/2}vw;">${dayjs((toDo.dated)).fromNow()}</td>`;
+        newInnerHtml += `<td><button ${styleType} onclick="deleteNode(${toDo.id})">Delete</button></td>`;
+        newInnerHtml += `<td><button ${styleType} onclick="shiftNodeDate(${toDo.id}, -${dayMs/24})">-1 hour</button></td>`;
+        newInnerHtml += `<td><button ${styleType} onclick="shiftNodeDate(${toDo.id}, ${dayMs/24})">+1 hour</button></td>`;
+        newInnerHtml += `<td><button ${styleType} onclick="shiftNodeDate(${toDo.id}, -${dayMs})">-1 day</button></td>`;
+        newInnerHtml += `<td><button ${styleType} onclick="shiftNodeDate(${toDo.id}, ${dayMs})">+1 day</button></td>`;
+        newInnerHtml += `<td><button ${styleType} onclick="topNodeDate(${toDo.id})">top</button></td>`;
+        newInnerHtml += `</tr>`;
+      }
+      newInnerHtml += `</table>`;
+      document.getElementById("output").innerHTML = newInnerHtml;
+    }
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    function sortGrid() {
+      toDos = toDos.sort((a, b) => b.dated - a.dated);
+    }
+    function inputKeypress(ele) {
+      if (event.keyCode === 13) {
+        (async () => {
+          toDos.push({
+            text: ele.value,
+            id: (new Date).getTime(),
+            dated: (new Date).getTime(),
+          });
+          sortGrid();
+          await saveData(toDos);
+          redrawGrid();
+        })();
+      }
+    }
+    (async () => {
+      toDos = await getData();
+      sortGrid();
+      redrawGrid();
+    })();
+  </script>
+</body>
+
+</html>
