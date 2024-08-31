@@ -117,17 +117,23 @@
       newInnerHtml += `</tr>`;
       var nowStamp = new Date().getTime();
       for (const toDo of toDos) {
-        var fontvw = (2.5 / (((nowStamp - toDo.dated) / (dayMs/2)) + 1)) + 0.3;
+        var fontvw = (3 / (((nowStamp - toDo.dated) / (dayMs)) + 1)) + 0.3;
         var styleType = `style="font-size: ${fontvw}vw;" type="button"`
-        newInnerHtml += `<tr>`;
+        var bgColor = "#"+(Math.floor(toDo.id * 10) % (256*256*256)).toString(16).padStart(6, '0');
+        newInnerHtml += `<tr style="background: ${bgColor};">`;
         newInnerHtml += `<td><button ${styleType} onclick="updateNode(${toDo.id})">${toDo.text}</button></td>`;
         newInnerHtml += `<td style="font-size: ${fontvw/2}vw;">${dayjs((toDo.dated)).fromNow()}</td>`;
-        newInnerHtml += `<td><button ${styleType} onclick="deleteNode(${toDo.id})">Delete</button></td>`;
-        newInnerHtml += `<td><button ${styleType} onclick="shiftNodeDate(${toDo.id}, -${dayMs/24})">-1 hour</button></td>`;
-        newInnerHtml += `<td><button ${styleType} onclick="shiftNodeDate(${toDo.id}, ${dayMs/24})">+1 hour</button></td>`;
-        newInnerHtml += `<td><button ${styleType} onclick="shiftNodeDate(${toDo.id}, -${dayMs})">-1 day</button></td>`;
-        newInnerHtml += `<td><button ${styleType} onclick="shiftNodeDate(${toDo.id}, ${dayMs})">+1 day</button></td>`;
-        newInnerHtml += `<td><button ${styleType} onclick="topNodeDate(${toDo.id})">top</button></td>`;
+        fontvw = (1 / (((nowStamp - toDo.dated) / (dayMs/2)) + 1)) + 0.1;
+        styleType = `style="font-size: ${fontvw}vw;" type="button"`
+        newInnerHtml += `<td><button ${styleType} onclick="deleteNode(${toDo.id})">Delete</button>`;
+        styleType = `style="font-size: ${fontvw}vw;background: #ffcccc" type="button"`
+        newInnerHtml += `<button ${styleType} onclick="shiftNodeDate(${toDo.id}, -${dayMs/24})">🔽1 hour</button>`;
+        newInnerHtml += `<button ${styleType} onclick="shiftNodeDate(${toDo.id}, ${dayMs/24})">🔼1 hour</button>`;
+        styleType = `style="font-size: ${fontvw}vw;background: #ffffcc" type="button"`
+        newInnerHtml += `<button ${styleType} onclick="shiftNodeDate(${toDo.id}, -${dayMs})">🔽1 day</button>`;
+        newInnerHtml += `<button ${styleType} onclick="shiftNodeDate(${toDo.id}, ${dayMs})">🔼1 day</button>`;
+        styleType = `style="font-size: ${fontvw}vw;background: #ccffcc" type="button"`
+        newInnerHtml += `<button ${styleType} onclick="topNodeDate(${toDo.id})">top</button></td>`;
         newInnerHtml += `</tr>`;
       }
       newInnerHtml += `</table>`;
