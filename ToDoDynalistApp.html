@@ -117,12 +117,12 @@
       newInnerHtml += `</tr>`;
       var nowStamp = new Date().getTime();
       for (const toDo of toDos) {
-        var fontvw = (3 / (((nowStamp - toDo.dated) / (dayMs)) + 1)) + 0.1;
+        var fontvw = (3 / (((nowStamp - toDo.dated) / (dayMs)) + 1)) + 0.6;
         var styleType = `style="font-size: ${fontvw}vw;vertical-align:middle;" type="button"`
         var bgColor = "#"+(Math.floor(toDo.id * 10) % (256*256*256)).toString(16).padStart(6, '0');
         newInnerHtml += `<tr style="background: ${bgColor};">`;
         newInnerHtml += `<td><button ${styleType} onclick="updateNode(${toDo.id})">${toDo.text}</button>`;
-        fontvw = (1 / (((nowStamp - toDo.dated) / (dayMs/2)) + 1)) + 0.4;
+        fontvw = (1 / (((nowStamp - toDo.dated) / (dayMs/2)) + 1)) + 0.8;
         newInnerHtml += `<span style="opacity:.5;"><span style="background:white;border-radius:${fontvw/5}vw;padding:${fontvw/5}vw;margin:${fontvw/5}vw;font-size: ${fontvw}vw;">${dayjs((toDo.dated)).fromNow()}</span>`;
         styleType = `style="font-size: ${fontvw}vw;" type="button"`
         newInnerHtml += `<button ${styleType} onclick="deleteNode(${toDo.id})">Delete</button>`;
