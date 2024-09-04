@@ -113,7 +113,7 @@
     function redrawGrid() {
       var newInnerHtml = `<table style="width: 100%">`;
       newInnerHtml += `<tr>`;
-      newInnerHtml += `<td colspan="4"><input type="text" style="width: 100%; box-sizing: border-box;" onkeypress="inputKeypress(this)"/></td>`;
+      newInnerHtml += `<td colspan="4"><input id="addyBox" type="text" style="width: 100%; box-sizing: border-box;" onkeypress="inputKeypress(this)"/></td>`;
       newInnerHtml += `</tr>`;
       var nowStamp = new Date().getTime();
       for (const toDo of toDos) {
@@ -138,6 +138,7 @@
       }
       newInnerHtml += `</table>`;
       document.getElementById("output").innerHTML = newInnerHtml;
+      document.getElementById("addyBox").focus();
     }
     /////////////////////////////////////////////////////////////////////////////////////////////////////
     /////////////////////////////////////////////////////////////////////////////////////////////////////
