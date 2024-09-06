@@ -62,7 +62,9 @@
 
     var updateNode = (nodeId) => (async () => {
       var self = toDos.filter((item) => item.id === nodeId)[0];
-      self.text = prompt("Edit Text", self.text);
+      var answer = prompt("Edit Text", self.text);
+      if (!answer) return;
+      self.text = answer;
       await saveData(toDos);
       redrawGrid();
     })();
