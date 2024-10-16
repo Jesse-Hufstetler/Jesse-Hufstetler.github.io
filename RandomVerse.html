@@ -169,8 +169,7 @@
     <div>Click the button below to come up with a random Bible verse.</div>
     <div>Each of the 31,101 verses in the Bible has equal probability.</div>
     <div><input type="checkbox" id="easy">
-        <label>Easy Mode (Gen-Ex,
-            Josh-Prov, Dan, Mat-Jude</label>
+        <label>Easy Mode (Gen, Mat-Jude)</label>
     </div>
     <br>
     <button class="button-85" id="rando" onauxclick="GetRandom()" onclick="GetRandom()">Random Verse</button><br>
@@ -209,32 +208,32 @@
             item = verses[Math.floor(Math.random() * verses.length)];
             if (easy) {
                 while (//item.book == "Genesis" ||
-                    //item.book == "Exodus" ||
+                    item.book == "Exodus" ||
                     item.book == "Leviticus" ||
                     item.book == "Numbers" ||
                     item.book == "Deuteronomy" ||
-                    //item.book == "Joshua" ||
-                    //item.book == "Judges" ||
-                    //item.book == "Ruth" ||
-                    //item.book == "1 Samuel" ||
-                    //item.book == "2 Samuel" ||
-                    //item.book == "1 Kings" ||
-                    //item.book == "2 Kings" ||
-                    //item.book == "1 Chronicles" ||
-                    //item.book == "2 Chronicles" ||
-                    //item.book == "Ezra" ||
-                    //item.book == "Nehemiah" ||
-                    //item.book == "Esther" ||
-                    //item.book == "Job" ||
-                    //item.book == "Psalms" ||
-                    //item.book == "Proverbs" ||
+                    item.book == "Joshua" ||
+                    item.book == "Judges" ||
+                    item.book == "Ruth" ||
+                    item.book == "1 Samuel" ||
+                    item.book == "2 Samuel" ||
+                    item.book == "1 Kings" ||
+                    item.book == "2 Kings" ||
+                    item.book == "1 Chronicles" ||
+                    item.book == "2 Chronicles" ||
+                    item.book == "Ezra" ||
+                    item.book == "Nehemiah" ||
+                    item.book == "Esther" ||
+                    item.book == "Job" ||
+                    item.book == "Psalms" ||
+                    item.book == "Proverbs" ||
                     item.book == "Ecclesiastes" ||
                     item.book == "Song of Solomon" ||
                     item.book == "Isaiah" ||
                     item.book == "Jeremiah" ||
                     item.book == "Lamentations" ||
                     item.book == "Ezekiel" ||
-                    //item.book == "Daniel" ||
+                    item.book == "Daniel" ||
                     item.book == "Hosea" ||
                     item.book == "Joel" ||
                     item.book == "Amos" ||
