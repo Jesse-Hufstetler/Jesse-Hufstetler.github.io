@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script type="text/javascript" src="https://livejs.com/live.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
+    <title>sfafder</title>
+    <style>
+    * {
+        color: #fff;
+        text-shadow: .9vmin .9vmin 1vmin #000, -.9vmin -.9vmin 1vmin #000;
+    }
+
+    .background {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: -1;
+        pointer-events: none;
+    }
+
+    iframe {
+        position: relative;
+        width: 100%;
+    }
+
+    content {}
+
+
+    @font-face {
+        font-family: 'Droid Sans Mono';
+        src: url(DroidSansMono.ttf);
+    }
+    html,
+    body {
+        font-family: 'Droid Sans Mono', monospace;
+        text-align: center;
+        font-size: 10vmin;
+        overflow: hidden;
+    }
+
+
+    div.outer-div {
+        height: 100%;
+        width: 100%;
+        animation-name: inoutbg;
+        animation-duration: 12s;
+        animation-iteration-count: infinite;
+    }
+
+
+
+    #time {
+        animation-name: inoutsm;
+        animation-duration: 1s;
+        animation-iteration-count: infinite;
+    }
+
+    @keyframes inoutbg {
+        0% {
+            transform: scale(0.9, 0.9);
+        }
+
+        50% {
+            transform: scale(0.75, 0.75);
+        }
+
+        100% {
+            transform: scale(0.9, 0.9);
+        }
+    }
+
+    @keyframes inoutsm {
+        0% {
+            transform: scale(1, 1);
+        }
+
+        50% {
+            transform: scale(1.02, 1.02);
+        }
+
+        100% {
+            transform: scale(1, 1);
+        }
+    }
+
+    div.middle-div {
+        position: relative;
+    }
+
+
+
+    </style>
+</head>
+
+<body>
+    <div class="page">
+        <div class="background">
+            <iframe allowtransparence="true" width="640" height="360" frameborder="0" src="https://www.shadertoy.com/embed/l3XGRB?gui=false&t=10&paused=false&muted=false" frameborder="0" style="height:100%;width:100%" height="100%" width="100%"></iframe>
+        </div>
+        <content>
+            <div class='outer-div'>
+                <div class='middle-div'>
+                    <div style="font-size: 20vh; padding: 0;margin: 0;">
+                    <span >&nbsp;</span>
+                    </div>
+                    <div id="minfo" style="font-size:25vmin">
+                        <span id="wday"></span>
+                        <span id="temp"></span><span id="dp" style="opacity: .15;"></span>
+                    </div>
+                    <div id="day" style=""></div>
+                    <div id="time" style="font-size: 17vmin;"></div>
+                </div>
+            </div>
+
+    <script>
+    const momentProxy = (arg1) => moment(arg1);
+    const urlParams = new URLSearchParams(window.location.search);
+    const appid = urlParams.get('appid');
+    setInterval(() => document.getElementById("time").innerText = momentProxy().format('h:mm:ss'), 250);
+    var fToC = (input) => (input - 32) * 5 / 9;
+    var cToF = (input) => (input * 9 / 5) + 32;
+    var dp = (h, t) => Math.pow(h / 100, 1 / 8) * (112 + 0.9 * t) + 0.1 * t - 112;
+    var dpF = (h, t) => cToF(dp(h, fToC(t)));
+    (function() {
+        var mouseTimer = null,
+            cursorVisible = true;
+
+        function disappearCursor() {
+            mouseTimer = null;
+            document.body.style.cursor = "none";
+            cursorVisible = false;
+        }
+
+        document.onmousemove = function() {
+            if (mouseTimer) {
+                window.clearTimeout(mouseTimer);
+            }
+            if (!cursorVisible) {
+                document.body.style.cursor = "default";
+                cursorVisible = true;
+            }
+            mouseTimer = window.setTimeout(disappearCursor, 500);
+        };
+    })();
+    var dformat = 'ddd';
+
+    function getWeather() {
+        document.getElementById("day").innerText = momentProxy().format('MMM Do YYYY')
+        document.getElementById("wday").innerText = momentProxy().format(dformat)
+        if (appid) fetch(`https://api.openweathermap.org/data/2.5/weather?zip=44720,US&appid=${appid}&units=imperial`)
+            .then(response => response.json())
+            .then(data => {
+                var feelsLike = Math.round(data.main.feels_like);
+                var dp = Math.round(dpF(data.main.humidity, data.main.temp));
+                console.log(data);
+                document.getElementById("temp").innerText = `${feelsLike}°`;
+                document.getElementById("dp").innerText = `/${dp}°`;
+                document.getElementById("wday").innerText = momentProxy().format(dformat)
+            });
+    }
+    document.onclick = function() {
+        document.documentElement.requestFullscreen();
+    }
+    getWeather();
+    setInterval(getWeather, 1000 * 60 * 20);
+
+
+
+
+    
+    
+
+
+
+
+    </script>
+
+
+        </content>
+    </div>
+</body>
+
+</html>
