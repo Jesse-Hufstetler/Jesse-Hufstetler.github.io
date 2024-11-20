@@ -29,6 +29,9 @@
 <body>
   <div id="output">
   </div>
+  <br>
+  <input type="checkbox" id="snooBox" name="snooBox" value="Bike">
+  <label for="snooBox"> Show Snoozed</label><br>
   <script>
     dayjs.extend(window.dayjs_plugin_relativeTime)
     var toDos;
@@ -66,6 +69,13 @@
       var answer = prompt("Edit Text", self.text);
       if (!answer) return;
       self.text = answer;
+      await saveData(toDos);
+      redrawGrid();
+    })();
+    var snoozeNode = (nodeId, ms) => (async () => {
+      var self = toDos.filter((item) => item.id === nodeId)[0];
+      self.snooze = new Date().getTime() + ms;
+      sortGrid();
       await saveData(toDos);
       redrawGrid();
     })();
@@ -141,10 +151,14 @@
         var fontvw = (3 / (((nowStamp - toDo.dated) / (dayMs)) + 1)) + 0.6;
         var styleType = `style="font-size: ${fontvw}vw;vertical-align:middle;" type="button"`
         var bgColor = "#" + (Math.floor(toDo.id * 10) % (256 * 256 * 256)).toString(16).padStart(6, '0');
-        newInnerHtml += `<tr style="background: ${bgColor};">`;
+        var snoozeTill = toDo.snooze;
+        if (!snoozeTill) snoozeTill = 1;
+        var snoozed = snoozeTill > nowStamp;
+        newInnerHtml += `<tr class="${snoozed ? "snoozed" : ""}" style="background: ${bgColor};">`;
         newInnerHtml += `<td><button ${styleType} onclick="updateNode(${toDo.id})">${toDo.text}</button>`;
         fontvw = (1 / (((nowStamp - toDo.dated) / (dayMs / 2)) + 1)) + 0.8;
-        newInnerHtml += `<span style="opacity:.5;"><span style="background:white;border-radius:${fontvw / 5}vw;padding:${fontvw / 5}vw;margin:${fontvw / 5}vw;font-size: ${fontvw}vw;">${dayjs((toDo.dated)).fromNow()}</span>`;
+        newInnerHtml += `<span style="opacity:.5;">`;
+        newInnerHtml += `<span style="background:white;border-radius:${fontvw / 5}vw;padding:${fontvw / 5}vw;margin:${fontvw / 5}vw;font-size: ${fontvw}vw;">${dayjs((toDo.dated)).fromNow()}</span>`;
         styleType = `style="font-size: ${fontvw}vw;" type="button"`
         newInnerHtml += `<button ${styleType} onclick="deleteNode(${toDo.id})">Delete</button>`;
         styleType = `style="font-size: ${fontvw}vw;background: #ffcccc" type="button"`
@@ -154,15 +168,37 @@
         newInnerHtml += `<button ${styleType} onclick="shiftNodeDate(${toDo.id}, -${dayMs})">🔽1 day</button>`;
         newInnerHtml += `<button ${styleType} onclick="shiftNodeDate(${toDo.id}, ${dayMs})">🔼1 day</button>`;
         styleType = `style="font-size: ${fontvw}vw;background: #ccffcc" type="button"`
-        newInnerHtml += `<button ${styleType} onclick="topNodeDate(${toDo.id})">top</button></span></td>`;
-        newInnerHtml += `</tr>`;
+        newInnerHtml += `<button ${styleType} onclick="topNodeDate(${toDo.id})">top</button>`;
+        if (snoozed){
+        styleType = `style="font-size: ${fontvw}vw;background: #ffffff" type="button"`
+          newInnerHtml += `<button ${styleType} onclick="snoozeNode(${toDo.id}, ${-10000000000000000})">UNSNOOZE</button>`;
+          newInnerHtml += `(will unsnooze ${dayjs((snoozeTill)).fromNow()})`;
+        }else{
+        styleType = `style="font-size: ${fontvw}vw;background: #ccccff" type="button"`
+          newInnerHtml += `<button ${styleType} onclick="snoozeNode(${toDo.id}, ${1000 * 60 * 60 * 2})">snz 2h</button>`;
+          newInnerHtml += `<button ${styleType} onclick="snoozeNode(${toDo.id}, ${1000 * 60 * 60 * 10})">snz 10h</button>`;
+          newInnerHtml += `<button ${styleType} onclick="snoozeNode(${toDo.id}, ${1000 * 60 * 60 * 24 * 7})">snz 7d</button>`;
+          newInnerHtml += `<button ${styleType} onclick="snoozeNode(${toDo.id}, ${1000 * 60 * 60 * 24 * 60})">snz 60d</button>`;
+        }
+        newInnerHtml += `</span></td></tr>`;
       }
       newInnerHtml += `</table>`;
       document.getElementById("output").innerHTML = newInnerHtml;
       document.getElementById("addyBox").focus();
+      showHideSnooze();
     }
     /////////////////////////////////////////////////////////////////////////////////////////////////////
     /////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    const snzChkbx = document.getElementById('snooBox')
+
+    snzChkbx.addEventListener('change', (event) => showHideSnooze());
+
+    function showHideSnooze() {
+      document.querySelectorAll('.snoozed').forEach(function (el) {
+        el.style.display = snzChkbx.checked ? 'table-row' : 'none' ;
+      });
+    }
 
     function sortGrid() {
       toDos = toDos.sort((a, b) => b.dated - a.dated);
