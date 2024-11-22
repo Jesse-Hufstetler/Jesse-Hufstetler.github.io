@@ -169,14 +169,20 @@
         newInnerHtml += `<button ${styleType} onclick="shiftNodeDate(${toDo.id}, ${dayMs})">🔼1 day</button>`;
         styleType = `style="font-size: ${fontvw}vw;background: #ccffcc" type="button"`
         newInnerHtml += `<button ${styleType} onclick="topNodeDate(${toDo.id})">top</button>`;
-        if (snoozed){
-        styleType = `style="font-size: ${fontvw}vw;background: #ffffff" type="button"`
+        if (snoozed) {
+          styleType = `style="font-size: ${fontvw}vw;background: #ffffff" type="button"`
           newInnerHtml += `<button ${styleType} onclick="snoozeNode(${toDo.id}, ${-10000000000000000})">UNSNOOZE</button>`;
           newInnerHtml += `(will unsnooze ${dayjs((snoozeTill)).fromNow()})`;
-        }else{
-        styleType = `style="font-size: ${fontvw}vw;background: #ccccff" type="button"`
+        } else {
+          styleType = `style="font-size: ${fontvw}vw;background: #ccccff" type="button"`
           newInnerHtml += `<button ${styleType} onclick="snoozeNode(${toDo.id}, ${1000 * 60 * 60 * 2})">snz 2h</button>`;
-          newInnerHtml += `<button ${styleType} onclick="snoozeNode(${toDo.id}, ${1000 * 60 * 60 * 10})">snz 10h</button>`;
+          if (new Date().getHours() < 17) {
+            var nowObj = new Date();
+            var ms5p = new Date(nowObj.getFullYear(), nowObj.getMonth(), nowObj.getDate(), 12+5).getTime() - nowObj.getTime();
+            newInnerHtml += `<button ${styleType} onclick="snoozeNode(${toDo.id}, ${ms5p})">snz 5p</button>`;
+          } else {
+            newInnerHtml += `<button ${styleType} onclick="snoozeNode(${toDo.id}, ${1000 * 60 * 60 * 10})">snz 10h</button>`;
+          }
           newInnerHtml += `<button ${styleType} onclick="snoozeNode(${toDo.id}, ${1000 * 60 * 60 * 24 * 7})">snz 7d</button>`;
           newInnerHtml += `<button ${styleType} onclick="snoozeNode(${toDo.id}, ${1000 * 60 * 60 * 24 * 60})">snz 60d</button>`;
         }
@@ -196,7 +202,7 @@
 
     function showHideSnooze() {
       document.querySelectorAll('.snoozed').forEach(function (el) {
-        el.style.display = snzChkbx.checked ? 'table-row' : 'none' ;
+        el.style.display = snzChkbx.checked ? 'table-row' : 'none';
       });
     }
 
