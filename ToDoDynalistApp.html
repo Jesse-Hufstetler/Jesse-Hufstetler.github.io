@@ -32,6 +32,8 @@
   <br>
   <input type="checkbox" id="snooBox" name="snooBox" value="Bike">
   <label for="snooBox"> Show Snoozed</label><br>
+  <br>
+  <div id="urls"></div>
   <script>
     dayjs.extend(window.dayjs_plugin_relativeTime)
     var toDos;
@@ -43,6 +45,18 @@
     const token = urlParams.get("token");
     const file_id = urlParams.get("file_id");
     const node_id = urlParams.get("node_id");
+    try {
+      const extraLinks = JSON.parse(urlParams.get("el"));
+      console.log(extraLinks);
+      linksHtml = "<ul>";
+      for (const lObj of extraLinks) {
+        linksHtml += `<li><a href="${lObj.url}">${lObj.text}</a></li>`;
+      }
+      linksHtml += "</ul>";
+      document.getElementById("urls").innerHTML = linksHtml;
+    } catch {
+
+    }
 
     var topNodeDate = (nodeId) => (async () => {
       var self = toDos.filter((item) => item.id === nodeId)[0];
@@ -178,7 +192,7 @@
           newInnerHtml += `<button ${styleType} onclick="snoozeNode(${toDo.id}, ${1000 * 60 * 60 * 2})">snz 2h</button>`;
           if (new Date().getHours() < 17) {
             var nowObj = new Date();
-            var ms5p = new Date(nowObj.getFullYear(), nowObj.getMonth(), nowObj.getDate(), 12+5).getTime() - nowObj.getTime();
+            var ms5p = new Date(nowObj.getFullYear(), nowObj.getMonth(), nowObj.getDate(), 12 + 5).getTime() - nowObj.getTime();
             newInnerHtml += `<button ${styleType} onclick="snoozeNode(${toDo.id}, ${ms5p})">snz 5p</button>`;
           } else {
             newInnerHtml += `<button ${styleType} onclick="snoozeNode(${toDo.id}, ${1000 * 60 * 60 * 10})">snz 10h</button>`;
