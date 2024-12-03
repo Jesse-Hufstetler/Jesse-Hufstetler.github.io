@@ -45,41 +45,30 @@
     const token = urlParams.get("token");
     const file_id = urlParams.get("file_id");
     const node_id = urlParams.get("node_id");
-    try {
-      const extraLinks = JSON.parse(urlParams.get("el"));
-      console.log(extraLinks);
-      linksHtml = "<ul>";
-      for (const lObj of extraLinks) {
-        linksHtml += `<li><a href="${lObj.url}">${lObj.text}</a></li>`;
-      }
-      linksHtml += "</ul>";
-      document.getElementById("urls").innerHTML = linksHtml;
-    } catch {
 
-    }
 
     var topNodeDate = (nodeId) => (async () => {
-      var self = toDos.filter((item) => item.id === nodeId)[0];
+      var self = toDos.tasks.filter((item) => item.id === nodeId)[0];
       self.dated = new Date().getTime();
       sortGrid();
       await saveData(toDos);
       redrawGrid();
     })();
     var shiftNodeDate = (nodeId, ms) => (async () => {
-      var self = toDos.filter((item) => item.id === nodeId)[0];
+      var self = toDostoDos.tasks.filter((item) => item.id === nodeId)[0];
       self.dated += ms;
       sortGrid();
       await saveData(toDos);
       redrawGrid();
     })();
     var deleteNode = (nodeId) => (async () => {
-      toDos = toDos.filter((item) => item.id !== nodeId);
+      toDos.tasks = toDos.tasks.filter((item) => item.id !== nodeId);
       await saveData(toDos);
       redrawGrid();
     })();
 
     var updateNode = (nodeId) => (async () => {
-      var self = toDos.filter((item) => item.id === nodeId)[0];
+      var self = toDos.tasks.filter((item) => item.id === nodeId)[0];
       var answer = prompt("Edit Text", self.text);
       if (!answer) return;
       self.text = answer;
@@ -87,7 +76,7 @@
       redrawGrid();
     })();
     var snoozeNode = (nodeId, ms) => (async () => {
-      var self = toDos.filter((item) => item.id === nodeId)[0];
+      var self = toDos.tasks.filter((item) => item.id === nodeId)[0];
       self.snooze = new Date().getTime() + ms;
       sortGrid();
       await saveData(toDos);
@@ -156,12 +145,13 @@
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     function redrawGrid() {
+      redrawLinks();
       var newInnerHtml = `<table style="width: 100%">`;
       newInnerHtml += `<tr>`;
       newInnerHtml += `<td colspan="4"><input autocomplete="off" id="addyBox" type="text" style="width: 100%; box-sizing: border-box;" onkeypress="inputKeypress(this)"/></td>`;
       newInnerHtml += `</tr>`;
       var nowStamp = new Date().getTime();
-      for (const toDo of toDos) {
+      for (const toDo of toDos.tasks) {
         var fontvw = (3 / (((nowStamp - toDo.dated) / (dayMs)) + 1)) + 0.6;
         var styleType = `style="font-size: ${fontvw}vw;vertical-align:middle;" type="button"`
         var bgColor = "#" + (Math.floor(toDo.id * 10) % (256 * 256 * 256)).toString(16).padStart(6, '0');
@@ -207,6 +197,19 @@
       document.getElementById("addyBox").focus();
       showHideSnooze();
     }
+    function redrawLinks()
+    {
+      try {
+        linksHtml = "<ul>";
+        for (const lObj of toDos.links) {
+          linksHtml += `<li><a href="${lObj.url}">${lObj.text}</a></li>`;
+        }
+        linksHtml += "</ul>";
+        document.getElementById("urls").innerHTML = linksHtml;
+      } catch {
+  
+      }
+    }
     /////////////////////////////////////////////////////////////////////////////////////////////////////
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -221,12 +224,12 @@
     }
 
     function sortGrid() {
-      toDos = toDos.sort((a, b) => b.dated - a.dated);
+      toDos.tasks = toDos.tasks.sort((a, b) => b.dated - a.dated);
     }
     function inputKeypress(ele) {
       if (event.keyCode === 13) {
         (async () => {
-          toDos.push({
+          toDos.tasks.push({
             text: ele.value,
             id: (new Date).getTime(),
             dated: (new Date).getTime(),
