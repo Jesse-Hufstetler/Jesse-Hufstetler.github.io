@@ -150,7 +150,14 @@
       newInnerHtml += `<tr>`;
       newInnerHtml += `<td colspan="4"><input autocomplete="off" id="addyBox" type="text" style="width: 100%; box-sizing: border-box;" onkeypress="inputKeypress(this)"/></td>`;
       newInnerHtml += `</tr>`;
+      var nowObj = new Date();
       var nowStamp = new Date().getTime();
+
+      var nextFri = dayjs();
+      nextFri = nextFri.add(1, 'day');
+      while (nextFri.day() != 5) nextFri = nextFri.add(1, 'day');
+      var nextfd = nextFri.toDate();
+
       for (const toDo of toDos.tasks) {
         var fontvw = (3 / (((nowStamp - toDo.dated) / (dayMs)) + 1)) + 0.6;
         var styleType = `style="font-size: ${fontvw}vw;vertical-align:middle;" type="button"`
@@ -176,17 +183,18 @@
         if (snoozed) {
           styleType = `style="font-size: ${fontvw}vw;background: #ffffff" type="button"`
           newInnerHtml += `<button ${styleType} onclick="snoozeNode(${toDo.id}, ${-10000000000000000})">UNSNOOZE</button>`;
-          newInnerHtml += `(will unsnooze ${dayjs((snoozeTill)).fromNow()})`;
+          newInnerHtml += `(will unsnooze ${dayjs((snoozeTill)).fromNow()} - ${new Date(snoozeTill)})`;
         } else {
           styleType = `style="font-size: ${fontvw}vw;background: #ccccff" type="button"`
           newInnerHtml += `<button ${styleType} onclick="snoozeNode(${toDo.id}, ${1000 * 60 * 60 * 2})">snz 2h</button>`;
           if (new Date().getHours() < 17) {
-            var nowObj = new Date();
             var ms5p = new Date(nowObj.getFullYear(), nowObj.getMonth(), nowObj.getDate(), 12 + 5).getTime() - nowObj.getTime();
             newInnerHtml += `<button ${styleType} onclick="snoozeNode(${toDo.id}, ${ms5p})">snz 5p</button>`;
           } else {
             newInnerHtml += `<button ${styleType} onclick="snoozeNode(${toDo.id}, ${1000 * 60 * 60 * 10})">snz 10h</button>`;
           }
+          var msf = new Date(nextfd.getFullYear(), nextfd.getMonth(), nextfd.getDate(), 12 + 5).getTime() - nowObj.getTime();
+          newInnerHtml += `<button ${styleType} onclick="snoozeNode(${toDo.id}, ${msf})">snz fri 5</button>`;
           newInnerHtml += `<button ${styleType} onclick="snoozeNode(${toDo.id}, ${1000 * 60 * 60 * 24 * 7})">snz 7d</button>`;
           newInnerHtml += `<button ${styleType} onclick="snoozeNode(${toDo.id}, ${1000 * 60 * 60 * 24 * 60})">snz 60d</button>`;
         }
