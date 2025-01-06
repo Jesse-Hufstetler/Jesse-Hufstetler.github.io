@@ -55,7 +55,7 @@
       redrawGrid();
     })();
     var shiftNodeDate = (nodeId, ms) => (async () => {
-      var self = toDostoDos.tasks.filter((item) => item.id === nodeId)[0];
+      var self = toDos.tasks.filter((item) => item.id === nodeId)[0];
       self.dated += ms;
       sortGrid();
       await saveData(toDos);
