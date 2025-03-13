@@ -83,7 +83,9 @@
         table.innerHTML += `
         <tr>
             <td>${item.friendlyName}</td>
-            <td colspan="2"><div id="swatch" style="height: 34px;color:white;border: 1px solid black;"></div></td>
+            <td colspan="2"><div id="swatch" style="height: 34px;color:white;border: 1px solid black;margin-bottom: 8px;"></div>
+                <div id="codes" style="background: #f3f3f3;padding: 5px;font-family: monospace;border: 1px solid black;"></div>
+            </td>
         </tr>${mn?`
         <tr>
             <td style="height: 25px;vertical-align:bottom;"><span id="midiout"></span></td>
@@ -105,6 +107,7 @@
     function UpdateColorPre(color)
     {
         document.querySelector(`#swatch`).style.backgroundColor = color.toString({format: "srgb"}); 
+        document.querySelector(`#codes`).innerText = `${color.toString({format: "hex"})} · ${color.toString({format: "hsl"})} · ${color.toString({format: "oklch"})}`; 
     }
     UpdateColorPre(new Color("#0000ff"));
     for (item of values) {
