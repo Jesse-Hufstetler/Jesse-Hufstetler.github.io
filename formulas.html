@@ -2,6 +2,7 @@
 <html>
 
 <head>
+    <script src="https://colorjs.io/dist/color.global.js"></script>
     <meta charset="utf-8">
     <title>Formulas</title>
     <style>
@@ -59,6 +60,16 @@
         { friendlyName: "Percent Humidity", min: 0, max: 100, default: 100 },
         { friendlyName: "Dew Point Fahrenheit", min: 14, max: 77, default: 32 },
         { friendlyName: "Dew Point Celsius", min: -10, max: 25, default: 0 },
+        { friendlyName: "Color Preview" },
+        { friendlyName: "Red", min: 0, max: 255, default: 0 },
+        { friendlyName: "Green", min: 0, max: 255, default: 0 },
+        { friendlyName: "Blue", min: 0, max: 255, default: 255 },
+        { friendlyName: "HSL Hue", min: 0, max: 360, default: 240 },
+        { friendlyName: "HSL Sat", min: 0, max: 100, default: 100 },
+        { friendlyName: "HSL Lum", min: 0, max: 100, default: 50 },
+        { friendlyName: "OKLCH Lgt", min: 0, max: 1, default: 0.45201371817442365 },
+        { friendlyName: "OKLCH Chr", min: 0, max: 0.47, default: 0.3132143886344849 },
+        { friendlyName: "OKLCH Hue", min: 0, max: 360, default: 264.0520226163699 },
     ]
     for (item of values)
         item.name = item.friendlyName.replaceAll(" ", "");
@@ -66,6 +77,19 @@
     const table = document.querySelector("#theTable");
     for (item of values) {
         var mn = item.name === `MidiNote`;
+        var clr = item.name === `ColorPreview`;
+        if (clr)
+        {
+        table.innerHTML += `
+        <tr>
+            <td>${item.friendlyName}</td>
+            <td colspan="2"><div id="swatch" style="height: 34px;color:white;border: 1px solid black;"></div></td>
+        </tr>${mn?`
+        <tr>
+            <td style="height: 25px;vertical-align:bottom;"><span id="midiout"></span></td>
+        </tr>`:""}`;
+            continue;
+        }
         table.innerHTML += `
         <tr>
             <td ${mn?"rowspan=2":""} >${item.friendlyName}</td>
@@ -78,7 +102,13 @@
             <td style="height: 25px;vertical-align:bottom;"><span id="midiout"></span></td>
         </tr>`:""}`;
     }
+    function UpdateColorPre(color)
+    {
+        document.querySelector(`#swatch`).style.backgroundColor = color.toString({format: "srgb"}); 
+    }
+    UpdateColorPre(new Color("#0000ff"));
     for (item of values) {
+        if (item.name == `ColorPreview`) continue;
         let box = document.querySelector(`#${item.name}Box`);
         let slider = document.querySelector(`#${item.name}Slider`);
         slider.addEventListener("input", (event) => {
@@ -95,6 +125,7 @@
     function UpdateThings(target) {
         var state = {};
         for (item of values) {
+            if (item.name == `ColorPreview`) continue;
             state[item.name] = document.querySelector(`#${item.name}Slider`).value;
         }
         if (target.dataset.valueName == `SampleRate`) {
@@ -181,11 +212,42 @@
             state.DewPointCelsius = (state.DewPointFahrenheit - 32) * 5/9;
             state.PercentHumidity = Math.pow((state.DewPointCelsius-(0.1*state.DegreesCelsius-112))/(112+0.9*state.DegreesCelsius),8)*100;
         }
+        if (target.dataset.valueName == `Red` || target.dataset.valueName == `Green` || target.dataset.valueName == `Blue`) {
+            let color = new Color(`rgb(${state.Red}, ${state.Green}, ${state.Blue})`);
+            UpdateColorPre(color)
+            state.HSLHue = color.hsl.h;
+            state.HSLSat = color.hsl.s;
+            state.HSLLum = color.hsl.l;
+            state.OKLCHLgt = color.oklch.l;
+            state.OKLCHChr = color.oklch.c;
+            state.OKLCHHue = color.oklch.h;
+        }
+        if (target.dataset.valueName == `HSLHue` || target.dataset.valueName == `HSLSat` || target.dataset.valueName == `HSLLum`) {
+            let color = new Color(`hsl(${state.HSLHue}, ${state.HSLSat}%, ${state.HSLLum}%)`);
+            UpdateColorPre(color)
+            state.Red = color.srgb.r * 255;
+            state.Green = color.srgb.g * 255;
+            state.Blue = color.srgb.b * 255;
+            state.OKLCHLgt = color.oklch.l;
+            state.OKLCHChr = color.oklch.c;
+            state.OKLCHHue = color.oklch.h;
+        }
+        if (target.dataset.valueName == `OKLCHLgt` || target.dataset.valueName == `OKLCHChr` || target.dataset.valueName == `OKLCHHue`) {
+            let color = new Color(`oklch(${state.OKLCHLgt}, ${state.OKLCHChr}, ${state.OKLCHHue})`);
+            UpdateColorPre(color)
+            state.HSLHue = color.hsl.h;
+            state.HSLSat = color.hsl.s;
+            state.HSLLum = color.hsl.l;
+            state.Red = color.srgb.r * 255;
+            state.Green = color.srgb.g * 255;
+            state.Blue = color.srgb.b * 255;
+        }
 
         var intNote = Math.floor(state.MidiNote);
         document.querySelector(`#midiout`).innerText = `Note ${intNote} is ${NoteName(intNote)}`;
 
         for (item of values) {
+            if (item.name == `ColorPreview`) continue;
             document.querySelector(`#${item.name}Slider`).value = state[item.name];
             document.querySelector(`#${item.name}Box`).value = state[item.name];
         }
