@@ -6,26 +6,26 @@
     <meta charset="utf-8">
     <title>Formulas</title>
     <style>
-    table,
-    th,
-    td {
-        border: 1px solid black;
-        border-collapse: collapse;
-        padding: 5px;
-    }
+        table,
+        th,
+        td {
+            border: 1px solid black;
+            border-collapse: collapse;
+            padding: 5px;
+        }
 
-    input {
-        width: 100%;
-        box-sizing: border-box;
-    }
+        table input {
+            width: 100%;
+            box-sizing: border-box;
+        }
 
-    table {
-        width: 100%;
-    }
+        table {
+            width: 100%;
+        }
 
-    html {
-        font-family: sans-serif;
-    }
+        html {
+            font-family: sans-serif;
+        }
     </style>
 </head>
 
@@ -38,253 +38,266 @@
         </tr>
     </table>
     <br>
+    Paste a color and press enter: <input type="text" id="colBox">
+    <br>
     <br>
     <a href="index.html">(My Other Stuff)</a>
     <script>
-    const values = [
-        { friendlyName: "Midi Note", min: 0, max: 128, default: 69 },
-        { friendlyName: "Frequency", min: 0, max: 20000, default: 440 },
-        { friendlyName: "Wavelenth In Samples", min: 0, max: 6000, default: 44100 / 440 },
-        { friendlyName: "Wavelenth In ms", min: 0, max: 100, default: (44100 / 440 / 44100) * 1000 },
-        { friendlyName: "Sample Rate", min: 0, max: 192000, default: 44100 },
-        { friendlyName: "Audio Buffer Size", min: 0, max: 2048, default: 128 },
-        { friendlyName: "Audio Buffer Size 2 Exponent", min: 0, max: 11, default: 7 },
-        { friendlyName: "Audio Buffer Latency ms", min: 0, max: 50, default: 128 / 44100 * 1000 },
-        { friendlyName: "Audio Buffer Latency Feet", min: 0, max: 50, default: (128 / 44100) * 1116.437 },
-        { friendlyName: "Decibels", min: -100, max: 0, default: -20 },
-        { friendlyName: "Gain", min: 0, max: 1, default: Math.pow(10, -20 / 20) },
-        { friendlyName: "Q", min: 0.2, max: 144, default: 0.707106781186548 },
-        { friendlyName: "Bandwidth", min: 0.01, max: 4, default: 1.8999686269529905 },
-        { friendlyName: "Degrees Fahrenheit", min: -40, max: 500, default: 32 },
-        { friendlyName: "Degrees Celsius", min: -40, max: 260, default: 0 },
-        { friendlyName: "Percent Humidity", min: 0, max: 100, default: 100 },
-        { friendlyName: "Dew Point Fahrenheit", min: 14, max: 77, default: 32 },
-        { friendlyName: "Dew Point Celsius", min: -10, max: 25, default: 0 },
-        { friendlyName: "Color Preview" },
-        { friendlyName: "Red", min: 0, max: 255, default: 0 },
-        { friendlyName: "Green", min: 0, max: 255, default: 0 },
-        { friendlyName: "Blue", min: 0, max: 255, default: 255 },
-        { friendlyName: "HSL Hue", min: 0, max: 360, default: 240 },
-        { friendlyName: "HSL Sat", min: 0, max: 100, default: 100 },
-        { friendlyName: "HSL Lum", min: 0, max: 100, default: 50 },
-        { friendlyName: "OKLCH Lgt", min: 0, max: 1, default: 0.45201371817442365 },
-        { friendlyName: "OKLCH Chr", min: 0, max: 0.47, default: 0.3132143886344849 },
-        { friendlyName: "OKLCH Hue", min: 0, max: 360, default: 264.0520226163699 },
-    ]
-    for (item of values)
-        item.name = item.friendlyName.replaceAll(" ", "");
+        const values = [
+            { friendlyName: "Midi Note", min: 0, max: 128, default: 69 },
+            { friendlyName: "Frequency", min: 0, max: 20000, default: 440 },
+            { friendlyName: "Wavelenth In Samples", min: 0, max: 6000, default: 44100 / 440 },
+            { friendlyName: "Wavelenth In ms", min: 0, max: 100, default: (44100 / 440 / 44100) * 1000 },
+            { friendlyName: "Sample Rate", min: 0, max: 192000, default: 44100 },
+            { friendlyName: "Audio Buffer Size", min: 0, max: 2048, default: 128 },
+            { friendlyName: "Audio Buffer Size 2 Exponent", min: 0, max: 11, default: 7 },
+            { friendlyName: "Audio Buffer Latency ms", min: 0, max: 50, default: 128 / 44100 * 1000 },
+            { friendlyName: "Audio Buffer Latency Feet", min: 0, max: 50, default: (128 / 44100) * 1116.437 },
+            { friendlyName: "Decibels", min: -100, max: 0, default: -20 },
+            { friendlyName: "Gain", min: 0, max: 1, default: Math.pow(10, -20 / 20) },
+            { friendlyName: "Q", min: 0.2, max: 144, default: 0.707106781186548 },
+            { friendlyName: "Bandwidth", min: 0.01, max: 4, default: 1.8999686269529905 },
+            { friendlyName: "Degrees Fahrenheit", min: -40, max: 500, default: 32 },
+            { friendlyName: "Degrees Celsius", min: -40, max: 260, default: 0 },
+            { friendlyName: "Percent Humidity", min: 0, max: 100, default: 100 },
+            { friendlyName: "Dew Point Fahrenheit", min: 14, max: 77, default: 32 },
+            { friendlyName: "Dew Point Celsius", min: -10, max: 25, default: 0 },
+            { friendlyName: "Color Preview" },
+            { friendlyName: "Red", min: 0, max: 255, default: 0 },
+            { friendlyName: "Green", min: 0, max: 255, default: 0 },
+            { friendlyName: "Blue", min: 0, max: 255, default: 255 },
+            { friendlyName: "HSL Hue", min: 0, max: 360, default: 240 },
+            { friendlyName: "HSL Sat", min: 0, max: 100, default: 100 },
+            { friendlyName: "HSL Lum", min: 0, max: 100, default: 50 },
+            { friendlyName: "OKLCH Lgt", min: 0, max: 1, default: 0.45201371817442365 },
+            { friendlyName: "OKLCH Chr", min: 0, max: 0.47, default: 0.3132143886344849 },
+            { friendlyName: "OKLCH Hue", min: 0, max: 360, default: 264.0520226163699 },
+        ]
+        for (item of values)
+            item.name = item.friendlyName.replaceAll(" ", "");
 
-    const table = document.querySelector("#theTable");
-    for (item of values) {
-        var mn = item.name === `MidiNote`;
-        var clr = item.name === `ColorPreview`;
-        if (clr)
-        {
-        table.innerHTML += `
+        const table = document.querySelector("#theTable");
+        for (item of values) {
+            var mn = item.name === `MidiNote`;
+            var clr = item.name === `ColorPreview`;
+            if (clr) {
+                table.innerHTML += `
         <tr>
             <td>${item.friendlyName}</td>
             <td colspan="2"><div id="swatch" style="height: 34px;color:white;border: 1px solid black;margin-bottom: 8px;"></div>
                 <div id="codes" style="background: #f3f3f3;padding: 5px;font-family: monospace;border: 1px solid black;"></div>
             </td>
-        </tr>${mn?`
+        </tr>${mn ? `
         <tr>
             <td style="height: 25px;vertical-align:bottom;"><span id="midiout"></span></td>
-        </tr>`:""}`;
-            continue;
-        }
-        table.innerHTML += `
+        </tr>`: ""}`;
+                continue;
+            }
+            table.innerHTML += `
         <tr>
-            <td ${mn?"rowspan=2":""} >${item.friendlyName}</td>
+            <td ${mn ? "rowspan=2" : ""} >${item.friendlyName}</td>
             <td><input type="number" id="${item.name}Box" step="any" value="${item.default}" min="${item.min}" max="${item.max}" data-value-name="${item.name}"></td>
-            <td ${mn?"rowspan=2":""}>
+            <td ${mn ? "rowspan=2" : ""}>
                 <input type="range" id="${item.name}Slider" step="any" value="${item.default}" min="${item.min}" max="${item.max}" data-value-name="${item.name}">
             </td>
-        </tr>${mn?`
+        </tr>${mn ? `
         <tr>
             <td style="height: 25px;vertical-align:bottom;"><span id="midiout"></span></td>
-        </tr>`:""}`;
-    }
-    function UpdateColorPre(color)
-    {
-        document.querySelector(`#swatch`).style.backgroundColor = color.toString({format: "srgb"}); 
-        document.querySelector(`#codes`).innerText = `${color.toString({format: "hex"})} · ${color.toString({format: "hsl"})} · ${color.toString({format: "oklch"})}`; 
-    }
-    UpdateColorPre(new Color("#0000ff"));
-    for (item of values) {
-        if (item.name == `ColorPreview`) continue;
-        let box = document.querySelector(`#${item.name}Box`);
-        let slider = document.querySelector(`#${item.name}Slider`);
-        slider.addEventListener("input", (event) => {
-            box.value = event.target.value;
-            UpdateThings(event.target);
-        });
-        box.addEventListener("input", (event) => {
-            slider.value = event.target.value;
-            UpdateThings(event.target);
-        });
-    }
-    UpdateThings(document.querySelector(`#MidiNoteSlider`));
+        </tr>`: ""}`;
+        }
+        function UpdateColorPre(color) {
+            document.querySelector(`#swatch`).style.backgroundColor = color.toString({ format: "srgb" });
+            document.querySelector(`#codes`).innerText = `${color.toString({ format: "hex" })} · ${color.toString({ format: "hsl" })} · ${color.toString({ format: "oklch" })}`;
+        }
+        UpdateColorPre(new Color("#0000ff"));
+        const colBoxNode = document.querySelector("#colBox");
+        colBoxNode.addEventListener("keyup", function (event) {
+            if (event.key === "Enter") {
+                let typedColor = new Color(colBoxNode.value);
+                UpdateColorPre(typedColor);
+                
+                document.querySelector(`#OKLCHLgtSlider`).value = typedColor.oklch.l;
+                document.querySelector(`#OKLCHChrSlider`).value = typedColor.oklch.c;
+                document.querySelector(`#OKLCHHueSlider`).value = typedColor.oklch.h;
 
-    function UpdateThings(target) {
-        var state = {};
+                UpdateThings(document.querySelector(`#OKLCHHueSlider`));
+            }
+        });
         for (item of values) {
             if (item.name == `ColorPreview`) continue;
-            state[item.name] = document.querySelector(`#${item.name}Slider`).value;
+            let box = document.querySelector(`#${item.name}Box`);
+            let slider = document.querySelector(`#${item.name}Slider`);
+            slider.addEventListener("input", (event) => {
+                box.value = event.target.value;
+                UpdateThings(event.target);
+            });
+            box.addEventListener("input", (event) => {
+                slider.value = event.target.value;
+                UpdateThings(event.target);
+            });
         }
-        if (target.dataset.valueName == `SampleRate`) {
-            state.WavelenthInSamples = state.SampleRate / state.Frequency;
-            state.AudioBufferLatencyms = state.AudioBufferSize / state.SampleRate * 1000;
-            state.AudioBufferLatencyFeet = state.AudioBufferLatencyms / 1000 * 1116.437;
+        UpdateThings(document.querySelector(`#MidiNoteSlider`));
+
+        function UpdateThings(target) {
+            var state = {};
+            for (item of values) {
+                if (item.name == `ColorPreview`) continue;
+                state[item.name] = document.querySelector(`#${item.name}Slider`).value;
+            }
+            if (target.dataset.valueName == `SampleRate`) {
+                state.WavelenthInSamples = state.SampleRate / state.Frequency;
+                state.AudioBufferLatencyms = state.AudioBufferSize / state.SampleRate * 1000;
+                state.AudioBufferLatencyFeet = state.AudioBufferLatencyms / 1000 * 1116.437;
+            }
+
+            if (target.dataset.valueName == `Frequency`) {
+                state.MidiNote = Math.log2(state.Frequency / 440) * 12 + 69;
+                state.WavelenthInSamples = state.SampleRate / state.Frequency;
+                state.WavelenthInms = state.WavelenthInSamples / state.SampleRate * 1000;
+            }
+            if (target.dataset.valueName == `WavelenthInSamples`) {
+                state.Frequency = state.SampleRate / state.WavelenthInSamples;
+                state.MidiNote = Math.log2(state.Frequency / 440) * 12 + 69;
+                state.WavelenthInSamples = state.SampleRate / state.Frequency;
+                state.WavelenthInms = state.WavelenthInSamples / state.SampleRate * 1000;
+            }
+            if (target.dataset.valueName == `MidiNote`) {
+                state.Frequency = Math.pow(2, (state.MidiNote - 69) / 12) * 440;
+                state.WavelenthInSamples = state.SampleRate / state.Frequency;
+                state.WavelenthInms = state.WavelenthInSamples / state.SampleRate * 1000;
+            }
+            if (target.dataset.valueName == `AudioBufferSize2Exponent`) {
+                state.AudioBufferSize = Math.pow(2, state.AudioBufferSize2Exponent);
+                state.AudioBufferLatencyms = state.AudioBufferSize / state.SampleRate * 1000;
+                state.AudioBufferSize2Exponent = Math.log2(state.AudioBufferSize);
+                state.AudioBufferLatencyFeet = state.AudioBufferLatencyms / 1000 * 1116.437;
+            }
+            if (target.dataset.valueName == `AudioBufferSize`) {
+                state.AudioBufferLatencyms = state.AudioBufferSize / state.SampleRate * 1000;
+                state.AudioBufferSize2Exponent = Math.log2(state.AudioBufferSize);
+                state.AudioBufferLatencyFeet = state.AudioBufferLatencyms / 1000 * 1116.437;
+            }
+            if (target.dataset.valueName == `AudioBufferLatencyms`) {
+                state.AudioBufferSize = state.AudioBufferLatencyms / 1000 * state.SampleRate;
+                state.AudioBufferSize2Exponent = Math.log2(state.AudioBufferSize);
+                state.AudioBufferLatencyFeet = state.AudioBufferLatencyms / 1000 * 1116.437;
+            }
+            if (target.dataset.valueName == `AudioBufferLatencyFeet`) {
+                state.AudioBufferLatencyms = state.AudioBufferLatencyFeet / 1116.437 * 1000;
+                state.AudioBufferSize = state.AudioBufferLatencyms / 1000 * state.SampleRate;
+                state.AudioBufferSize2Exponent = Math.log2(state.AudioBufferSize);
+            }
+            if (target.dataset.valueName == `Decibels`) {
+                state.Gain = Math.pow(10, state.Decibels / 20);
+            }
+            if (target.dataset.valueName == `Gain`) {
+                state.Decibels = Math.log10(state.Gain) * 20;
+            }
+            if (target.dataset.valueName == `WavelenthInms`) {
+                state.WavelenthInSamples = state.WavelenthInms * state.SampleRate / 1000;
+                state.MidiNote = Math.log2(state.Frequency / 440) * 12 + 69;
+                state.Frequency = state.SampleRate / state.WavelenthInSamples;
+            }
+            if (target.dataset.valueName == `Q`) {
+                state.Bandwidth = Math.log((2 * state.Q * state.Q + 1) / (2 * state.Q * state.Q) + Math.sqrt(Math.pow(2 * (2 * state.Q * state.Q + 1) / (2 * state.Q * state.Q), 2) / 4 - 1)) / Math.log(2);
+            }
+            if (target.dataset.valueName == `Bandwidth`) {
+                state.Q = Math.pow(2, state.Bandwidth / 2) / (Math.pow(2, state.Bandwidth) - 1);
+            }
+            if (target.dataset.valueName == `DegreesFahrenheit`) {
+                state.DegreesCelsius = (state.DegreesFahrenheit - 32) * 5 / 9;
+                state.DewPointCelsius = Math.pow(state.PercentHumidity / 100, 1 / 8) * (112 + 0.9 * state.DegreesCelsius) + 0.1 * state.DegreesCelsius - 112;
+                state.DewPointFahrenheit = state.DewPointCelsius * 9 / 5 + 32;
+            }
+            if (target.dataset.valueName == `DegreesCelsius`) {
+                state.DegreesFahrenheit = state.DegreesCelsius * 9 / 5 + 32;
+                state.DewPointCelsius = Math.pow(state.PercentHumidity / 100, 1 / 8) * (112 + 0.9 * state.DegreesCelsius) + 0.1 * state.DegreesCelsius - 112;
+                state.DewPointFahrenheit = state.DewPointCelsius * 9 / 5 + 32;
+            }
+            if (target.dataset.valueName == `PercentHumidity`) {
+                state.DewPointCelsius = Math.pow(state.PercentHumidity / 100, 1 / 8) * (112 + 0.9 * state.DegreesCelsius)
+                    + 0.1 * state.DegreesCelsius
+                    - 112;
+                state.DewPointFahrenheit = state.DewPointCelsius * 9 / 5 + 32;
+            }
+            if (target.dataset.valueName == `DewPointCelsius`) {
+                state.PercentHumidity = Math.pow((state.DewPointCelsius - (0.1 * state.DegreesCelsius - 112)) / (112 + 0.9 * state.DegreesCelsius), 8) * 100;
+                state.DewPointFahrenheit = state.DewPointCelsius * 9 / 5 + 32;
+            }
+            if (target.dataset.valueName == `DewPointFahrenheit`) {
+                state.DewPointCelsius = (state.DewPointFahrenheit - 32) * 5 / 9;
+                state.PercentHumidity = Math.pow((state.DewPointCelsius - (0.1 * state.DegreesCelsius - 112)) / (112 + 0.9 * state.DegreesCelsius), 8) * 100;
+            }
+            if (target.dataset.valueName == `Red` || target.dataset.valueName == `Green` || target.dataset.valueName == `Blue`) {
+                let color = new Color(`rgb(${state.Red}, ${state.Green}, ${state.Blue})`);
+                UpdateColorPre(color)
+                state.HSLHue = color.hsl.h;
+                state.HSLSat = color.hsl.s;
+                state.HSLLum = color.hsl.l;
+                state.OKLCHLgt = color.oklch.l;
+                state.OKLCHChr = color.oklch.c;
+                state.OKLCHHue = color.oklch.h;
+            }
+            if (target.dataset.valueName == `HSLHue` || target.dataset.valueName == `HSLSat` || target.dataset.valueName == `HSLLum`) {
+                let color = new Color(`hsl(${state.HSLHue}, ${state.HSLSat}%, ${state.HSLLum}%)`);
+                UpdateColorPre(color)
+                state.Red = color.srgb.r * 255;
+                state.Green = color.srgb.g * 255;
+                state.Blue = color.srgb.b * 255;
+                state.OKLCHLgt = color.oklch.l;
+                state.OKLCHChr = color.oklch.c;
+                state.OKLCHHue = color.oklch.h;
+            }
+            if (target.dataset.valueName == `OKLCHLgt` || target.dataset.valueName == `OKLCHChr` || target.dataset.valueName == `OKLCHHue`) {
+                let color = new Color(`oklch(${state.OKLCHLgt}, ${state.OKLCHChr}, ${state.OKLCHHue})`);
+                UpdateColorPre(color)
+                state.HSLHue = color.hsl.h;
+                state.HSLSat = color.hsl.s;
+                state.HSLLum = color.hsl.l;
+                state.Red = color.srgb.r * 255;
+                state.Green = color.srgb.g * 255;
+                state.Blue = color.srgb.b * 255;
+            }
+
+            var intNote = Math.floor(state.MidiNote);
+            document.querySelector(`#midiout`).innerText = `Note ${intNote} is ${NoteName(intNote)}`;
+
+            for (item of values) {
+                if (item.name == `ColorPreview`) continue;
+                document.querySelector(`#${item.name}Slider`).value = state[item.name];
+                document.querySelector(`#${item.name}Box`).value = state[item.name];
+            }
         }
 
-        if (target.dataset.valueName == `Frequency`) {
-            state.MidiNote = Math.log2(state.Frequency / 440) * 12 + 69;
-            state.WavelenthInSamples = state.SampleRate / state.Frequency;
-            state.WavelenthInms = state.WavelenthInSamples / state.SampleRate * 1000;
+        function NoteName(argument) {
+            switch (argument % 12) {
+                case 0:
+                    return `C`;
+                case 1:
+                    return `C♯/D♭`;
+                case 2:
+                    return `D`;
+                case 3:
+                    return `D♯/E♭`;
+                case 4:
+                    return `E`;
+                case 5:
+                    return `F`;
+                case 6:
+                    return `F♯/G♭`;
+                case 7:
+                    return `G`;
+                case 8:
+                    return `G♯/A♭`;
+                case 9:
+                    return `A`;
+                case 10:
+                    return `A♯/B♭`;
+                case 11:
+                    return `B`;
+            }
+            return ``;
         }
-        if (target.dataset.valueName == `WavelenthInSamples`) {
-            state.Frequency = state.SampleRate / state.WavelenthInSamples;
-            state.MidiNote = Math.log2(state.Frequency / 440) * 12 + 69;
-            state.WavelenthInSamples = state.SampleRate / state.Frequency;
-            state.WavelenthInms = state.WavelenthInSamples / state.SampleRate * 1000;
-        }
-        if (target.dataset.valueName == `MidiNote`) {
-            state.Frequency = Math.pow(2, (state.MidiNote - 69) / 12) * 440;
-            state.WavelenthInSamples = state.SampleRate / state.Frequency;
-            state.WavelenthInms = state.WavelenthInSamples / state.SampleRate * 1000;
-        }
-        if (target.dataset.valueName == `AudioBufferSize2Exponent`) {
-            state.AudioBufferSize = Math.pow(2, state.AudioBufferSize2Exponent);
-            state.AudioBufferLatencyms = state.AudioBufferSize / state.SampleRate * 1000;
-            state.AudioBufferSize2Exponent = Math.log2(state.AudioBufferSize);
-            state.AudioBufferLatencyFeet = state.AudioBufferLatencyms / 1000 * 1116.437;
-        }
-        if (target.dataset.valueName == `AudioBufferSize`) {
-            state.AudioBufferLatencyms = state.AudioBufferSize / state.SampleRate * 1000;
-            state.AudioBufferSize2Exponent = Math.log2(state.AudioBufferSize);
-            state.AudioBufferLatencyFeet = state.AudioBufferLatencyms / 1000 * 1116.437;
-        }
-        if (target.dataset.valueName == `AudioBufferLatencyms`) {
-            state.AudioBufferSize = state.AudioBufferLatencyms / 1000 * state.SampleRate;
-            state.AudioBufferSize2Exponent = Math.log2(state.AudioBufferSize);
-            state.AudioBufferLatencyFeet = state.AudioBufferLatencyms / 1000 * 1116.437;
-        }
-        if (target.dataset.valueName == `AudioBufferLatencyFeet`) {
-            state.AudioBufferLatencyms = state.AudioBufferLatencyFeet/1116.437*1000;
-            state.AudioBufferSize = state.AudioBufferLatencyms / 1000 * state.SampleRate;
-            state.AudioBufferSize2Exponent = Math.log2(state.AudioBufferSize);
-        }
-        if (target.dataset.valueName == `Decibels`) {
-            state.Gain = Math.pow(10, state.Decibels / 20);
-        }
-        if (target.dataset.valueName == `Gain`) {
-            state.Decibels = Math.log10(state.Gain) * 20;
-        }
-        if (target.dataset.valueName == `WavelenthInms`) {
-            state.WavelenthInSamples = state.WavelenthInms * state.SampleRate / 1000;
-            state.MidiNote = Math.log2(state.Frequency / 440) * 12 + 69;
-            state.Frequency = state.SampleRate / state.WavelenthInSamples;
-        }
-        if (target.dataset.valueName == `Q`) {
-            state.Bandwidth = Math.log((2*state.Q*state.Q+1)/(2*state.Q*state.Q) + Math.sqrt(Math.pow(2*(2*state.Q*state.Q+1)/(2*state.Q*state.Q),2)/4-1))/Math.log(2);
-        }
-        if (target.dataset.valueName == `Bandwidth`) {
-            state.Q = Math.pow(2, state.Bandwidth/2)/(Math.pow(2, state.Bandwidth)-1);
-        }
-        if (target.dataset.valueName == `DegreesFahrenheit`) {
-            state.DegreesCelsius = (state.DegreesFahrenheit - 32) * 5/9;
-            state.DewPointCelsius = Math.pow(state.PercentHumidity / 100, 1 / 8) * (112 + 0.9 * state.DegreesCelsius) + 0.1 * state.DegreesCelsius - 112;
-            state.DewPointFahrenheit = state.DewPointCelsius * 9/5 + 32;
-        }
-        if (target.dataset.valueName == `DegreesCelsius`) {
-            state.DegreesFahrenheit = state.DegreesCelsius * 9/5 + 32;
-            state.DewPointCelsius = Math.pow(state.PercentHumidity / 100, 1 / 8) * (112 + 0.9 * state.DegreesCelsius) + 0.1 * state.DegreesCelsius - 112;
-            state.DewPointFahrenheit = state.DewPointCelsius * 9/5 + 32;
-        }
-        if (target.dataset.valueName == `PercentHumidity`) {
-            state.DewPointCelsius = Math.pow(state.PercentHumidity / 100, 1 / 8) * (112 + 0.9 * state.DegreesCelsius) 
-                                    + 0.1 * state.DegreesCelsius 
-                                    - 112;
-            state.DewPointFahrenheit = state.DewPointCelsius * 9/5 + 32;
-        }
-        if (target.dataset.valueName == `DewPointCelsius`) {
-            state.PercentHumidity = Math.pow((state.DewPointCelsius-(0.1*state.DegreesCelsius-112))/(112+0.9*state.DegreesCelsius),8)*100;
-            state.DewPointFahrenheit = state.DewPointCelsius * 9/5 + 32;
-        }
-        if (target.dataset.valueName == `DewPointFahrenheit`) {
-            state.DewPointCelsius = (state.DewPointFahrenheit - 32) * 5/9;
-            state.PercentHumidity = Math.pow((state.DewPointCelsius-(0.1*state.DegreesCelsius-112))/(112+0.9*state.DegreesCelsius),8)*100;
-        }
-        if (target.dataset.valueName == `Red` || target.dataset.valueName == `Green` || target.dataset.valueName == `Blue`) {
-            let color = new Color(`rgb(${state.Red}, ${state.Green}, ${state.Blue})`);
-            UpdateColorPre(color)
-            state.HSLHue = color.hsl.h;
-            state.HSLSat = color.hsl.s;
-            state.HSLLum = color.hsl.l;
-            state.OKLCHLgt = color.oklch.l;
-            state.OKLCHChr = color.oklch.c;
-            state.OKLCHHue = color.oklch.h;
-        }
-        if (target.dataset.valueName == `HSLHue` || target.dataset.valueName == `HSLSat` || target.dataset.valueName == `HSLLum`) {
-            let color = new Color(`hsl(${state.HSLHue}, ${state.HSLSat}%, ${state.HSLLum}%)`);
-            UpdateColorPre(color)
-            state.Red = color.srgb.r * 255;
-            state.Green = color.srgb.g * 255;
-            state.Blue = color.srgb.b * 255;
-            state.OKLCHLgt = color.oklch.l;
-            state.OKLCHChr = color.oklch.c;
-            state.OKLCHHue = color.oklch.h;
-        }
-        if (target.dataset.valueName == `OKLCHLgt` || target.dataset.valueName == `OKLCHChr` || target.dataset.valueName == `OKLCHHue`) {
-            let color = new Color(`oklch(${state.OKLCHLgt}, ${state.OKLCHChr}, ${state.OKLCHHue})`);
-            UpdateColorPre(color)
-            state.HSLHue = color.hsl.h;
-            state.HSLSat = color.hsl.s;
-            state.HSLLum = color.hsl.l;
-            state.Red = color.srgb.r * 255;
-            state.Green = color.srgb.g * 255;
-            state.Blue = color.srgb.b * 255;
-        }
-
-        var intNote = Math.floor(state.MidiNote);
-        document.querySelector(`#midiout`).innerText = `Note ${intNote} is ${NoteName(intNote)}`;
-
-        for (item of values) {
-            if (item.name == `ColorPreview`) continue;
-            document.querySelector(`#${item.name}Slider`).value = state[item.name];
-            document.querySelector(`#${item.name}Box`).value = state[item.name];
-        }
-    }
-
-    function NoteName(argument) {
-        switch (argument % 12) {
-            case 0:
-                return `C`;
-            case 1:
-                return `C♯/D♭`;
-            case 2:
-                return `D`;
-            case 3:
-                return `D♯/E♭`;
-            case 4:
-                return `E`;
-            case 5:
-                return `F`;
-            case 6:
-                return `F♯/G♭`;
-            case 7:
-                return `G`;
-            case 8:
-                return `G♯/A♭`;
-            case 9:
-                return `A`;
-            case 10:
-                return `A♯/B♭`;
-            case 11:
-                return `B`;
-        }
-        return ``;
-    }
     </script>
 </body>
 
