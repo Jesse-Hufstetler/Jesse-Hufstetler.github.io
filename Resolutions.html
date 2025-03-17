@@ -69,6 +69,18 @@
         outText += `    <text x="92%" y="100%" dominant-baseline="auto" font-size="60%" transform="translate(0 -11)" fill="#B03060" text-anchor="middle">Ultrawide ${width}x${height}</text>`;
         outText += `</svg>`;
 
+        width = 160; height = 144;
+        outText += `<svg x="0" y="0" width="${width}" height="${height}" overflow="visible" opacity="0.5">`;
+        outText += `    <rect width="100%" height="100%" fill="none" stroke="#204A87" stroke-width="1" />`;
+        outText += `    <text x="50%" y="100%" dominant-baseline="auto" font-size="40%" transform="translate(0 -11)" fill="#204A87" text-anchor="middle">${width}x${height} GB</text>`;
+        outText += `</svg>`;
+
+        width = 240; height = 160;
+        outText += `<svg x="0" y="0" width="${width}" height="${height}" overflow="visible" opacity="0.5">`;
+        outText += `    <rect width="100%" height="100%" fill="none" stroke="#204A87" stroke-width="1" />`;
+        outText += `    <text x="50%" y="100%" dominant-baseline="auto" font-size="50%" transform="translate(220 -11)" fill="#204A87" text-anchor="middle">${width}x${height} GBA</text>`;
+        outText += `</svg>`;
+
         width = 1600; height = 900;
         outText += `<svg x="0" y="0" width="${width}" height="${height}" overflow="visible">`;
         outText += `    <rect width="100%" height="100%" fill="none" stroke="#204A87" stroke-width="1" />`;
