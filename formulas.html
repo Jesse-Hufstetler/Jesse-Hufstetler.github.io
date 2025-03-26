@@ -26,6 +26,11 @@
         html {
             font-family: sans-serif;
         }
+		
+		.colorPill {
+			padding: 3px;
+			border-radius: 6px;
+		}
     </style>
 </head>
 
@@ -42,8 +47,14 @@
     <br>
     <br>
     <a href="index.html">(My Other Stuff)</a> <br> <br>
-    Note to self: OKLCH hues are roughly 18 = red, 80 = orange, 110 = yellow, 144 = green, 275 = blue, 307 = purple.
-    For OKLCH, 0.95 Lgt and 0.024 Chr works well for black text background colors.
+    Note to self: OKLCH hues are roughly
+	<span class="colorPill" style="background: oklch(96% 0.02 18)">18=red</span>,
+	<span class="colorPill" style="background: oklch(96% 0.02 70)">70=orange</span>,
+	<span class="colorPill" style="background: oklch(96% 0.02 110)">110=yellow</span>,
+	<span class="colorPill" style="background: oklch(96% 0.02 144)">144=green</span>,
+	<span class="colorPill" style="background: oklch(96% 0.02 250)">250=blue</span>,
+	<span class="colorPill" style="background: oklch(96% 0.02 307)">307=purple</span>.
+    For OKLCH, 0.96 Lgt and 0.02 Chr works well for black text background colors.
     <script>
         const values = [
             { friendlyName: "Midi Note", min: 0, max: 128, default: 69 },
