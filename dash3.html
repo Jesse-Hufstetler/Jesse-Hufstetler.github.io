@@ -51,6 +51,7 @@
         animation-name: inoutbg;
         animation-duration: 12s;
         animation-iteration-count: infinite;
+        animation-timing-function: linear;
     }
 
 
@@ -175,9 +176,6 @@
                 document.getElementById("dp").innerText = `/${dp}°`;
                 document.getElementById("wday").innerText = momentProxy().format(dformat)
             });
-    }
-    document.onclick = function() {
-        document.documentElement.requestFullscreen();
     }
     getWeather();
     setInterval(getWeather, 1000 * 60 * 20);
