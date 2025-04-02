@@ -30,6 +30,13 @@
         .colorPill {
             padding: 3px;
             border-radius: 6px;
+            border: 1px solid black;
+        }
+        .colorPillBlack {
+            padding: 3px;
+            border-radius: 6px;
+            color: white;
+            border: 1px solid black;
         }
     </style>
 </head>
@@ -47,14 +54,29 @@
     <br>
     <br>
     <a href="index.html">(My Other Stuff)</a> <br> <br>
-    Note to self: OKLCH hues are roughly
-    <span class="colorPill" onclick="OkCol(0.96,0.02,18)" style="background: oklch(96% 0.02 18)">18=red</span>,
-    <span class="colorPill" onclick="OkCol(0.96,0.02,70)" style="background: oklch(96% 0.02 70)">70=orange</span>,
-    <span class="colorPill" onclick="OkCol(0.96,0.02,110)" style="background: oklch(96% 0.02 110)">110=yellow</span>,
-    <span class="colorPill" onclick="OkCol(0.96,0.02,144)" style="background: oklch(96% 0.02 144)">144=green</span>,
-    <span class="colorPill" onclick="OkCol(0.96,0.02,250)" style="background: oklch(96% 0.02 250)">250=blue</span>,
-    <span class="colorPill" onclick="OkCol(0.96,0.02,307)" style="background: oklch(96% 0.02 307)">307=purple</span>.
-    For OKLCH, 0.96 Lgt and 0.02 Chr works well for black text background colors.
+    <div style="line-height: 1.7;">
+        Note to self: OKLCH hues are roughly
+        <span class="colorPill" onclick="OkCol(0.96,0.018,29)" style="background: oklch(96% 0.018 29)">29=red</span>,
+        <span class="colorPill" onclick="OkCol(0.96,0.018,58)" style="background: oklch(96% 0.018 58)">58=orange</span>,
+        <span class="colorPill" onclick="OkCol(0.96,0.018,110)" style="background: oklch(96% 0.018 110)">110=yellow</span>,
+        <span class="colorPill" onclick="OkCol(0.96,0.018,144)" style="background: oklch(96% 0.018 144)">144=green</span>,
+        <span class="colorPill" onclick="OkCol(0.96,0.018,250)" style="background: oklch(96% 0.018 250)">250=blue</span>,
+        <span class="colorPill" onclick="OkCol(0.96,0.018,301)" style="background: oklch(96% 0.018 301)">301=purple</span>.
+        For OKLCH, 0.96 Lgt and 0.018 Chr works well for black text background colors. Also 0.98 and 0.009, which gives
+        <span class="colorPill" onclick="OkCol(0.98,0.009,29)" style="background: oklch(98% 0.009 29)">red</span>,
+        <span class="colorPill" onclick="OkCol(0.98,0.009,58)" style="background: oklch(98% 0.009 58)">orange</span>,
+        <span class="colorPill" onclick="OkCol(0.98,0.009,110)" style="background: oklch(98% 0.009 110)">yellow</span>,
+        <span class="colorPill" onclick="OkCol(0.98,0.009,144)" style="background: oklch(98% 0.009 144)">green</span>,
+        <span class="colorPill" onclick="OkCol(0.98,0.009,250)" style="background: oklch(98% 0.009 250)">blue</span>,
+        <span class="colorPill" onclick="OkCol(0.98,0.009,301)" style="background: oklch(98% 0.009 301)">purple</span>.
+        For light text, 0.4/0.068 gives a nice background: 
+        <span class="colorPillBlack" onclick="OkCol(0.4,0.068,29)" style="background: oklch(40% 0.068 29)">red</span>,
+        <span class="colorPillBlack" onclick="OkCol(0.4,0.068,58)" style="background: oklch(40% 0.068 58)">orange</span>,
+        <span class="colorPillBlack" onclick="OkCol(0.4,0.068,110)" style="background: oklch(40% 0.068 110)">yellow</span>,
+        <span class="colorPillBlack" onclick="OkCol(0.4,0.068,144)" style="background: oklch(40% 0.068 144)">green</span>,
+        <span class="colorPillBlack" onclick="OkCol(0.4,0.068,250)" style="background: oklch(40% 0.068 250)">blue</span>,
+        <span class="colorPillBlack" onclick="OkCol(0.4,0.068,301)" style="background: oklch(40% 0.068 301)">purple</span>.
+    </div>
     <script>
         const values = [
             { friendlyName: "Midi Note", min: 0, max: 128, default: 69 },
