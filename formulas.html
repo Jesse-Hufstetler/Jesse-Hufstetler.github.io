@@ -31,12 +31,20 @@
             padding: 3px;
             border-radius: 6px;
             border: 1px solid black;
+            cursor: pointer;
+        }
+        .colorPill:hover {
+            outline: 3px solid black;
         }
         .colorPillBlack {
             padding: 3px;
             border-radius: 6px;
             color: white;
             border: 1px solid black;
+            cursor: pointer;
+        }
+        .colorPillBlack:hover {
+            outline: 3px solid black;
         }
     </style>
 </head>
@@ -88,19 +96,23 @@
             { friendlyName: "Audio Buffer Size 2 Exponent", min: 0, max: 11, default: 7 },
             { friendlyName: "Audio Buffer Latency ms", min: 0, max: 50, default: 128 / 44100 * 1000 },
             { friendlyName: "Audio Buffer Latency Feet", min: 0, max: 50, default: (128 / 44100) * 1116.437 },
+            { friendlyName: "separator" },
             { friendlyName: "Decibels", min: -100, max: 0, default: -20 },
             { friendlyName: "Gain", min: 0, max: 1, default: Math.pow(10, -20 / 20) },
+            { friendlyName: "separator" },
             { friendlyName: "Q", min: 0.2, max: 144, default: 0.707106781186548 },
             { friendlyName: "Bandwidth", min: 0.01, max: 4, default: 1.8999686269529905 },
+            { friendlyName: "separator" },
             { friendlyName: "Degrees Fahrenheit", min: -40, max: 500, default: 32 },
             { friendlyName: "Degrees Celsius", min: -40, max: 260, default: 0 },
             { friendlyName: "Percent Humidity", min: 0, max: 100, default: 100 },
             { friendlyName: "Dew Point Fahrenheit", min: 14, max: 77, default: 32 },
             { friendlyName: "Dew Point Celsius", min: -10, max: 25, default: 0 },
+            { friendlyName: "separator" },
             { friendlyName: "Color Preview" },
-            { friendlyName: "Red", min: 0, max: 255, default: 0 },
-            { friendlyName: "Green", min: 0, max: 255, default: 0 },
-            { friendlyName: "Blue", min: 0, max: 255, default: 255 },
+            { friendlyName: "RGB Red", min: 0, max: 255, default: 0 },
+            { friendlyName: "RGB Green", min: 0, max: 255, default: 0 },
+            { friendlyName: "RGB Blue", min: 0, max: 255, default: 255 },
             { friendlyName: "HSL Hue", min: 0, max: 360, default: 240 },
             { friendlyName: "HSL Sat", min: 0, max: 100, default: 100 },
             { friendlyName: "HSL Lum", min: 0, max: 100, default: 50 },
@@ -113,6 +125,10 @@
 
         const table = document.querySelector("#theTable");
         for (item of values) {
+            if (item.name === "separator"){
+                table.innerHTML += `<tr><td colspan="3" style="background:gray;"></td></tr>`;
+                continue;
+            }
             var mn = item.name === `MidiNote`;
             var clr = item.name === `ColorPreview`;
             if (clr) {
@@ -163,6 +179,7 @@
         });
         for (item of values) {
             if (item.name == `ColorPreview`) continue;
+            if (item.name === "separator") continue;
             let box = document.querySelector(`#${item.name}Box`);
             let slider = document.querySelector(`#${item.name}Slider`);
             slider.addEventListener("input", (event) => {
@@ -188,6 +205,7 @@
             var state = {};
             for (item of values) {
                 if (item.name == `ColorPreview`) continue;
+                if (item.name === "separator") continue;
                 state[item.name] = document.querySelector(`#${item.name}Slider`).value;
             }
             if (target.dataset.valueName == `SampleRate`) {
@@ -274,8 +292,8 @@
                 state.DewPointCelsius = (state.DewPointFahrenheit - 32) * 5 / 9;
                 state.PercentHumidity = Math.pow((state.DewPointCelsius - (0.1 * state.DegreesCelsius - 112)) / (112 + 0.9 * state.DegreesCelsius), 8) * 100;
             }
-            if (target.dataset.valueName == `Red` || target.dataset.valueName == `Green` || target.dataset.valueName == `Blue`) {
-                let color = new Color(`rgb(${state.Red}, ${state.Green}, ${state.Blue})`);
+            if (target.dataset.valueName == `RGBRed` || target.dataset.valueName == `RGBGreen` || target.dataset.valueName == `RGBBlue`) {
+                let color = new Color(`rgb(${state.RGBRed}, ${state.RGBGreen}, ${state.RGBBlue})`);
                 UpdateColorPre(color)
                 state.HSLHue = color.hsl.h;
                 state.HSLSat = color.hsl.s;
@@ -287,9 +305,9 @@
             if (target.dataset.valueName == `HSLHue` || target.dataset.valueName == `HSLSat` || target.dataset.valueName == `HSLLum`) {
                 let color = new Color(`hsl(${state.HSLHue}, ${state.HSLSat}%, ${state.HSLLum}%)`);
                 UpdateColorPre(color)
-                state.Red = color.srgb.r * 255;
-                state.Green = color.srgb.g * 255;
-                state.Blue = color.srgb.b * 255;
+                state.RGBRed = color.srgb.r * 255;
+                state.RGBGreen = color.srgb.g * 255;
+                state.RGBBlue = color.srgb.b * 255;
                 state.OKLCHLgt = color.oklch.l;
                 state.OKLCHChr = color.oklch.c;
                 state.OKLCHHue = color.oklch.h;
@@ -303,9 +321,9 @@
                 state.HSLHue = color.hsl.h;
                 state.HSLSat = color.hsl.s;
                 state.HSLLum = color.hsl.l;
-                state.Red = color.srgb.r * 255;
-                state.Green = color.srgb.g * 255;
-                state.Blue = color.srgb.b * 255;
+                state.RGBRed = color.srgb.r * 255;
+                state.RGBGreen = color.srgb.g * 255;
+                state.RGBBlue = color.srgb.b * 255;
                 /*if (target.dataset.valueName != 'OKLCHLgt')*/ state.OKLCHLgt = color.oklch.l;
                 /*if (target.dataset.valueName != 'OKLCHChr')*/ state.OKLCHChr = color.oklch.c;
                 /*if (target.dataset.valueName != 'OKLCHHue')*/ state.OKLCHHue = color.oklch.h;
@@ -316,6 +334,7 @@
 
             for (item of values) {
                 if (item.name == `ColorPreview`) continue;
+                if (item.name === "separator") continue;
                 document.querySelector(`#${item.name}Slider`).value = state[item.name];
                 document.querySelector(`#${item.name}Box`).value = state[item.name];
             }
