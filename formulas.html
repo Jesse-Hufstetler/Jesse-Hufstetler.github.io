@@ -115,6 +115,13 @@
             { friendlyName: "Dew Point Fahrenheit", min: 14, max: 77, default: 32 },
             { friendlyName: "Dew Point Celsius", min: -10, max: 25, default: 0 },
             { friendlyName: "separator" },
+            { friendlyName: "Tesla Charge Amps", min: 0, max: 500, default: 16 },
+            { friendlyName: "Tesla Charge Volts", min: 0, max: 500, default: 240 },
+            { friendlyName: "Tesla Charge Watts", min: 0, max: 250000, default: 3840 },
+            { friendlyName: "Tesla Charge MPH", min: 0, max: 870, default: 13.3333 },
+            { friendlyName: "Tesla Charge Time Hours", min: 0, max: 25, default: 3.15 },
+            { friendlyName: "Tesla Charge Battery Percent", min: 0, max: 100, default: 20 },
+            { friendlyName: "separator" },
             { friendlyName: "Color Preview" },
             { friendlyName: "RGB Red", min: 0, max: 255, default: 0 },
             { friendlyName: "RGB Green", min: 0, max: 255, default: 0 },
@@ -297,6 +304,32 @@
             if (target.dataset.valueName == `DewPointFahrenheit`) {
                 state.DewPointCelsius = (state.DewPointFahrenheit - 32) * 5 / 9;
                 state.PercentHumidity = Math.pow((state.DewPointCelsius - (0.1 * state.DegreesCelsius - 112)) / (112 + 0.9 * state.DegreesCelsius), 8) * 100;
+            }
+            if (target.dataset.valueName == `TeslaChargeAmps`) {
+                state.TeslaChargeWatts = (state.TeslaChargeAmps * state.TeslaChargeVolts);
+                state.TeslaChargeMPH = (state.TeslaChargeWatts / 288);
+                state.TeslaChargeTimeHours = (state.TeslaChargeBatteryPercent / state.TeslaChargeMPH) * 2.1;
+            }
+            if (target.dataset.valueName == `TeslaChargeVolts`) {
+                state.TeslaChargeWatts = (state.TeslaChargeAmps * state.TeslaChargeVolts);
+                state.TeslaChargeMPH = (state.TeslaChargeWatts / 288);
+                state.TeslaChargeTimeHours = (state.TeslaChargeBatteryPercent / state.TeslaChargeMPH) * 2.1;
+            }
+            if (target.dataset.valueName == `TeslaChargeWatts`) {
+                state.TeslaChargeAmps = (state.TeslaChargeWatts / state.TeslaChargeVolts);
+                state.TeslaChargeMPH = (state.TeslaChargeWatts / 288);
+                state.TeslaChargeTimeHours = (state.TeslaChargeBatteryPercent / state.TeslaChargeMPH) * 2.1;
+            }
+            if (target.dataset.valueName == `TeslaChargeMPH`) {
+                state.TeslaChargeWatts = (state.TeslaChargeMPH * 288);
+                state.TeslaChargeAmps = (state.TeslaChargeWatts / state.TeslaChargeVolts);
+                state.TeslaChargeTimeHours = (state.TeslaChargeBatteryPercent / state.TeslaChargeMPH) * 2.1;
+            }
+            if (target.dataset.valueName == `TeslaChargeTimeHours`) {
+                state.TeslaChargeBatteryPercent = state.TeslaChargeMPH * state.TeslaChargeTimeHours / 2.1;
+            }
+            if (target.dataset.valueName == `TeslaChargeBatteryPercent`) {
+                state.TeslaChargeTimeHours = (state.TeslaChargeBatteryPercent / state.TeslaChargeMPH) * 2.1;
             }
             if (target.dataset.valueName == `RGBRed` || target.dataset.valueName == `RGBGreen` || target.dataset.valueName == `RGBBlue`) {
                 let color = new Color(`rgb(${state.RGBRed}, ${state.RGBGreen}, ${state.RGBBlue})`);
