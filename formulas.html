@@ -118,8 +118,8 @@
             { friendlyName: "Tesla Charge Amps", min: 0, max: 500, default: 16 },
             { friendlyName: "Tesla Charge Volts", min: 0, max: 500, default: 240 },
             { friendlyName: "Tesla Charge Watts", min: 0, max: 250000, default: 3840 },
-            { friendlyName: "Tesla Charge MPH", min: 0, max: 870, default: 13.3333 },
-            { friendlyName: "Tesla Charge Time Hours", min: 0, max: 25, default: 3.15 },
+            { friendlyName: "Tesla Charge MPH", min: 0, max: 870, default: 7.68 },
+            { friendlyName: "Tesla Charge Time Hours", min: 0, max: 25, default: 5.20 },
             { friendlyName: "Tesla Charge Battery Percent", min: 0, max: 100, default: 20 },
             { friendlyName: "separator" },
             { friendlyName: "Color Preview" },
@@ -307,29 +307,29 @@
             }
             if (target.dataset.valueName == `TeslaChargeAmps`) {
                 state.TeslaChargeWatts = (state.TeslaChargeAmps * state.TeslaChargeVolts);
-                state.TeslaChargeMPH = (state.TeslaChargeWatts / 288);
-                state.TeslaChargeTimeHours = (state.TeslaChargeBatteryPercent / state.TeslaChargeMPH) * 2.1;
+                state.TeslaChargeMPH = (state.TeslaChargeWatts / 500);
+                state.TeslaChargeTimeHours = (state.TeslaChargeBatteryPercent / state.TeslaChargeMPH) * 2;
             }
             if (target.dataset.valueName == `TeslaChargeVolts`) {
                 state.TeslaChargeWatts = (state.TeslaChargeAmps * state.TeslaChargeVolts);
-                state.TeslaChargeMPH = (state.TeslaChargeWatts / 288);
-                state.TeslaChargeTimeHours = (state.TeslaChargeBatteryPercent / state.TeslaChargeMPH) * 2.1;
+                state.TeslaChargeMPH = (state.TeslaChargeWatts / 500);
+                state.TeslaChargeTimeHours = (state.TeslaChargeBatteryPercent / state.TeslaChargeMPH) * 2;
             }
             if (target.dataset.valueName == `TeslaChargeWatts`) {
                 state.TeslaChargeAmps = (state.TeslaChargeWatts / state.TeslaChargeVolts);
-                state.TeslaChargeMPH = (state.TeslaChargeWatts / 288);
-                state.TeslaChargeTimeHours = (state.TeslaChargeBatteryPercent / state.TeslaChargeMPH) * 2.1;
+                state.TeslaChargeMPH = (state.TeslaChargeWatts / 500);
+                state.TeslaChargeTimeHours = (state.TeslaChargeBatteryPercent / state.TeslaChargeMPH) * 2;
             }
             if (target.dataset.valueName == `TeslaChargeMPH`) {
-                state.TeslaChargeWatts = (state.TeslaChargeMPH * 288);
+                state.TeslaChargeWatts = (state.TeslaChargeMPH * 500);
                 state.TeslaChargeAmps = (state.TeslaChargeWatts / state.TeslaChargeVolts);
-                state.TeslaChargeTimeHours = (state.TeslaChargeBatteryPercent / state.TeslaChargeMPH) * 2.1;
+                state.TeslaChargeTimeHours = (state.TeslaChargeBatteryPercent / state.TeslaChargeMPH) * 2;
             }
             if (target.dataset.valueName == `TeslaChargeTimeHours`) {
-                state.TeslaChargeBatteryPercent = state.TeslaChargeMPH * state.TeslaChargeTimeHours / 2.1;
+                state.TeslaChargeBatteryPercent = state.TeslaChargeMPH * state.TeslaChargeTimeHours / 2;
             }
             if (target.dataset.valueName == `TeslaChargeBatteryPercent`) {
-                state.TeslaChargeTimeHours = (state.TeslaChargeBatteryPercent / state.TeslaChargeMPH) * 2.1;
+                state.TeslaChargeTimeHours = (state.TeslaChargeBatteryPercent / state.TeslaChargeMPH) * 2;
             }
             if (target.dataset.valueName == `RGBRed` || target.dataset.valueName == `RGBGreen` || target.dataset.valueName == `RGBBlue`) {
                 let color = new Color(`rgb(${state.RGBRed}, ${state.RGBGreen}, ${state.RGBBlue})`);
