@@ -115,6 +115,10 @@
             { friendlyName: "Dew Point Fahrenheit", min: 14, max: 77, default: 32 },
             { friendlyName: "Dew Point Celsius", min: -10, max: 25, default: 0 },
             { friendlyName: "separator" },
+            { friendlyName: "Biking MPH", min: 0, max: 30, default: 6 },
+            { friendlyName: "Biking Miles", min: 0, max: 60, default: 5 },
+            { friendlyName: "Biking Minutes", min: 0, max: 120, default: 50 },
+            { friendlyName: "separator" },
             { friendlyName: "Tesla Charge Amps", min: 0, max: 500, default: 16 },
             { friendlyName: "Tesla Charge Volts", min: 0, max: 500, default: 240 },
             { friendlyName: "Tesla Charge Watts", min: 0, max: 250000, default: 3840 },
@@ -174,7 +178,7 @@
         }
         function UpdateColorPre(color) {
             document.querySelector(`#swatch`).style.backgroundColor = color.toString({ format: "srgb" });
-            document.querySelector(`#codes`).innerText = `${color.toString({ format: "hex" })} · ${color.toString({ format: "hsl" })} · ${color.toString({ format: "oklch" })}`;
+            document.querySelector(`#codes`).innerText = `${color.toString({ format: "hex" })} · ${color.toString({ format: "hsl" })} · ${color.toString({ format: "oklch" })} · ${Math.floor(color.srgb.r * 255 * 256 * 256 + color.srgb.g * 255 * 256 + color.srgb.b * 255)}`;
         }
         UpdateColorPre(new Color("#0000ff"));
         const colBoxNode = document.querySelector("#colBox");
@@ -304,6 +308,15 @@
             if (target.dataset.valueName == `DewPointFahrenheit`) {
                 state.DewPointCelsius = (state.DewPointFahrenheit - 32) * 5 / 9;
                 state.PercentHumidity = Math.pow((state.DewPointCelsius - (0.1 * state.DegreesCelsius - 112)) / (112 + 0.9 * state.DegreesCelsius), 8) * 100;
+            }
+            if (target.dataset.valueName == `BikingMPH`) {
+                state.BikingMinutes = state.BikingMiles / state.BikingMPH * 60;
+            }
+            if (target.dataset.valueName == `BikingMiles`) {
+                state.BikingMinutes = state.BikingMiles / state.BikingMPH * 60;
+            }
+            if (target.dataset.valueName == `BikingMinutes`) {
+                state.BikingMPH = state.BikingMiles / state.BikingMinutes * 60;
             }
             if (target.dataset.valueName == `TeslaChargeAmps`) {
                 state.TeslaChargeWatts = (state.TeslaChargeAmps * state.TeslaChargeVolts);
