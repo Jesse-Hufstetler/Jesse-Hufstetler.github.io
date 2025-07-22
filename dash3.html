@@ -120,7 +120,9 @@
                     <div style="font-size: 5vmin;">Calif (Pacific): <span id="caltim">xx</span></div>
                     <div style="font-size: 5vmin;">Ariz (Mntn Std): <span id="arztim">xx</span></div>
                     <div style="font-size: 5vmin;">Nash/Tex (Cent): <span id="nshtim">xx</span></div>
+                    <br>
                     <div style="font-size: 5vmin;">Reykjav&#x00ED;k (UTC): <span id="utctim">xx</span></div>
+                    <div style="font-size: 5vmin;">Frnc (Cent Eur): <span id="frntim">xx</span></div>
                     <div style="font-size: 20vh; padding: 0;margin: 0;">
                     <span >&nbsp;</span>
                     </div>
@@ -133,10 +135,11 @@
     const appid = urlParams.get('appid');
     setInterval(() => {
         document.getElementById("time").innerText = momentProxy().format('h:mm:ss');
-        document.getElementById("caltim").innerText = momentProxy().tz('America/Los_Angeles').format('hh:mm:ss');
-        document.getElementById("arztim").innerText = momentProxy().tz('America/Phoenix').format('hh:mm:ss');
-        document.getElementById("nshtim").innerText = momentProxy().tz('America/Chicago').format('hh:mm:ss');
-        document.getElementById("utctim").innerText = momentProxy().tz('UTC').format('hh:mm:ss');
+        document.getElementById("caltim").innerText = momentProxy().tz('America/Los_Angeles').format('hh:mm:ss A');
+        document.getElementById("arztim").innerText = momentProxy().tz('America/Phoenix').format('hh:mm:ss A');
+        document.getElementById("nshtim").innerText = momentProxy().tz('America/Chicago').format('hh:mm:ss A');
+        document.getElementById("utctim").innerText = momentProxy().tz('UTC').format('hh:mm:ss A');
+        document.getElementById("frntim").innerText = momentProxy().tz('Europe/Paris').format('hh:mm:ss A');
     }, 250);
     var fToC = (input) => (input - 32) * 5 / 9;
     var cToF = (input) => (input * 9 / 5) + 32;
