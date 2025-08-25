@@ -1,0 +1,212 @@
+<html>
+
+<head>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/14.6.0/math.js"
+    integrity="sha512-UuQC26OPo7O/ZQ67xAOTzBlQXFaSsJpguqrs+nFJL2GFG2+9Gm1RZzBTvEyM9aBy+cOzlJ4eNX0m2IGv2oPu1w=="
+    crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <style>
+    table,
+    th,
+    td {
+      border: 1px solid black;
+      border-collapse: collapse;
+      padding: 5px;
+    }
+
+    input[type=range] {
+      width: 100%;
+      box-sizing: border-box;
+    }
+
+    table {
+      width: 1000px;
+    }
+
+    html {
+      font-family: sans-serif;
+    }
+
+    .colorPill {
+      padding: 3px;
+      border-radius: 6px;
+      border: 1px solid black;
+      cursor: pointer;
+    }
+
+    .colorPill:hover {
+      outline: 3px solid black;
+    }
+
+    .colorPillBlack {
+      padding: 3px;
+      border-radius: 6px;
+      color: white;
+      border: 1px solid black;
+      cursor: pointer;
+    }
+
+    .colorPillBlack:hover {
+      outline: 3px solid black;
+    }
+  </style>
+
+</head>
+
+<body>
+  <div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <table>
+    <tr>
+      <td colspan="3">
+        <canvas id="myChart"></canvas>
+      </td>
+    </tr>
+    <tr>
+      <th style="width: 250px;">Name</th>
+      <th style="width: 150px;">Value</th>
+      <th>Slider</th>
+    </tr>
+    <tr>
+      <td>Fs (Hz) - Resonant frequency of speaker driver</td>
+      <td><input type="number" id="FsBox" step="any" value="21" min="5" max="180" data-value-name="Fs"></td>
+      <td>
+        <input type="range" id="FsSlider" step="any" value="21" min="5" max="180" data-value-name="Fs">
+      </td>
+    </tr>
+    <tr>
+      <td>Qts - Overall damping of speaker driver</td>
+      <td><input type="number" id="QtsBox" step="any" value="0.540" min="0" max="1" data-value-name="Qts"></td>
+      <td>
+        <input type="range" id="QtsSlider" step="any" value="0.540" min="0" max="1" data-value-name="Qts">
+      </td>
+    </tr>
+    <tr>
+      <td>Vas (ft&#xb3;) - compliance equivalent volume of speaker driver</td>
+      <td><input type="number" id="VasBox" step="any" value="16.8" min="0.01" max="20" data-value-name="Vas"></td>
+      <td>
+        <input type="range" id="VasSlider" step="any" value="16.8" min="0.01" max="20" data-value-name="Vas">
+      </td>
+    </tr>
+    <tr>
+      <td>Vb (ft&#xb3;) - box volume</td>
+      <td><input type="number" id="VbBox" step="any" value="16.538" min="0" max="20" data-value-name="Vb"></td>
+      <td>
+        <input type="range" id="VbSlider" step="any" value="16.538" min="0" max="20" data-value-name="Vb">
+      </td>
+    </tr>
+    <tr>
+      <td>Fb (Hz) - box port tuning frequency</td>
+      <td><input type="number" id="FbBox" step="any" value="15.62" min="2" max="180" data-value-name="Fb"></td>
+      <td>
+        <input type="range" id="FbSlider" step="any" value="15.62" min="2" max="180" data-value-name="Fb">
+      </td>
+    </tr>
+  </table>
+  All chosen frequencies on the x axis also happen to be MIDI note frequencies. Technically Vas and Vb can be in whatever units you want, they just need to match.
+  <script>
+    const ctx = document.getElementById('myChart');
+
+    let allData = [...Array(60).keys()]
+      .map((item) => item + 7)
+      .map((item) => (
+        {
+          note: item,
+          freq: 440 * Math.pow(2, (item - 69) / 12),
+          value: (130 - item) * -1
+        }));
+
+    var labels = allData.map((item) => item.freq.toFixed(2));
+    var data = allData.map((item) => item.value);
+
+    let chart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: labels,
+        datasets: [{
+          label: 'Frequency Response Curve',
+          data: data
+        }]
+      },
+      options: {
+        animation: false,
+        scales: {
+          y: {
+            min: -20,
+            max: 10
+          }
+        }
+      }
+    });
+
+
+    let fsSlider = document.querySelector(`#FsSlider`);
+    let fsBox = document.querySelector(`#FsBox`);
+    fsSlider.addEventListener("input", (event) => { fsBox.value = event.target.value; UpdateThings(event.target); });
+    fsBox.addEventListener("input", (event) => { fsSlider.value = event.target.value; UpdateThings(event.target); });
+    let qtsSlider = document.querySelector(`#QtsSlider`);
+    let qtsBox = document.querySelector(`#QtsBox`);
+    qtsSlider.addEventListener("input", (event) => { qtsBox.value = event.target.value; UpdateThings(event.target); });
+    qtsBox.addEventListener("input", (event) => { qtsSlider.value = event.target.value; UpdateThings(event.target); });
+    let vasSlider = document.querySelector(`#VasSlider`);
+    let vasBox = document.querySelector(`#VasBox`);
+    vasSlider.addEventListener("input", (event) => { vasBox.value = event.target.value; UpdateThings(event.target); });
+    vasBox.addEventListener("input", (event) => { vasSlider.value = event.target.value; UpdateThings(event.target); });
+    let vbSlider = document.querySelector(`#VbSlider`);
+    let vbBox = document.querySelector(`#VbBox`);
+    vbSlider.addEventListener("input", (event) => { vbBox.value = event.target.value; UpdateThings(event.target); });
+    vbBox.addEventListener("input", (event) => { vbSlider.value = event.target.value; UpdateThings(event.target); });
+    let fbSlider = document.querySelector(`#FbSlider`);
+    let fbBox = document.querySelector(`#FbBox`);
+    fbSlider.addEventListener("input", (event) => { fbBox.value = event.target.value; UpdateThings(event.target); });
+    fbBox.addEventListener("input", (event) => { fbSlider.value = event.target.value; UpdateThings(event.target); });
+
+    function UpdateThings(target) {
+      let fs = fsBox.value;
+      let qts = qtsBox.value;
+      let vas = vasBox.value;
+      let vb = vbBox.value;
+      let fb = fbBox.value;
+
+
+
+      let a = vas / vb;
+      let ws = 2 * Math.PI * fs;
+      let wb = 2 * Math.PI * fb;
+      let a3 = ws / qts;
+      let a2 = Math.pow(ws, 2) * (1 + a) + Math.pow(wb, 2);
+      let a1 = ws * Math.pow(wb, 2) / qts;
+      let a0 = Math.pow(ws, 2) * Math.pow(wb, 2);
+
+      data = allData.map((ad) => {
+        var freq = ad.freq;
+        var s = math.multiply(math.Complex(0, 1), 2 * Math.PI * freq);
+
+        var mag = Math.log10(math.abs(math.divide(math.pow(s, 4), math.add(math.pow(s, 4), math.multiply(a3, math.pow(s, 3)), math.multiply(a2, math.pow(s, 2)), math.multiply(a1, s), a0)))) * 20;
+        // var magd = Math.Log(mag.Magnitude, 10) * 20,
+
+
+
+
+        return mag;
+      });
+
+      // data[0] = fs;
+      // data[1] = qts;
+      // data[2] = vas;
+      // data[3] = vb;
+      // data[4] = fb;
+
+
+      chart.data.datasets[0].data = data;
+      chart.update(0);
+    }
+
+    UpdateThings(null);
+
+
+  </script>
+</body>
+
+</html>
