@@ -19,7 +19,7 @@
     }
 
     table {
-      width: 1000px;
+      width: 1200px;
     }
 
     html {
@@ -64,8 +64,8 @@
       </td>
     </tr>
     <tr>
-      <th style="width: 250px;">Name</th>
-      <th style="width: 150px;">Value</th>
+      <th style="width: 448px;">Name</th>
+      <th style="width: 15px;">Value</th>
       <th>Slider</th>
     </tr>
     <tr>
@@ -104,6 +104,7 @@
       </td>
     </tr>
   </table>
+  <br>
   All chosen frequencies on the x axis also happen to be MIDI note frequencies. Technically Vas and Vb can be in
   whatever units you want, they just need to match.
   <br>
@@ -118,18 +119,20 @@
         {
           note: item,
           freq: 440 * Math.pow(2, (item - 69) / 12),
-          value: (130 - item) * -1
         }));
 
     var labels = allData.map((item) => item.freq.toFixed(2));
-    var data = allData.map((item) => item.value);
+    var data = allData.map((item) => 0);
 
     let chart = new Chart(ctx, {
       type: 'line',
       data: {
         labels: labels,
         datasets: [{
-          label: 'Transfer Function Magnitude (dB)',
+          label: 'Transfer Function Magnitude Ported (dB)',
+          data: data
+        },{
+          label: 'Transfer Function Magnitude Sealed (dB)',
           data: data
         }]
       },
@@ -182,19 +185,28 @@
       let a2 = Math.pow(ws, 2) * (1 + a) + Math.pow(wb, 2);
       let a1 = ws * Math.pow(wb, 2) / qts;
       let a0 = Math.pow(ws, 2) * Math.pow(wb, 2);
+      let fc = fs*Math.sqrt(a+1);
+      let q = qts*Math.sqrt(a+1);
 
-      data = allData.map((ad) => {
+      let dataBoth = allData.map((ad) => {
         var freq = ad.freq;
-        var s = math.multiply(math.Complex(0, 1), 2 * Math.PI * freq);
+        var w = 2 * Math.PI * freq;
+        var s = math.multiply(math.Complex(0, 1), w);
+        var s2 = math.pow(s, 2);
+        var ported = Math.log10(math.abs(math.divide(math.pow(s, 4), math.add(math.pow(s, 4), math.multiply(a3, math.pow(s, 3)), math.multiply(a2, math.pow(s, 2)), math.multiply(a1, s), a0)))) * 20;
 
-        var mag = Math.log10(math.abs(math.divide(math.pow(s, 4), math.add(math.pow(s, 4), math.multiply(a3, math.pow(s, 3)), math.multiply(a2, math.pow(s, 2)), math.multiply(a1, s), a0)))) * 20;
-        // var magd = Math.Log(mag.Magnitude, 10) * 20,
+        var w0 = math.multiply(2, math.PI, fc);
+        var qtc = qts * Math.sqrt(vas/vb+1);
+
+        var sealedComplex = math.divide(s2, math.add(s2, math.multiply(math.divide(w0, qtc), s), math.pow(w0, 2)));
+        var sealedMag = math.abs(sealedComplex);
+        var sealedDecibels = Math.log10(sealedMag) * 20;
 
 
-
-
-        return mag;
+        return {ported:ported, sealed:sealedDecibels};
       });
+
+
 
       // data[0] = fs;
       // data[1] = qts;
@@ -203,12 +215,13 @@
       // data[4] = fb;
 
 
-      chart.data.datasets[0].data = data;
+      chart.data.datasets[0].data = dataBoth.map((o) => o.ported);
+      chart.data.datasets[1].data = dataBoth.map((o) => o.sealed);
       chart.update(0);
     }
 
     UpdateThings(null);
-
+    document.querySelectorAll('input[type="number"]').forEach(input => input.style.width = '75px');
 
   </script>
 </body>
