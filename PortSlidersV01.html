@@ -77,9 +77,9 @@
     </tr>
     <tr>
       <td>Qts - Overall damping of speaker driver</td>
-      <td><input type="number" id="QtsBox" step="any" value="0.540" min="0" max="1" data-value-name="Qts"></td>
+      <td><input type="number" id="QtsBox" step="any" value="0.540" min="0" max="2.5" data-value-name="Qts"></td>
       <td>
-        <input type="range" id="QtsSlider" step="any" value="0.540" min="0" max="1" data-value-name="Qts">
+        <input type="range" id="QtsSlider" step="any" value="0.540" min="0" max="2.5" data-value-name="Qts">
       </td>
     </tr>
     <tr>
@@ -121,7 +121,7 @@
           freq: 440 * Math.pow(2, (item - 69) / 12),
         }));
 
-    var labels = allData.map((item) => item.freq.toFixed(2));
+    var labels = allData.map((item) => `${item.freq.toFixed(2)} hz (${noteName(item.note)})`);
     var data = allData.map((item) => 0);
 
     let chart = new Chart(ctx, {
@@ -131,7 +131,7 @@
         datasets: [{
           label: 'Transfer Function Magnitude Ported (dB)',
           data: data
-        },{
+        }, {
           label: 'Transfer Function Magnitude Sealed (dB)',
           data: data
         }]
@@ -141,7 +141,7 @@
         scales: {
           y: {
             min: -20,
-            max: 10
+            max: 20
           }
         }
       }
@@ -185,8 +185,8 @@
       let a2 = Math.pow(ws, 2) * (1 + a) + Math.pow(wb, 2);
       let a1 = ws * Math.pow(wb, 2) / qts;
       let a0 = Math.pow(ws, 2) * Math.pow(wb, 2);
-      let fc = fs*Math.sqrt(a+1);
-      let q = qts*Math.sqrt(a+1);
+      let fc = fs * Math.sqrt(a + 1);
+      let q = qts * Math.sqrt(a + 1);
 
       let dataBoth = allData.map((ad) => {
         var freq = ad.freq;
@@ -196,14 +196,14 @@
         var ported = Math.log10(math.abs(math.divide(math.pow(s, 4), math.add(math.pow(s, 4), math.multiply(a3, math.pow(s, 3)), math.multiply(a2, math.pow(s, 2)), math.multiply(a1, s), a0)))) * 20;
 
         var w0 = math.multiply(2, math.PI, fc);
-        var qtc = qts * Math.sqrt(vas/vb+1);
+        var qtc = qts * Math.sqrt(vas / vb + 1);
 
         var sealedComplex = math.divide(s2, math.add(s2, math.multiply(math.divide(w0, qtc), s), math.pow(w0, 2)));
         var sealedMag = math.abs(sealedComplex);
         var sealedDecibels = Math.log10(sealedMag) * 20;
 
 
-        return {ported:ported, sealed:sealedDecibels};
+        return { ported: ported, sealed: sealedDecibels };
       });
 
 
@@ -222,6 +222,38 @@
 
     UpdateThings(null);
     document.querySelectorAll('input[type="number"]').forEach(input => input.style.width = '75px');
+
+
+    function noteName(noteNum) {
+      switch (noteNum % 12) {
+        case 0:
+          return "C";
+        case 1:
+          return "C#/Db";
+        case 2:
+          return "D";
+        case 3:
+          return "D#/Eb";
+        case 4:
+          return "E";
+        case 5:
+          return "F";
+        case 6:
+          return "F#/Gb";
+        case 7:
+          return "G";
+        case 8:
+          return "G#/Ab";
+        case 9:
+          return "A";
+        case 10:
+          return "A#/Bb";
+        case 11:
+          return "B";
+        default:
+          return "X";
+      }
+    }
 
   </script>
 </body>
