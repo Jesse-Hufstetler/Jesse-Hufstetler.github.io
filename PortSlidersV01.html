@@ -59,46 +59,48 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <table>
     <tr>
-      <td colspan="3">
+      <td colspan="4">
         <canvas id="myChart"></canvas>
       </td>
     </tr>
     <tr>
       <th style="width: 448px;">Name</th>
-      <th style="width: 15px;">Value</th>
-      <th>Slider</th>
+      <th style="width: 15px;" colspan="2">Value</th>
+      <th style="width: 1500px;">Slider</th>
     </tr>
     <tr>
       <td>Fs (Hz) - Resonant frequency of speaker driver</td>
-      <td><input type="number" id="FsBox" step="any" value="23" min="5" max="180" data-value-name="Fs"></td>
+      <td colspan="2"><input type="number" id="FsBox" step="any" value="23" min="5" max="180" style="width: 120px;" data-value-name="Fs"></td>
       <td>
         <input type="range" id="FsSlider" step="any" value="23" min="5" max="180" data-value-name="Fs">
       </td>
     </tr>
     <tr>
       <td>Qts - Overall damping of speaker driver</td>
-      <td><input type="number" id="QtsBox" step="any" value="0.540" min="0" max="2.5" data-value-name="Qts"></td>
+      <td colspan="2"><input type="number" id="QtsBox" step="any" value="0.540" min="0" max="2.5" style="width: 120px;" data-value-name="Qts"></td>
       <td>
         <input type="range" id="QtsSlider" step="any" value="0.540" min="0" max="2.5" data-value-name="Qts">
       </td>
     </tr>
     <tr>
-      <td>Vas (ft&#xb3;) - compliance equivalent volume of speaker driver</td>
-      <td><input type="number" id="VasBox" step="any" value="16.8" min="0.01" max="20" data-value-name="Vas"></td>
+      <td>Vas (L &amp; ft&#xb3;) - compliance equivalent volume of speaker driver</td>
+      <td><input type="number" id="VasBoxL" step="any" value="475.7" min="0.01" max="20" style="width: 55px;" data-value-name="Vas"></td>
+      <td><input type="number" id="VasBox" step="any" value="16.8" min="0.01" max="20" style="width: 55px;" data-value-name="Vas"></td>
       <td>
         <input type="range" id="VasSlider" step="any" value="16.8" min="0.01" max="20" data-value-name="Vas">
       </td>
     </tr>
     <tr>
-      <td>Vb (ft&#xb3;) - box volume</td>
-      <td><input type="number" id="VbBox" step="any" value="10" min="0" max="20" data-value-name="Vb"></td>
+      <td>Vb (L &amp; ft&#xb3;) - box volume</td>
+      <td><input type="number" id="VbBoxL" step="any" value="283.1" min="0" max="20" style="width: 55px;" data-value-name="Vb"></td>
+      <td><input type="number" id="VbBox" step="any" value="10" min="0" max="20" style="width: 55px;" data-value-name="Vb"></td>
       <td>
         <input type="range" id="VbSlider" step="any" value="10" min="0" max="20" data-value-name="Vb">
       </td>
     </tr>
     <tr>
       <td>Fb (Hz) - box port tuning frequency</td>
-      <td><input type="number" id="FbBox" step="any" value="35" min="2" max="180" data-value-name="Fb"></td>
+      <td colspan="2"><input type="number" id="FbBox" step="any" value="35" min="2" max="180" style="width: 120px;" data-value-name="Fb"></td>
       <td>
         <input type="range" id="FbSlider" step="any" value="35" min="2" max="180" data-value-name="Fb">
       </td>
@@ -158,12 +160,16 @@
     qtsBox.addEventListener("input", (event) => { qtsSlider.value = event.target.value; UpdateThings(event.target); });
     let vasSlider = document.querySelector(`#VasSlider`);
     let vasBox = document.querySelector(`#VasBox`);
-    vasSlider.addEventListener("input", (event) => { vasBox.value = event.target.value; UpdateThings(event.target); });
-    vasBox.addEventListener("input", (event) => { vasSlider.value = event.target.value; UpdateThings(event.target); });
+    let vasBoxL = document.querySelector(`#VasBoxL`);
+    vasSlider.addEventListener("input", (event) => { vasBox.value = event.target.value; vasBoxL.value = event.target.value * 28.31685; UpdateThings(event.target); });
+    vasBox.addEventListener("input", (event) => { vasSlider.value = event.target.value; vasBoxL.value = event.target.value * 28.31685; UpdateThings(event.target); });
+    vasBoxL.addEventListener("input", (event) => { vasSlider.value = event.target.value / 28.31685; vasBox.value = event.target.value / 28.31685; UpdateThings(event.target); });
     let vbSlider = document.querySelector(`#VbSlider`);
     let vbBox = document.querySelector(`#VbBox`);
-    vbSlider.addEventListener("input", (event) => { vbBox.value = event.target.value; UpdateThings(event.target); });
-    vbBox.addEventListener("input", (event) => { vbSlider.value = event.target.value; UpdateThings(event.target); });
+    let vbBoxL = document.querySelector(`#VbBoxL`);
+    vbSlider.addEventListener("input", (event) => { vbBox.value = event.target.value; vbBoxL.value = event.target.value * 28.31685; UpdateThings(event.target); });
+    vbBox.addEventListener("input", (event) => { vbSlider.value = event.target.value; vbBoxL.value = event.target.value * 28.31685; UpdateThings(event.target); });
+    vbBoxL.addEventListener("input", (event) => { vbSlider.value = event.target.value / 28.31685; vbBox.value = event.target.value / 28.31685; UpdateThings(event.target); });
     let fbSlider = document.querySelector(`#FbSlider`);
     let fbBox = document.querySelector(`#FbBox`);
     fbSlider.addEventListener("input", (event) => { fbBox.value = event.target.value; UpdateThings(event.target); });
@@ -221,8 +227,6 @@
     }
 
     UpdateThings(null);
-    document.querySelectorAll('input[type="number"]').forEach(input => input.style.width = '75px');
-
 
     function noteName(noteNum) {
       switch (noteNum % 12) {
