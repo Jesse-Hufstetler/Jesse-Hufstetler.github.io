@@ -1,0 +1,324 @@
+<html>
+
+<head>
+    <title>Decimal to Ruler</title>
+
+</head>
+
+<body style="font-family: sans-serif;">
+
+
+    Put decimals on a ruler!
+    <br>
+    Type a decimal:
+    <input type="text" id="decimalInput" value="0.5" />
+    <br><br>
+
+
+    <svg id="svgContent" height="700px" width="1000px" version="1.1" viewBox="0 0 1000 700"
+        xmlns="http://www.w3.org/2000/svg">
+        <rect width="100%" height="100%" fill="#eee" stroke="black" />
+
+
+
+
+
+
+        <line x1="500" x2="500" y1="105" y2="200" stroke="black" stroke-width=".5" />
+        <text text-anchor="middle" x="490" y="140">1</text>
+        <text text-anchor="middle" x="500" y="150">/</text>
+        <text text-anchor="middle" x="510" y="160">2</text>
+
+
+
+        <line x1="250" x2="250" y1="205" y2="300" stroke="black" stroke-width=".5" />
+        <text text-anchor="middle" x="240" y="240">1</text>
+        <text text-anchor="middle" x="250" y="250">/</text>
+        <text text-anchor="middle" x="260" y="260">4</text>
+        <line x1="500" x2="500" y1="205" y2="300" stroke="black" stroke-width=".5" />
+        <text text-anchor="middle" x="490" y="240">2</text>
+        <text text-anchor="middle" x="500" y="250">/</text>
+        <text text-anchor="middle" x="510" y="260">4</text>
+        <line x1="750" x2="750" y1="205" y2="300" stroke="black" stroke-width=".5" />
+        <text text-anchor="middle" x="740" y="240">3</text>
+        <text text-anchor="middle" x="750" y="250">/</text>
+        <text text-anchor="middle" x="760" y="260">4</text>
+
+
+
+
+
+
+        <line x1="125" x2="125" y1="305" y2="400" stroke="black" stroke-width=".5" />
+        <text text-anchor="middle" x="115" y="340">1</text>
+        <text text-anchor="middle" x="125" y="350">/</text>
+        <text text-anchor="middle" x="135" y="360">8</text>
+        <line x1="250" x2="250" y1="305" y2="400" stroke="black" stroke-width=".5" />
+        <text text-anchor="middle" x="240" y="340">2</text>
+        <text text-anchor="middle" x="250" y="350">/</text>
+        <text text-anchor="middle" x="260" y="360">8</text>
+        <line x1="375" x2="375" y1="305" y2="400" stroke="black" stroke-width=".5" />
+        <text text-anchor="middle" x="365" y="340">3</text>
+        <text text-anchor="middle" x="375" y="350">/</text>
+        <text text-anchor="middle" x="385" y="360">8</text>
+        <line x1="500" x2="500" y1="305" y2="400" stroke="black" stroke-width=".5" />
+        <text text-anchor="middle" x="490" y="340">4</text>
+        <text text-anchor="middle" x="500" y="350">/</text>
+        <text text-anchor="middle" x="510" y="360">8</text>
+        <line x1="625" x2="625" y1="305" y2="400" stroke="black" stroke-width=".5" />
+        <text text-anchor="middle" x="615" y="340">5</text>
+        <text text-anchor="middle" x="625" y="350">/</text>
+        <text text-anchor="middle" x="635" y="360">8</text>
+        <line x1="750" x2="750" y1="305" y2="400" stroke="black" stroke-width=".5" />
+        <text text-anchor="middle" x="740" y="340">6</text>
+        <text text-anchor="middle" x="750" y="350">/</text>
+        <text text-anchor="middle" x="760" y="360">8</text>
+        <line x1="875" x2="875" y1="305" y2="400" stroke="black" stroke-width=".5" />
+        <text text-anchor="middle" x="865" y="340">7</text>
+        <text text-anchor="middle" x="875" y="350">/</text>
+        <text text-anchor="middle" x="885" y="360">8</text>
+
+
+
+
+
+
+
+        <line x1="62.5" x2="62.5" y1="405" y2="500" stroke="black" stroke-width=".5" />
+        <text text-anchor="middle" x="52.5" y="440">1</text>
+        <text text-anchor="middle" x="62.5" y="450">/</text>
+        <text text-anchor="middle" x="72.5" y="460">16</text>
+        <line x1="125" x2="125" y1="405" y2="500" stroke="black" stroke-width=".5" />
+        <text text-anchor="middle" x="115" y="440">2</text>
+        <text text-anchor="middle" x="125" y="450">/</text>
+        <text text-anchor="middle" x="135" y="460">16</text>
+        <line x1="187.5" x2="187.5" y1="405" y2="500" stroke="black" stroke-width=".5" />
+        <text text-anchor="middle" x="177.5" y="440">3</text>
+        <text text-anchor="middle" x="187.5" y="450">/</text>
+        <text text-anchor="middle" x="197.5" y="460">16</text>
+        <line x1="250" x2="250" y1="405" y2="500" stroke="black" stroke-width=".5" />
+        <text text-anchor="middle" x="240" y="440">4</text>
+        <text text-anchor="middle" x="250" y="450">/</text>
+        <text text-anchor="middle" x="260" y="460">16</text>
+        <line x1="312.5" x2="312.5" y1="405" y2="500" stroke="black" stroke-width=".5" />
+        <text text-anchor="middle" x="302.5" y="440">5</text>
+        <text text-anchor="middle" x="312.5" y="450">/</text>
+        <text text-anchor="middle" x="322.5" y="460">16</text>
+        <line x1="375" x2="375" y1="405" y2="500" stroke="black" stroke-width=".5" />
+        <text text-anchor="middle" x="365" y="440">6</text>
+        <text text-anchor="middle" x="375" y="450">/</text>
+        <text text-anchor="middle" x="385" y="460">16</text>
+        <line x1="437.5" x2="437.5" y1="405" y2="500" stroke="black" stroke-width=".5" />
+        <text text-anchor="middle" x="427.5" y="440">7</text>
+        <text text-anchor="middle" x="437.5" y="450">/</text>
+        <text text-anchor="middle" x="447.5" y="460">16</text>
+        <line x1="500" x2="500" y1="405" y2="500" stroke="black" stroke-width=".5" />
+        <text text-anchor="middle" x="490" y="440">8</text>
+        <text text-anchor="middle" x="500" y="450">/</text>
+        <text text-anchor="middle" x="510" y="460">16</text>
+        <line x1="562.5" x2="562.5" y1="405" y2="500" stroke="black" stroke-width=".5" />
+        <text text-anchor="middle" x="552.5" y="440">9</text>
+        <text text-anchor="middle" x="562.5" y="450">/</text>
+        <text text-anchor="middle" x="572.5" y="460">16</text>
+        <line x1="625" x2="625" y1="405" y2="500" stroke="black" stroke-width=".5" />
+        <text text-anchor="middle" x="615" y="440">10</text>
+        <text text-anchor="middle" x="625" y="450">/</text>
+        <text text-anchor="middle" x="635" y="460">16</text>
+        <line x1="687.5" x2="687.5" y1="405" y2="500" stroke="black" stroke-width=".5" />
+        <text text-anchor="middle" x="677.5" y="440">11</text>
+        <text text-anchor="middle" x="687.5" y="450">/</text>
+        <text text-anchor="middle" x="697.5" y="460">16</text>
+        <line x1="750" x2="750" y1="405" y2="500" stroke="black" stroke-width=".5" />
+        <text text-anchor="middle" x="740" y="440">12</text>
+        <text text-anchor="middle" x="750" y="450">/</text>
+        <text text-anchor="middle" x="760" y="460">16</text>
+        <line x1="812.5" x2="812.5" y1="405" y2="500" stroke="black" stroke-width=".5" />
+        <text text-anchor="middle" x="802.5" y="440">13</text>
+        <text text-anchor="middle" x="812.5" y="450">/</text>
+        <text text-anchor="middle" x="822.5" y="460">16</text>
+        <line x1="875" x2="875" y1="405" y2="500" stroke="black" stroke-width=".5" />
+        <text text-anchor="middle" x="865" y="440">14</text>
+        <text text-anchor="middle" x="875" y="450">/</text>
+        <text text-anchor="middle" x="885" y="460">16</text>
+        <line x1="937.5" x2="937.5" y1="405" y2="500" stroke="black" stroke-width=".5" />
+        <text text-anchor="middle" x="927.5" y="440">15</text>
+        <text text-anchor="middle" x="937.5" y="450">/</text>
+        <text text-anchor="middle" x="947.5" y="460">16</text>
+
+
+
+
+        <line x1="31.25" x2="31.25" y1="505" y2="600" stroke="black" stroke-width=".5" />
+        <text text-anchor="middle" x="21.25" y="540">1</text>
+        <text text-anchor="middle" x="31.25" y="550">/</text>
+        <text text-anchor="middle" x="41.25" y="560">32</text>
+        <line x1="62.5" x2="62.5" y1="505" y2="600" stroke="black" stroke-width=".5" />
+        <text text-anchor="middle" x="52.5" y="540">2</text>
+        <text text-anchor="middle" x="62.5" y="550">/</text>
+        <text text-anchor="middle" x="72.5" y="560">32</text>
+        <line x1="93.75" x2="93.75" y1="505" y2="600" stroke="black" stroke-width=".5" />
+        <text text-anchor="middle" x="83.75" y="540">3</text>
+        <text text-anchor="middle" x="93.75" y="550">/</text>
+        <text text-anchor="middle" x="103.75" y="560">32</text>
+        <line x1="125" x2="125" y1="505" y2="600" stroke="black" stroke-width=".5" />
+        <text text-anchor="middle" x="115" y="540">4</text>
+        <text text-anchor="middle" x="125" y="550">/</text>
+        <text text-anchor="middle" x="135" y="560">32</text>
+        <line x1="156.25" x2="156.25" y1="505" y2="600" stroke="black" stroke-width=".5" />
+        <text text-anchor="middle" x="146.25" y="540">5</text>
+        <text text-anchor="middle" x="156.25" y="550">/</text>
+        <text text-anchor="middle" x="166.25" y="560">32</text>
+        <line x1="187.5" x2="187.5" y1="505" y2="600" stroke="black" stroke-width=".5" />
+        <text text-anchor="middle" x="177.5" y="540">6</text>
+        <text text-anchor="middle" x="187.5" y="550">/</text>
+        <text text-anchor="middle" x="197.5" y="560">32</text>
+        <line x1="218.75" x2="218.75" y1="505" y2="600" stroke="black" stroke-width=".5" />
+        <text text-anchor="middle" x="208.75" y="540">7</text>
+        <text text-anchor="middle" x="218.75" y="550">/</text>
+        <text text-anchor="middle" x="228.75" y="560">32</text>
+        <line x1="250" x2="250" y1="505" y2="600" stroke="black" stroke-width=".5" />
+        <text text-anchor="middle" x="240" y="540">8</text>
+        <text text-anchor="middle" x="250" y="550">/</text>
+        <text text-anchor="middle" x="260" y="560">32</text>
+        <line x1="281.25" x2="281.25" y1="505" y2="600" stroke="black" stroke-width=".5" />
+        <text text-anchor="middle" x="271.25" y="540">9</text>
+        <text text-anchor="middle" x="281.25" y="550">/</text>
+        <text text-anchor="middle" x="291.25" y="560">32</text>
+        <line x1="312.5" x2="312.5" y1="505" y2="600" stroke="black" stroke-width=".5" />
+        <text text-anchor="middle" x="302.5" y="540">10</text>
+        <text text-anchor="middle" x="312.5" y="550">/</text>
+        <text text-anchor="middle" x="322.5" y="560">32</text>
+        <line x1="343.75" x2="343.75" y1="505" y2="600" stroke="black" stroke-width=".5" />
+        <text text-anchor="middle" x="333.75" y="540">11</text>
+        <text text-anchor="middle" x="343.75" y="550">/</text>
+        <text text-anchor="middle" x="353.75" y="560">32</text>
+        <line x1="375" x2="375" y1="505" y2="600" stroke="black" stroke-width=".5" />
+        <text text-anchor="middle" x="365" y="540">12</text>
+        <text text-anchor="middle" x="375" y="550">/</text>
+        <text text-anchor="middle" x="385" y="560">32</text>
+        <line x1="406.25" x2="406.25" y1="505" y2="600" stroke="black" stroke-width=".5" />
+        <text text-anchor="middle" x="396.25" y="540">13</text>
+        <text text-anchor="middle" x="406.25" y="550">/</text>
+        <text text-anchor="middle" x="416.25" y="560">32</text>
+        <line x1="437.5" x2="437.5" y1="505" y2="600" stroke="black" stroke-width=".5" />
+        <text text-anchor="middle" x="427.5" y="540">14</text>
+        <text text-anchor="middle" x="437.5" y="550">/</text>
+        <text text-anchor="middle" x="447.5" y="560">32</text>
+        <line x1="468.75" x2="468.75" y1="505" y2="600" stroke="black" stroke-width=".5" />
+        <text text-anchor="middle" x="458.75" y="540">15</text>
+        <text text-anchor="middle" x="468.75" y="550">/</text>
+        <text text-anchor="middle" x="478.75" y="560">32</text>
+        <line x1="500" x2="500" y1="505" y2="600" stroke="black" stroke-width=".5" />
+        <text text-anchor="middle" x="490" y="540">16</text>
+        <text text-anchor="middle" x="500" y="550">/</text>
+        <text text-anchor="middle" x="510" y="560">32</text>
+        <line x1="531.25" x2="531.25" y1="505" y2="600" stroke="black" stroke-width=".5" />
+        <text text-anchor="middle" x="521.25" y="540">17</text>
+        <text text-anchor="middle" x="531.25" y="550">/</text>
+        <text text-anchor="middle" x="541.25" y="560">32</text>
+        <line x1="562.5" x2="562.5" y1="505" y2="600" stroke="black" stroke-width=".5" />
+        <text text-anchor="middle" x="552.5" y="540">18</text>
+        <text text-anchor="middle" x="562.5" y="550">/</text>
+        <text text-anchor="middle" x="572.5" y="560">32</text>
+        <line x1="593.75" x2="593.75" y1="505" y2="600" stroke="black" stroke-width=".5" />
+        <text text-anchor="middle" x="583.75" y="540">19</text>
+        <text text-anchor="middle" x="593.75" y="550">/</text>
+        <text text-anchor="middle" x="603.75" y="560">32</text>
+        <line x1="625" x2="625" y1="505" y2="600" stroke="black" stroke-width=".5" />
+        <text text-anchor="middle" x="615" y="540">20</text>
+        <text text-anchor="middle" x="625" y="550">/</text>
+        <text text-anchor="middle" x="635" y="560">32</text>
+        <line x1="656.25" x2="656.25" y1="505" y2="600" stroke="black" stroke-width=".5" />
+        <text text-anchor="middle" x="646.25" y="540">21</text>
+        <text text-anchor="middle" x="656.25" y="550">/</text>
+        <text text-anchor="middle" x="666.25" y="560">32</text>
+        <line x1="687.5" x2="687.5" y1="505" y2="600" stroke="black" stroke-width=".5" />
+        <text text-anchor="middle" x="677.5" y="540">22</text>
+        <text text-anchor="middle" x="687.5" y="550">/</text>
+        <text text-anchor="middle" x="697.5" y="560">32</text>
+        <line x1="718.75" x2="718.75" y1="505" y2="600" stroke="black" stroke-width=".5" />
+        <text text-anchor="middle" x="708.75" y="540">23</text>
+        <text text-anchor="middle" x="718.75" y="550">/</text>
+        <text text-anchor="middle" x="728.75" y="560">32</text>
+        <line x1="750" x2="750" y1="505" y2="600" stroke="black" stroke-width=".5" />
+        <text text-anchor="middle" x="740" y="540">24</text>
+        <text text-anchor="middle" x="750" y="550">/</text>
+        <text text-anchor="middle" x="760" y="560">32</text>
+        <line x1="781.25" x2="781.25" y1="505" y2="600" stroke="black" stroke-width=".5" />
+        <text text-anchor="middle" x="771.25" y="540">25</text>
+        <text text-anchor="middle" x="781.25" y="550">/</text>
+        <text text-anchor="middle" x="791.25" y="560">32</text>
+        <line x1="812.5" x2="812.5" y1="505" y2="600" stroke="black" stroke-width=".5" />
+        <text text-anchor="middle" x="802.5" y="540">26</text>
+        <text text-anchor="middle" x="812.5" y="550">/</text>
+        <text text-anchor="middle" x="822.5" y="560">32</text>
+        <line x1="843.75" x2="843.75" y1="505" y2="600" stroke="black" stroke-width=".5" />
+        <text text-anchor="middle" x="833.75" y="540">27</text>
+        <text text-anchor="middle" x="843.75" y="550">/</text>
+        <text text-anchor="middle" x="853.75" y="560">32</text>
+        <line x1="875" x2="875" y1="505" y2="600" stroke="black" stroke-width=".5" />
+        <text text-anchor="middle" x="865" y="540">28</text>
+        <text text-anchor="middle" x="875" y="550">/</text>
+        <text text-anchor="middle" x="885" y="560">32</text>
+        <line x1="906.25" x2="906.25" y1="505" y2="600" stroke="black" stroke-width=".5" />
+        <text text-anchor="middle" x="896.25" y="540">29</text>
+        <text text-anchor="middle" x="906.25" y="550">/</text>
+        <text text-anchor="middle" x="916.25" y="560">32</text>
+        <line x1="937.5" x2="937.5" y1="505" y2="600" stroke="black" stroke-width=".5" />
+        <text text-anchor="middle" x="927.5" y="540">30</text>
+        <text text-anchor="middle" x="937.5" y="550">/</text>
+        <text text-anchor="middle" x="947.5" y="560">32</text>
+        <line x1="968.75" x2="968.75" y1="505" y2="600" stroke="black" stroke-width=".5" />
+        <text text-anchor="middle" x="958.75" y="540">31</text>
+        <text text-anchor="middle" x="968.75" y="550">/</text>
+        <text text-anchor="middle" x="978.75" y="560">32</text>
+
+
+        <line id="line" x1="500" x2="500" y1="0" y2="1000" stroke="red" stroke-width=".5" />
+        <text id="textu" text-anchor="middle" x="500" y="50" color="red" fill="red">0.5</text>
+        <text id="textl" text-anchor="middle" x="500" y="650" color="red" fill="red">0.5</text>
+
+
+
+
+
+
+
+        <style>
+            <![CDATA[
+            text {
+                dominant-baseline: hanging;
+                font: 14px Verdana, Helvetica, Arial, sans-serif;
+            }
+            ]]>
+        </style>
+    </svg>
+
+
+
+
+
+    <script>
+
+
+
+        const selectElement = document.querySelector("#decimalInput");
+
+
+        selectElement.addEventListener("keyup", (event) => {
+            document.querySelector("#textl").textContent = event.target.value;
+            document.querySelector("#textu").textContent = event.target.value;
+            document.querySelector("#textl").setAttribute('x', event.target.value * 1000);
+            document.querySelector("#textu").setAttribute('x', event.target.value * 1000);
+            document.querySelector("#line").setAttribute('x1', event.target.value * 1000);
+            document.querySelector("#line").setAttribute('x2', event.target.value * 1000);
+
+        });
+    </script>
+    <br><br><br>
+    <a href="index.html">(My Other Stuff)</a>
+
+
+</body>
+
+</html>
