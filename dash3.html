@@ -306,7 +306,10 @@
                 fragColor = vec4(rgb2hsv(fragColor.xyz), fragColor.w);
                 fragColor.x *= 2.0;
                 fragColor.z *= -1.0;
-                fragColor.z += 1.9;
+                fragColor.z += 1.0;
+                fragColor.z *= 0.125;
+                fragColor.z *= fragColor.z;
+                fragColor.z *= fragColor.z;
                 fragColor = vec4(hsv2rgb(fragColor.xyz), fragColor.w);
                 fragColor += vec4(ScreenSpaceDither(fragCoord.xy, 20.0), 1.);
                 if (fragColor.x < 0.0) fragColor.x = 0.0;
@@ -342,8 +345,9 @@
     </script>
     <style>
     * {
-        color: #fff;
-        text-shadow: .9vmin .9vmin 1vmin #000, -.9vmin -.9vmin 1vmin #000;
+        color: black;
+        text-shadow: 0.125vmin 0.125vmin 0.25vmin white, -0.125vmin -0.125vmin 0.25vmin white, 0.125vmin -0.125vmin 0.25vmin white, -0.125vmin 0.125vmin 0.25vmin white,0.125vmin 0.125vmin 0.25vmin white, -0.125vmin -0.125vmin 0.25vmin white, 0.125vmin -0.125vmin 0.25vmin white, -0.125vmin 0.125vmin 0.25vmin white, 0.125vmin 0.125vmin 0.25vmin white, -0.125vmin -0.125vmin 0.25vmin white, 0.125vmin -0.125vmin 0.25vmin white, -0.125vmin 0.125vmin 0.25vmin white,0.125vmin 0.125vmin 0.25vmin white, -0.125vmin -0.125vmin 0.25vmin white, 0.125vmin -0.125vmin 0.25vmin white, -0.125vmin 0.125vmin 0.25vmin white;
+        paint-order: stroke;
     }
 
     .background {
