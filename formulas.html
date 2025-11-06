@@ -301,8 +301,7 @@
             }
             if (target.dataset.valueName == `DegreesCelsius`) {
                 state.DegreesFahrenheit = state.DegreesCelsius * 9 / 5 + 32;
-                state.DewPointCelsius = Math.pow(state.PercentHumidity / 100, 1 / 8) * (112 + 0.9 * state.DegreesCelsius) + 0.1 * state.DegreesCelsius - 112;
-                state.DewPointFahrenheit = state.DewPointCelsius * 9 / 5 + 32;
+                state.PercentHumidity = Math.pow((state.DewPointCelsius - (0.1 * state.DegreesCelsius - 112)) / (112 + 0.9 * state.DegreesCelsius), 8) * 100;
             }
             if (target.dataset.valueName == `PercentHumidity`) {
                 state.DewPointCelsius = Math.pow(state.PercentHumidity / 100, 1 / 8) * (112 + 0.9 * state.DegreesCelsius)
