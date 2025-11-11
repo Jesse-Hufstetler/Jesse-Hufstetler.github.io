@@ -9,26 +9,23 @@
     html,
     body {
         height: 100%;
-        margin: 0;
-        padding: 0;
         font-family: 'Consolas', 'Droid Sans Mono', monospace;
-        font-size: 64px;
+        font-size: 16px;
     }
     </style>
 </head>
 
 <body>
-    <div style="display: flex; justify-content: center;">
-        <svg width="100%" viewBox="-2 -2 4000 2500" id="output">
-
-
+    <div style="display: flex;">
+        <svg  width="700px" height="900px" viewBox="0 0 700 900" id="output">
           
 
         </svg>
     </div>
+    <br>
     <script>
 
-        var spacer = 110;
+        var spacer = 30;
         //function ytohz(input){ return input/hzJump + bottomHz;}
         //function hztoy(input){ return (input - bottomHz) * hzJump;}
         function hztoy(input) { return hzton(input)*spacer-20*spacer; }
@@ -78,39 +75,40 @@
 
         
         
-        for (let hz = 10; hz < 120; hz += 10) {
-            outText += `<text x="10" y="${hztoy(hz)}" dominant-baseline="mathematical" font-size="60%" transform="translate(0 -11)" fill="#007700" text-anchor="start">${hz} hz</text>`;
-            outText += `<line x1="0" y1="${hztoy(hz)}" x2="200000" y2="${hztoy(hz)}" stroke="#090" stroke-width="5"/>`;
+        for (let hz = 10; hz < 150; hz += 10) {
+            outText += `<line x1="0" y1="${hztoy(hz)}" x2="700" y2="${hztoy(hz)}" stroke="#090" stroke-width="2" opacity="0.4" />`;
         }
 
-        for (let hz = 10; hz < 120; hz += 5) {
-            outText += `<line x1="0" y1="${hztoy(hz)}" x2="200000" y2="${hztoy(hz)}" stroke="#090" opacity="0.4"/>`;
+        for (let hz = 30; hz < 150; hz += 5) {
+            outText += `<text x="10" y="${hztoy(hz)}" dominant-baseline="middle" font-size="12" fill="#007700" text-anchor="start">${hz} hz</text>`;
+            outText += `<line x1="0" y1="${hztoy(hz)}" x2="700" y2="${hztoy(hz)}" stroke="#090" stroke-width="0.5" opacity="0.4"/>`;
         }
         
 
-        for (let nn = 1; nn < 50; nn += 1) {
-            outText += `<line x1="100" y1="${hztoy(ntohz(nn))}" x2="200000" y2="${hztoy(ntohz(nn))}" stroke="#e0e"/>`;
-            outText += `<text x="340" y="${hztoy(ntohz(nn))}" dominant-baseline="mathematical" font-size="60%" transform="translate(0 -11)" fill="#B03060" text-anchor="start">MIDI Note #${nn} - ${NoteName(nn)} - ${ntohz(nn).toFixed(2)} hz</text>`;
+        for (let nn = 21; nn < 50; nn += 1) {
+            outText += `<line x1="50" y1="${hztoy(ntohz(nn))}" x2="700" y2="${hztoy(ntohz(nn))}" stroke="#e0e" stroke-width="0.5" />`;
+            outText += `<text x="60" y="${hztoy(ntohz(nn))}" dominant-baseline="middle" font-size="12" fill="#B03060" text-anchor="start">MIDI Note #${nn} - ${NoteName(nn)} - ${ntohz(nn).toFixed(2)} hz</text>`;
         }
         
         
-        outText += `<text x="1000" y="${hztoy(ntohz(23))}" dominant-baseline="mathematical" font-weight="bold" font-size="60%" transform="translate(0 -11)" fill="#0000ff" text-anchor="start">5 STRING BASS LOWEST</text>`;
-        outText += `<text x="1000" y="${hztoy(ntohz(28))}" dominant-baseline="mathematical" font-weight="bold" font-size="60%" transform="translate(0 -11)" fill="#0000ff" text-anchor="start">4 STRING BASS LOWEST</text>`;
-        outText += `<text x="1700" y="${hztoy(ntohz(27))}" dominant-baseline="mathematical" font-size="60%" transform="translate(0 -11)" fill="#3333dd" text-anchor="middle">Many</text>`;
-        outText += `<text x="1700" y="${hztoy(ntohz(28))}" dominant-baseline="mathematical" font-size="60%" transform="translate(0 -11)" fill="#3333dd" text-anchor="middle">Songs</text>`;
-        outText += `<text x="1700" y="${hztoy(ntohz(29))}" dominant-baseline="mathematical" font-size="60%" transform="translate(0 -11)" fill="#3333dd" text-anchor="middle">Bottom</text>`;
-        outText += `<text x="1700" y="${hztoy(ntohz(30))}" dominant-baseline="mathematical" font-size="60%" transform="translate(0 -11)" fill="#3333dd" text-anchor="middle">Out</text>`;
-        outText += `<text x="1700" y="${hztoy(ntohz(31))}" dominant-baseline="mathematical" font-size="60%" transform="translate(0 -11)" fill="#3333dd" text-anchor="middle">Here</text>`;
+        outText += `<text x="300" y="${hztoy(ntohz(23))}" dominant-baseline="middle" font-weight="bold" font-size="12" fill="#0000ff" text-anchor="start">5 STRING BASS LOWEST</text>`;
+        outText += `<text x="300" y="${hztoy(ntohz(28))}" dominant-baseline="middle" font-weight="bold" font-size="12" fill="#0000ff" text-anchor="start">4 STRING BASS LOWEST</text>`;
+        outText += `<text x="500" y="${hztoy(ntohz(27))}" dominant-baseline="middle" font-size="12" fill="#3333dd" text-anchor="middle">Many</text>`;
+        outText += `<text x="500" y="${hztoy(ntohz(28))}" dominant-baseline="middle" font-size="12" fill="#3333dd" text-anchor="middle">Songs</text>`;
+        outText += `<text x="500" y="${hztoy(ntohz(29))}" dominant-baseline="middle" font-size="12" fill="#3333dd" text-anchor="middle">Bottom</text>`;
+        outText += `<text x="500" y="${hztoy(ntohz(30))}" dominant-baseline="middle" font-size="12" fill="#3333dd" text-anchor="middle">Out</text>`;
+        outText += `<text x="500" y="${hztoy(ntohz(31))}" dominant-baseline="middle" font-size="12" fill="#3333dd" text-anchor="middle">Here</text>`;
         
 
 
         
-        outText += `<text x="2000" y="${hztoy(ntohz(25))}" dominant-baseline="mathematical" font-size="60%" transform="translate(0 -11)" fill="#3333dd" text-anchor="middle">HIP</text>`;
-        outText += `<text x="2000" y="${hztoy(ntohz(26))}" dominant-baseline="mathematical" font-size="60%" transform="translate(0 -11)" fill="#3333dd" text-anchor="middle">HOP</text>`;
+        outText += `<text x="600" y="${hztoy(ntohz(25))}" dominant-baseline="middle" font-size="12" fill="#3333dd" text-anchor="middle">HIP</text>`;
+        outText += `<text x="600" y="${hztoy(ntohz(26))}" dominant-baseline="middle" font-size="12" fill="#3333dd" text-anchor="middle">HOP</text>`;
 
         
-        outText += `<text x="1600" y="${hztoy(ntohz(23))}" dominant-baseline="mathematical" font-size="60%" transform="translate(0 -11)" fill="#3333dd" text-anchor="middle">DUB</text>`;
-        outText += `<text x="1600" y="${hztoy(ntohz(24))}" dominant-baseline="mathematical" font-size="60%" transform="translate(0 -11)" fill="#3333dd" text-anchor="middle">STEP</text>`;
+        outText += `<text x="550" y="${hztoy(ntohz(23))}" dominant-baseline="middle" font-size="12" fill="#3333dd" text-anchor="middle">DUB</text>`;
+        outText += `<text x="550" y="${hztoy(ntohz(24))}" dominant-baseline="middle" font-size="12" fill="#3333dd" text-anchor="middle">STEP</text>`;
+        outText += `<rect width="700" height="900" fill="transparent" stroke="black" stroke-width="0.5" />`;
 
         
 
