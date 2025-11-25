@@ -102,6 +102,7 @@
     </div>
     <script>
         const values = [
+            { friendlyName: "miniSeparator" },
             { friendlyName: "Midi Note", min: 0, max: 128, default: 69 },
             { friendlyName: "Frequency", min: 0, max: 20000, default: 440 },
             { friendlyName: "Wavelenth In Samples", min: 0, max: 6000, default: 44100 / 440 },
@@ -111,37 +112,40 @@
             { friendlyName: "Audio Buffer Size 2 Exponent", min: 0, max: 11, default: 7 },
             { friendlyName: "Audio Buffer Latency ms", min: 0, max: 50, default: 128 / 44100 * 1000 },
             { friendlyName: "Audio Buffer Latency Feet", min: 0, max: 50, default: (128 / 44100) * 1116.437 },
-            { friendlyName: "separator" },
+            { friendlyName: "fullSeparator" },
             { friendlyName: "Decibels", min: -100, max: 0, default: -20 },
             { friendlyName: "Gain", min: 0, max: 1, default: Math.pow(10, -20 / 20) },
-            { friendlyName: "separator" },
+            { friendlyName: "fullSeparator" },
             { friendlyName: "Q", min: 0.2, max: 144, default: 0.707106781186548 },
             { friendlyName: "Bandwidth", min: 0.01, max: 4, default: 1.8999686269529905 },
-            { friendlyName: "separator" },
+            { friendlyName: "fullSeparator" },
             { friendlyName: "Degrees Fahrenheit", min: -40, max: 500, default: 32 },
             { friendlyName: "Degrees Celsius", min: -40, max: 260, default: 0 },
             { friendlyName: "Percent Humidity", min: 0, max: 100, default: 100 },
             { friendlyName: "Dew Point Fahrenheit", min: 14, max: 77, default: 32 },
             { friendlyName: "Dew Point Celsius", min: -10, max: 25, default: 0 },
-            { friendlyName: "separator" },
+            { friendlyName: "fullSeparator" },
             { friendlyName: "Biking MPH", min: 0, max: 30, default: 6 },
             { friendlyName: "Biking Miles", min: 0, max: 60, default: 5 },
             { friendlyName: "Biking Minutes", min: 0, max: 120, default: 50 },
-            { friendlyName: "separator" },
+            { friendlyName: "fullSeparator" },
             { friendlyName: "Tesla Charge Amps", min: 0, max: 500, default: 16 },
             { friendlyName: "Tesla Charge Volts", min: 0, max: 500, default: 240 },
             { friendlyName: "Tesla Charge Watts", min: 0, max: 250000, default: 3840 },
             { friendlyName: "Tesla Charge MPH", min: 0, max: 870, default: 7.68 },
             { friendlyName: "Tesla Charge Time Hours", min: 0, max: 25, default: 5.20 },
             { friendlyName: "Tesla Charge Battery Percent", min: 0, max: 100, default: 20 },
-            { friendlyName: "separator" },
+            { friendlyName: "fullSeparator" },
             { friendlyName: "Color Preview" },
+            { friendlyName: "miniSeparator" },
             { friendlyName: "RGB Red", min: 0, max: 255, default: 0 },
             { friendlyName: "RGB Green", min: 0, max: 255, default: 0 },
             { friendlyName: "RGB Blue", min: 0, max: 255, default: 255 },
+            { friendlyName: "miniSeparator" },
             { friendlyName: "HSL Hue", min: 0, max: 360, default: 240 },
             { friendlyName: "HSL Sat", min: 0, max: 100, default: 100 },
             { friendlyName: "HSL Lum", min: 0, max: 100, default: 50 },
+            { friendlyName: "miniSeparator" },
             { friendlyName: "OKLCH Lgt", min: 0, max: 1, default: 0.45201371817442365 },
             { friendlyName: "OKLCH Chr", min: 0, max: 0.47, default: 0.3132143886344849 },
             { friendlyName: "OKLCH Hue", min: 0, max: 360, default: 264.0520226163699 },
@@ -151,8 +155,12 @@
 
         const table = document.querySelector("#theTable");
         for (item of values) {
-            if (item.name === "separator"){
-                table.innerHTML += `<tr><td colspan="3" style="background:gray;"></td></tr>`;
+            if (item.name === "fullSeparator"){
+                table.innerHTML += `<tr><td colspan="3" style="background:black;"></td></tr>`;
+                continue;
+            }
+            if (item.name === "miniSeparator"){
+                table.innerHTML += `<tr><td colspan="3" style="padding: 1px;background: black;"></td></tr>`;
                 continue;
             }
             var mn = item.name === `MidiNote`;
@@ -205,7 +213,7 @@
         });
         for (item of values) {
             if (item.name == `ColorPreview`) continue;
-            if (item.name === "separator") continue;
+            if (item.name === "fullSeparator") continue;
             let box = document.querySelector(`#${item.name}Box`);
             let slider = document.querySelector(`#${item.name}Slider`);
             slider.addEventListener("input", (event) => {
@@ -231,7 +239,7 @@
             var state = {};
             for (item of values) {
                 if (item.name == `ColorPreview`) continue;
-                if (item.name === "separator") continue;
+                if (item.name === "fullSeparator") continue;
                 state[item.name] = document.querySelector(`#${item.name}Slider`).value;
             }
             if (target.dataset.valueName == `SampleRate`) {
@@ -394,7 +402,7 @@
 
             for (item of values) {
                 if (item.name == `ColorPreview`) continue;
-                if (item.name === "separator") continue;
+                if (item.name === "fullSeparator") continue;
                 document.querySelector(`#${item.name}Slider`).value = state[item.name];
                 document.querySelector(`#${item.name}Box`).value = state[item.name];
             }
