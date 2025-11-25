@@ -214,6 +214,7 @@
         for (item of values) {
             if (item.name == `ColorPreview`) continue;
             if (item.name === "fullSeparator") continue;
+            if (item.name === "miniSeparator") continue;
             let box = document.querySelector(`#${item.name}Box`);
             let slider = document.querySelector(`#${item.name}Slider`);
             slider.addEventListener("input", (event) => {
@@ -240,6 +241,7 @@
             for (item of values) {
                 if (item.name == `ColorPreview`) continue;
                 if (item.name === "fullSeparator") continue;
+                if (item.name === "miniSeparator") continue;
                 state[item.name] = document.querySelector(`#${item.name}Slider`).value;
             }
             if (target.dataset.valueName == `SampleRate`) {
@@ -403,6 +405,7 @@
             for (item of values) {
                 if (item.name == `ColorPreview`) continue;
                 if (item.name === "fullSeparator") continue;
+                if (item.name === "miniSeparator") continue;
                 document.querySelector(`#${item.name}Slider`).value = state[item.name];
                 document.querySelector(`#${item.name}Box`).value = state[item.name];
             }
