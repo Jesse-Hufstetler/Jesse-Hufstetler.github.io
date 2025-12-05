@@ -195,7 +195,7 @@
         }
         function UpdateColorPre(color) {
             document.querySelector(`#swatch`).style.backgroundColor = color.toString({ format: "srgb" });
-            document.querySelector(`#codes`).innerText = `${color.toString({ format: "hex" })} · ${color.toString({ format: "hsl" })} · ${color.toString({ format: "oklch" })} · ${Math.floor(color.srgb.r * 255 * 256 * 256 + color.srgb.g * 255 * 256 + color.srgb.b * 255)} · Color.FromArgb(255, ${Math.floor(color.srgb.r * 255)}, ${Math.floor(color.srgb.g * 255)}, ${Math.floor(color.srgb.b * 255)})`;
+            document.querySelector(`#codes`).innerText = `${color.toString({ format: "hex" })} · ${color.toString({ format: "hsl" })} · ${color.toString({ format: "oklch" })} · ${Math.round(color.srgb.r * 255) * 256 * 256 + Math.round(color.srgb.g * 255) * 256 + Math.round(color.srgb.b * 255)} · Color.FromArgb(255, ${Math.floor(color.srgb.r * 255)}, ${Math.floor(color.srgb.g * 255)}, ${Math.floor(color.srgb.b * 255)})`;
         }
         UpdateColorPre(new Color("#0000ff"));
         const colBoxNode = document.querySelector("#colBox");
