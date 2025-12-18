@@ -6,7 +6,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script type="text/javascript" src="https://livejs.com/live.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment-timezone/0.5.47/moment-timezone-with-data.min.js"></script>
+    <script
+        src="https://cdnjs.cloudflare.com/ajax/libs/moment-timezone/0.5.47/moment-timezone-with-data.min.js"></script>
     <title>DASH</title>
     <script>// -- https://xemantic.github.io/shader-web-background/
         const shaderWebBackground = {}; (() => {
@@ -82,9 +83,9 @@
                             .5, s: () => g.cssWidth !== a.clientWidth || g.cssHeight !== a.clientHeight ? (g.resize(), !0) :
                                 !1, resize: () => {
                                     const e = window.devicePixelRatio || 1, m = a.clientWidth, n = a.clientHeight,
-                                    k = Math.floor(m * e), r = Math.floor(n * e); a.width = k; a.height = r; g.width = k; g.height = r; g.cssPixelRatio =
-                                        e; g.cssWidth = m; g.cssHeight = n; p.gl.viewport(0, 0, p.canvas.width, p.canvas.height); for (const q of w) q.g.l(k,
-                                            r)
+                                        k = Math.floor(m * e), r = Math.floor(n * e); a.width = k; a.height = r; g.width = k; g.height = r; g.cssPixelRatio =
+                                            e; g.cssWidth = m; g.cssHeight = n; p.gl.viewport(0, 0, p.canvas.width, p.canvas.height); for (const q of w) q.g.l(k,
+                                                r)
                                 }, texture: (e, m) => {
                                     {
                                         var n = p; const k = n.gl; m = m instanceof L ? m.g : m; k.activeTexture(k.TEXTURE0 +
@@ -145,15 +146,15 @@
             class W extends U {
                 constructor(a, b) { super(a, b); T(this, "EXT_color_buffer_float"); this.gl.getExtension("OES_texture_float_linear") } g(a,
                     b) {
-                        const c = this.gl; c.texImage2D(c.TEXTURE_2D, 0, c.RGBA16F, a, b, 0, c.RGBA, c.HALF_FLOAT,
-                            null)
+                    const c = this.gl; c.texImage2D(c.TEXTURE_2D, 0, c.RGBA16F, a, b, 0, c.RGBA, c.HALF_FLOAT,
+                        null)
                 }
             }
             function X(a) {
                 a = a.split(/\r?\n/); const b = a.length.toString().length; var c = []; a.forEach((d,
                     l) => {
-                        l = (l + 1).toString(); l = l.length >= b ? l : " ".repeat(b - l.length) + l; c.push(l + ": " + d +
-                            "\n")
+                    l = (l + 1).toString(); l = l.length >= b ? l : " ".repeat(b - l.length) + l; c.push(l + ": " + d +
+                        "\n")
                 }); return c.join("")
             } function M(a, b) { return new L(a.gl, () => { b(a.gl) }) }
             function N(a, b, c) {
@@ -344,94 +345,92 @@
 
     </script>
     <style>
-    * {
-        color: white;
-        text-shadow: 0 0 0.5vmin black;
-    }
-
-    .background {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        z-index: -1;
-        pointer-events: none;
-    }
-
-    iframe {
-        position: relative;
-        width: 100%;
-    }
-
-    content {}
-
-
-    @font-face {
-        font-family: 'Droid Sans Mono';
-        src: url(DroidSansMono.ttf);
-    }
-    html,
-    body {
-        font-family: 'Droid Sans Mono', monospace;
-        text-align: center;
-        font-size: 10vmin;
-        overflow: hidden;
-    }
-
-
-    div.outer-div {
-        height: 100%;
-        width: 100%;
-        animation-name: inoutbg;
-        animation-duration: 12s;
-        animation-iteration-count: infinite;
-        animation-timing-function: ease-in-out;
-    }
-
-
-
-    #time {
-        animation-name: inoutsm;
-        animation-duration: 1s;
-        animation-iteration-count: infinite;
-        animation-timing-function: ease-in-out;
-    }
-
-    @keyframes inoutbg {
-        0% {
-            transform: scale(0.9, 0.9) translate(0vh,-20vh);
+        * {
+            color: white;
+            text-shadow: 0 0 0.5vmin black;
         }
 
-        50% {
-            transform: scale(0.75, 0.75) translate(0vh,20vh);
+        .background {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            pointer-events: none;
         }
 
-        100% {
-            transform: scale(0.9, 0.9) translate(0vh,-20vh);
-        }
-    }
-
-    @keyframes inoutsm {
-        0% {
-            transform: scale(1, 1);
+        iframe {
+            position: relative;
+            width: 100%;
         }
 
-        50% {
-            transform: scale(1.02, 1.02);
+        content {}
+
+
+        @font-face {
+            font-family: 'Droid Sans Mono';
+            src: url(DroidSansMono.ttf);
         }
 
-        100% {
-            transform: scale(1, 1);
+        html,
+        body {
+            font-family: 'Droid Sans Mono', monospace;
+            text-align: center;
+            font-size: 10vmin;
+            overflow: hidden;
         }
-    }
-
-    div.middle-div {
-        position: relative;
-    }
 
 
+        div.outer-div {
+            height: 100%;
+            width: 100%;
+            animation-name: inoutbg;
+            animation-duration: 12s;
+            animation-iteration-count: infinite;
+            animation-timing-function: ease-in-out;
+        }
 
+
+
+        #time {
+            animation-name: inoutsm;
+            animation-duration: 1s;
+            animation-iteration-count: infinite;
+            animation-timing-function: ease-in-out;
+        }
+
+        @keyframes inoutbg {
+            0% {
+                transform: scale(0.9, 0.9) translate(0vh, -20vh);
+            }
+
+            50% {
+                transform: scale(0.75, 0.75) translate(0vh, 20vh);
+            }
+
+            100% {
+                transform: scale(0.9, 0.9) translate(0vh, -20vh);
+            }
+        }
+
+        @keyframes inoutsm {
+            0% {
+                transform: scale(1, 1);
+            }
+
+            50% {
+                transform: scale(1.02, 1.02);
+            }
+
+            100% {
+                transform: scale(1, 1);
+            }
+        }
+
+        div.middle-div {
+            position: relative;
+        }
     </style>
 </head>
 
@@ -441,7 +440,7 @@
             <div class='outer-div'>
                 <div class='middle-div'>
                     <div style="font-size: 20vh; padding: 0;margin: 0;">
-                    <span >&nbsp;</span>
+                        <span>&nbsp;</span>
                     </div>
                     <div id="minfo" style="font-size:25vmin">
                         <span id="wday"></span>
@@ -456,78 +455,86 @@
                     <br>
                     <div style="font-size: 5vmin;">Reykjav&#x00ED;k (UTC): <span id="utctim">xx</span></div>
                     <div style="font-size: 5vmin;">Frnc (Cent Eur): <span id="frntim">xx</span></div>
+                    <div style="font-size: 5vmin;">Random Number: <span id="randy"></span></div>
                     <div style="font-size: 20vh; padding: 0;margin: 0;">
-                    <span >&nbsp;</span>
+                        <span>&nbsp;</span>
                     </div>
                 </div>
             </div>
 
-    <script>
-    const momentProxy = (arg1) => moment(arg1);
-    const urlParams = new URLSearchParams(window.location.search);
-    const appid = urlParams.get('appid');
-    setInterval(() => {
-        document.getElementById("time").innerText = momentProxy().format('h:mm:ss');
-        document.getElementById("caltim").innerText = momentProxy().tz('America/Los_Angeles').format('hh:mm:ss A');
-        document.getElementById("arztim").innerText = momentProxy().tz('America/Phoenix').format('hh:mm:ss A');
-        document.getElementById("nshtim").innerText = momentProxy().tz('America/Chicago').format('hh:mm:ss A');
-        document.getElementById("utctim").innerText = momentProxy().tz('UTC').format('hh:mm:ss A');
-        document.getElementById("frntim").innerText = momentProxy().tz('Europe/Paris').format('hh:mm:ss A');
-    }, 250);
-    var fToC = (input) => (input - 32) * 5 / 9;
-    var cToF = (input) => (input * 9 / 5) + 32;
-    var dp = (h, t) => Math.pow(h / 100, 1 / 8) * (112 + 0.9 * t) + 0.1 * t - 112;
-    var dpF = (h, t) => cToF(dp(h, fToC(t)));
-    (function() {
-        var mouseTimer = null,
-            cursorVisible = true;
+            <script>
+                const momentProxy = (arg1) => moment(arg1);
+                const urlParams = new URLSearchParams(window.location.search);
+                const appid = urlParams.get('appid');
+                setInterval(() => {
+                    document.getElementById("time").innerText = momentProxy().format('h:mm:ss');
+                    document.getElementById("caltim").innerText = momentProxy().tz('America/Los_Angeles').format('hh:mm:ss A');
+                    document.getElementById("arztim").innerText = momentProxy().tz('America/Phoenix').format('hh:mm:ss A');
+                    document.getElementById("nshtim").innerText = momentProxy().tz('America/Chicago').format('hh:mm:ss A');
+                    document.getElementById("utctim").innerText = momentProxy().tz('UTC').format('hh:mm:ss A');
+                    document.getElementById("frntim").innerText = momentProxy().tz('Europe/Paris').format('hh:mm:ss A');
+                }, 500);
+                function newRandy() {
+                    document.getElementById("randy").innerText = new Intl.NumberFormat("en-US", { "minimumFractionDigits": 2, "maximumFractionDigits": 2 }).format(Math.random() * 100000000).padStart(13, '0');
+                }
+                newRandy();
+                setInterval(() => {
+                    newRandy();
+                }, 5000);
+                var fToC = (input) => (input - 32) * 5 / 9;
+                var cToF = (input) => (input * 9 / 5) + 32;
+                var dp = (h, t) => Math.pow(h / 100, 1 / 8) * (112 + 0.9 * t) + 0.1 * t - 112;
+                var dpF = (h, t) => cToF(dp(h, fToC(t)));
+                (function () {
+                    var mouseTimer = null,
+                        cursorVisible = true;
 
-        function disappearCursor() {
-            mouseTimer = null;
-            document.body.style.cursor = "none";
-            cursorVisible = false;
-        }
+                    function disappearCursor() {
+                        mouseTimer = null;
+                        document.body.style.cursor = "none";
+                        cursorVisible = false;
+                    }
 
-        document.onmousemove = function() {
-            if (mouseTimer) {
-                window.clearTimeout(mouseTimer);
-            }
-            if (!cursorVisible) {
-                document.body.style.cursor = "default";
-                cursorVisible = true;
-            }
-            mouseTimer = window.setTimeout(disappearCursor, 500);
-        };
-    })();
-    var dformat = 'ddd';
+                    document.onmousemove = function () {
+                        if (mouseTimer) {
+                            window.clearTimeout(mouseTimer);
+                        }
+                        if (!cursorVisible) {
+                            document.body.style.cursor = "default";
+                            cursorVisible = true;
+                        }
+                        mouseTimer = window.setTimeout(disappearCursor, 500);
+                    };
+                })();
+                var dformat = 'ddd';
 
-    function getWeather() {
-        document.getElementById("day").innerText = momentProxy().format('MMM Do YYYY')
-        document.getElementById("wday").innerText = momentProxy().format(dformat)
-        if (appid) fetch(`https://api.openweathermap.org/data/2.5/weather?zip=44720,US&appid=${appid}&units=imperial`)
-            .then(response => response.json())
-            .then(data => {
-                var feelsLike = Math.round(data.main.feels_like);
-                var dp = Math.round(dpF(data.main.humidity, data.main.temp));
-                console.log(data);
-                document.getElementById("temp").innerText = `${feelsLike}°`;
-                document.getElementById("dp").innerText = `/${dp}°`;
-                document.getElementById("wday").innerText = momentProxy().format(dformat)
-            });
-    }
-    getWeather();
-    setInterval(getWeather, 1000 * 60 * 20);
-
-
-
-
-    
-    
+                function getWeather() {
+                    document.getElementById("day").innerText = momentProxy().format('MMM Do YYYY')
+                    document.getElementById("wday").innerText = momentProxy().format(dformat)
+                    if (appid) fetch(`https://api.openweathermap.org/data/2.5/weather?zip=44720,US&appid=${appid}&units=imperial`)
+                        .then(response => response.json())
+                        .then(data => {
+                            var feelsLike = Math.round(data.main.feels_like);
+                            var dp = Math.round(dpF(data.main.humidity, data.main.temp));
+                            console.log(data);
+                            document.getElementById("temp").innerText = `${feelsLike}°`;
+                            document.getElementById("dp").innerText = `/${dp}°`;
+                            document.getElementById("wday").innerText = momentProxy().format(dformat)
+                        });
+                }
+                getWeather();
+                setInterval(getWeather, 1000 * 60 * 20);
 
 
 
 
-    </script>
+
+
+
+
+
+
+            </script>
 
 
         </content>
