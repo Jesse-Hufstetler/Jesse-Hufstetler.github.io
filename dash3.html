@@ -456,6 +456,7 @@
                     <div style="font-size: 5vmin;">Reykjav&#x00ED;k (UTC): <span id="utctim">xx</span></div>
                     <div style="font-size: 5vmin;">Frnc (Cent Eur): <span id="frntim">xx</span></div>
                     <div style="font-size: 5vmin;">Random Number: <span id="randy"></span></div>
+                    <div style="font-size: 5vmin;">Random: <span id="randy2"></span></div>
                     <div style="font-size: 20vh; padding: 0;margin: 0;">
                         <span>&nbsp;</span>
                     </div>
@@ -466,6 +467,17 @@
                 const momentProxy = (arg1) => moment(arg1);
                 const urlParams = new URLSearchParams(window.location.search);
                 const appid = urlParams.get('appid');
+                var anu = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789".split('');
+                function getRandomString(stringList) {
+                    const usableRange = 0xFFFFFFFF - (0xFFFFFFFF % stringList.length);
+                    let randomValue;
+                    do {
+                        const randomUint32Array = new Uint32Array(1);
+                        self.crypto.getRandomValues(randomUint32Array);
+                        randomValue = randomUint32Array[0];
+                    } while (randomValue >= usableRange);
+                    return stringList[randomValue % stringList.length];
+                }
                 setInterval(() => {
                     document.getElementById("time").innerText = momentProxy().format('h:mm:ss');
                     document.getElementById("caltim").innerText = momentProxy().tz('America/Los_Angeles').format('hh:mm:ss A');
@@ -476,6 +488,7 @@
                 }, 500);
                 function newRandy() {
                     document.getElementById("randy").innerText = new Intl.NumberFormat("en-US", { "minimumFractionDigits": 2, "maximumFractionDigits": 2 }).format(Math.random() * 100000000).padStart(13, '0');
+                    document.getElementById("randy2").innerText = [...Array(20).keys()].map((x) => getRandomString(anu)).join("");
                 }
                 newRandy();
                 setInterval(() => {
