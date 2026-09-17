@@ -1,0 +1,1180 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Local Model Console</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#f6f7f9;
+    --panel:#ffffff;
+    --panel-2:#eef0f3;
+    --border:#dde1e7;
+    --text:#1b1e24;
+    --text-dim:#5b6270;
+    --text-faint:#9aa1ad;
+    --good:#1f9d55;
+    --warn:#a8720a;
+    --bad:#c93f39;
+    --accent-h:210; /* hue shifts with temperature: cool -> hot */
+    --accent: hsl(var(--accent-h) 24% 50%);
+    --accent-dim: hsl(var(--accent-h) 20% 91%);
+    --radius:10px;
+    --mono:'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+    --sans:'Inter', ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html,body{height:100%;}
+  body{
+    margin:0; background:var(--bg); color:var(--text); font-family:var(--sans);
+    display:flex; height:100vh; overflow:hidden;
+  }
+  ::-webkit-scrollbar{width:10px;height:10px;}
+  ::-webkit-scrollbar-thumb{background:#c7cbd3;border-radius:6px;}
+  ::-webkit-scrollbar-track{background:transparent;}
+
+  /* ---------- Sidebar: model catalog ---------- */
+  #sidebar{
+    width:700px; min-width:700px; border-right:1px solid var(--border);
+    display:flex; flex-direction:column; background:var(--panel);
+    transition:width .15s ease, min-width .15s ease;
+  }
+  #sidebar.compact{ width:380px; min-width:380px; }
+  #sidebar.compact .col-extra{ display:none; }
+  #sidebar header{
+    padding:16px 16px 12px; border-bottom:1px solid var(--border);
+  }
+  #sidebar header .header-top{ display:flex; align-items:flex-start; justify-content:space-between; gap:8px; }
+  #sidebar h1{ font-size:14px; font-weight:600; margin:0 0 2px; letter-spacing:.01em; }
+  #sidebar .sub{ font-size:12px; color:var(--text-dim); }
+  .icon-btn.sm{ padding:4px 8px; font-size:11px; flex:none; }
+  #gpu-report{
+    margin:12px 16px; padding:10px 12px; border:1px solid var(--border);
+    border-radius:var(--radius); font-size:12px; color:var(--text-dim); background:var(--panel-2);
+  }
+  #gpu-report .row{ display:flex; justify-content:space-between; padding:2px 0; }
+  #gpu-report .row b{ color:var(--text); font-weight:500; font-family:var(--mono); }
+  #gpu-report .flag-bad{ color:var(--bad); }
+  #gpu-report .flag-good{ color:var(--good); }
+
+  #search-wrap{ padding:0 16px 8px; }
+  #search{
+    width:100%; padding:8px 10px; background:var(--panel-2); border:1px solid var(--border);
+    border-radius:8px; color:var(--text); font-size:13px; font-family:var(--sans);
+  }
+  #search:focus{ outline:none; border-color:var(--accent); }
+
+  #model-list{ flex:1; overflow:auto; padding:0; }
+  #model-table{ width:100%; border-collapse:collapse; font-family:var(--mono); font-size:11px; }
+  #sidebar:not(.compact) #model-table{ min-width:660px; }
+  #model-table thead th{
+    position:sticky; top:0; background:var(--panel); text-align:left; padding:7px 8px;
+    font-family:var(--sans); font-size:10px; color:var(--text-faint); font-weight:600;
+    cursor:pointer; user-select:none; border-bottom:1px solid var(--border); white-space:nowrap; z-index:1;
+  }
+  #model-table thead th:hover{ color:var(--text-dim); }
+  #model-table thead th .arrow{ margin-left:3px; }
+  #model-table tbody tr{ cursor:pointer; }
+  #model-table tbody tr:hover td{ filter:brightness(0.96); }
+  #model-table td{
+    padding:5px 8px; border-bottom:1px solid var(--border); white-space:nowrap;
+    color:var(--text-dim);
+  }
+  #model-table td.col-name{ font-family:var(--sans); font-size:12px; color:var(--text); white-space:normal; }
+  .badge{
+    display:inline-block; padding:1px 7px; border-radius:20px;
+    font-family:var(--sans); font-size:10px; font-weight:600; white-space:nowrap;
+  }
+  .loaded-tag{
+    font-family:var(--mono); font-size:9px; color:var(--accent);
+    border:1px solid var(--accent-dim); padding:0 5px; border-radius:20px; margin-left:6px;
+  }
+  .dot{ width:7px; height:7px; border-radius:50%; display:inline-block; flex:none; }
+  .dot.good{ background:var(--good); }
+  .dot.warn{ background:var(--warn); }
+  .dot.bad{ background:var(--bad); }
+
+  #sidebar footer{ padding:10px 16px 14px; border-top:1px solid var(--border); }
+  #load-btn{
+    width:100%; padding:10px; border-radius:8px; border:none; cursor:pointer;
+    background:var(--accent); color:#ffffff; font-weight:600; font-size:13px; font-family:var(--sans);
+  }
+  #load-btn:disabled{ background:var(--panel-2); color:var(--text-faint); cursor:not-allowed; }
+  #load-progress{ margin-top:8px; font-size:11px; color:var(--text-dim); font-family:var(--mono); }
+  #load-bar-track{ height:4px; background:var(--panel-2); border-radius:4px; margin-top:6px; overflow:hidden; display:none; }
+  #load-bar{ height:100%; width:0%; background:var(--accent); transition:width .15s linear; }
+
+  /* ---------- Main: chat ---------- */
+  #main{ flex:1; display:flex; flex-direction:column; min-width:0; }
+  #topbar{
+    display:flex; align-items:center; justify-content:space-between; padding:12px 20px;
+    border-bottom:1px solid var(--border);
+  }
+  #topbar .active-model{ font-size:13px; }
+  #topbar .active-model .id{ font-family:var(--mono); color:var(--text-dim); font-size:12px; }
+  #topbar .actions{ display:flex; gap:8px; }
+  .icon-btn{
+    background:var(--panel-2); border:1px solid var(--border); color:var(--text-dim);
+    padding:7px 12px; border-radius:8px; font-size:12px; cursor:pointer; font-family:var(--sans);
+  }
+  .icon-btn:hover{ color:var(--text); border-color:var(--accent-dim); }
+
+  #transcript{ flex:1; overflow-y:auto; padding:20px 0; }
+  #transcript .inner{ max-width:720px; margin:0 auto; padding:0 24px; }
+  .msg{ display:flex; gap:12px; margin-bottom:22px; align-items:flex-start; }
+  .msg .role{
+    width:26px; height:26px; border-radius:6px; flex:none; display:flex; align-items:center;
+    justify-content:center; font-size:10px; font-family:var(--mono); color:var(--text-dim);
+    background:var(--panel-2); border:1px solid var(--border); margin-top:2px;
+  }
+  .msg.user .role{ color:var(--accent); }
+  .msg .content{ font-size:14px; line-height:1.6; white-space:pre-wrap; padding-top:3px; }
+  .msg .content.pending::after{ content:"▍"; animation:blink 1s step-start infinite; color:var(--accent); }
+  @keyframes blink{ 50%{ opacity:0; } }
+  .model-switch-divider{
+    text-align:center; font-size:11px; color:var(--text-faint); font-family:var(--mono);
+    margin:18px 0; letter-spacing:.02em;
+  }
+  #empty-state{ max-width:520px; margin:14vh auto 0; padding:0 24px; text-align:center; color:var(--text-dim); }
+  #empty-state h2{ color:var(--text); font-size:18px; font-weight:600; margin-bottom:8px; }
+  #empty-state p{ font-size:13px; line-height:1.6; }
+
+  #composer{ border-top:1px solid var(--border); padding:14px 24px 18px; }
+  #composer .inner{ max-width:720px; margin:0 auto; display:flex; gap:10px; align-items:flex-end; }
+  #prompt{
+    flex:1; resize:none; max-height:160px; min-height:44px; padding:11px 14px;
+    background:var(--panel-2); border:1px solid var(--border); border-radius:10px;
+    color:var(--text); font-family:var(--sans); font-size:14px; line-height:1.4;
+  }
+  #prompt:focus{ outline:none; border-color:var(--accent); }
+  #send-btn, #stop-btn{
+    padding:11px 18px; border-radius:10px; border:none; cursor:pointer; font-weight:600;
+    font-size:13px; font-family:var(--sans);
+  }
+  #send-btn{ background:var(--accent); color:#ffffff; }
+  #send-btn:disabled{ background:var(--panel-2); color:var(--text-faint); cursor:not-allowed; }
+  #stop-btn{ background:var(--bad); color:#ffffff; display:none; }
+
+  /* ---------- Settings drawer: pure overlay, never touches engine state ---------- */
+  #settings-scrim{
+    position:fixed; inset:0; background:rgba(0,0,0,.35); opacity:0; pointer-events:none;
+    transition:opacity .18s ease; z-index:9;
+  }
+  #settings-scrim.open{ opacity:1; pointer-events:auto; }
+  #settings{
+    position:fixed; top:0; right:0; height:100%; width:340px; background:var(--panel);
+    border-left:1px solid var(--border); transform:translateX(100%); transition:transform .2s ease;
+    z-index:10; display:flex; flex-direction:column;
+  }
+  #settings.open{ transform:translateX(0); }
+  #settings header{
+    padding:16px 20px; border-bottom:1px solid var(--border); display:flex;
+    justify-content:space-between; align-items:center;
+  }
+  #settings header h2{ font-size:14px; margin:0; }
+  #settings header .note{ font-size:11px; color:var(--text-faint); margin-top:3px; }
+  #settings .body{ flex:1; overflow-y:auto; padding:18px 20px; }
+  .field{ margin-bottom:20px; }
+  .field label{ display:flex; justify-content:space-between; font-size:12px; color:var(--text-dim); margin-bottom:8px; }
+  .field label .val{ font-family:var(--mono); color:var(--text); }
+  .field input[type=range]{
+    -webkit-appearance:none; appearance:none; width:100%; height:4px; border-radius:4px;
+    cursor:pointer; outline:none;
+    /* background is a value-based fill gradient, set from JS in updateSliderFill().
+       Deliberately NOT using the accent-color property here: Chromium's native
+       range-input theming doesn't reliably repaint on a changed CSS custom
+       property unless that specific input is the one being dragged, and forcing
+       it via JS on every drag tick (an earlier attempt) instead made the
+       dragged slider itself flicker black/white under the repaint churn.
+       Plain background/gradient painting doesn't have either problem. */
+  }
+  .field input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none; appearance:none; width:14px; height:14px; border-radius:50%;
+    background:var(--accent); border:none; cursor:pointer;
+  }
+  .field input[type=range]::-moz-range-thumb{
+    width:14px; height:14px; border-radius:50%; background:var(--accent); border:none; cursor:pointer;
+  }
+  .field input[type=range]::-moz-range-track{
+    height:4px; border-radius:4px; background:transparent;
+  }
+  .field .hint{ font-size:11px; color:var(--text-faint); margin-top:5px; line-height:1.5; }
+  .presets{ display:flex; gap:8px; margin-bottom:22px; }
+  .preset-btn{
+    flex:1; padding:8px 4px; border-radius:8px; border:1px solid var(--border); background:var(--panel-2);
+    color:var(--text-dim); font-size:11px; cursor:pointer; font-family:var(--sans);
+  }
+  .preset-btn:hover{ border-color:var(--accent); color:var(--text); }
+  #close-settings{ background:none; border:none; color:var(--text-dim); font-size:18px; cursor:pointer; line-height:1; }
+
+  .hidden{ display:none !important; }
+</style>
+</head>
+<body>
+
+<aside id="sidebar">
+  <header>
+    <div class="header-top">
+      <div>
+        <h1>Local Model Console</h1>
+        <div class="sub">A GUI over @mlc-ai/web-llm</div>
+      </div>
+      <button class="icon-btn sm" id="collapse-btn" title="Show fewer columns">Compact</button>
+    </div>
+  </header>
+
+  <div id="gpu-report">Checking WebGPU…</div>
+
+  <div id="search-wrap">
+    <input id="search" type="text" placeholder="Filter models…" />
+  </div>
+
+  <div id="model-list"></div>
+
+  <footer>
+    <button id="load-btn" disabled>Select a model</button>
+    <div id="load-bar-track"><div id="load-bar"></div></div>
+    <div id="load-progress"></div>
+  </footer>
+</aside>
+
+<main id="main">
+  <div id="topbar">
+    <div class="active-model">
+      <div id="active-name">No model loaded</div>
+      <div class="id" id="active-id"></div>
+    </div>
+    <div class="actions">
+      <button class="icon-btn" id="copy-md-btn">Copy as Markdown</button>
+      <button class="icon-btn" id="clear-chat-btn" title="Erases the conversation from this tab's memory — nothing to undo. The loaded model itself stays in memory; only the chat text is gone.">Clear chat</button>
+      <button class="icon-btn" id="settings-btn">Reply settings</button>
+    </div>
+  </div>
+
+  <div id="transcript">
+    <div id="empty-state">
+      <h2>Pick a model on the left, load it, then talk to it here</h2>
+      <p>Tweak reply settings whenever you like — changes apply starting with your very next message.</p>
+    </div>
+    <div class="inner" id="messages"></div>
+  </div>
+
+  <div id="composer">
+    <div class="inner">
+      <textarea id="prompt" placeholder="Message the model… (Enter to send, Shift+Enter for newline)" rows="1" disabled></textarea>
+      <button id="send-btn" disabled>Send</button>
+      <button id="stop-btn">Stop</button>
+    </div>
+  </div>
+</main>
+
+<div id="settings-scrim"></div>
+<div id="settings">
+  <header>
+    <div>
+      <h2>Reply settings</h2>
+      <div class="note">Applied on your next message. The model stays loaded.</div>
+    </div>
+    <button id="close-settings">×</button>
+  </header>
+  <div class="body">
+    <div class="presets">
+      <button class="preset-btn" data-preset="coherent">Coherent</button>
+      <button class="preset-btn" data-preset="chaotic">Chaotic</button>
+      <button class="preset-btn" data-preset="feral">Feral</button>
+    </div>
+
+    <div class="field">
+      <label>Temperature <span class="val" id="temp-val">0.80</span></label>
+      <input type="range" id="temp" min="0" max="2.5" step="0.01" value="0.8" />
+      <div class="hint">0 = deterministic. Past ~1.6, most small models stop forming real sentences — that's the "unhinged" zone. If output ever locks the tab up, use Stop; it's a symptom of the model never emitting an end-of-text token, not a WebGPU crash.</div>
+    </div>
+
+    <div class="field">
+      <label>Top-p <span class="val" id="topp-val">0.95</span></label>
+      <input type="range" id="topp" min="0.05" max="1" step="0.01" value="0.95" />
+      <div class="hint">Limits each next word to the smallest set of candidates whose probabilities add up to this fraction, then picks among just those — so 0.95 considers almost every plausible word, while 0.5 restricts it to only the most likely ones. Lower values make output safer and more repetitive; 1.0 disables the limit entirely, leaving temperature as the only thing controlling randomness.</div>
+    </div>
+
+    <div class="field">
+      <label>Repetition penalty <span class="val" id="reppen-val">1.10</span></label>
+      <input type="range" id="reppen" min="1" max="1.8" step="0.01" value="1.1" />
+      <div class="hint">Above ~1.3 it starts avoiding common words entirely, which reads as "unhinged" for a different reason than temperature does.</div>
+    </div>
+
+    <div class="field">
+      <label>Max tokens per reply <span class="val" id="maxtok-val">512</span></label>
+      <input type="range" id="maxtok" min="16" max="2048" step="16" value="512" />
+    </div>
+
+    <div class="field">
+      <label>System prompt</label>
+      <textarea id="sysprompt" rows="3" style="width:100%;background:var(--panel-2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--sans);font-size:13px;padding:8px;" placeholder="Optional"></textarea>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+// webllm is loaded dynamically further down, NOT as a static top-level
+// import. A static import blocks the entire module from executing until
+// it resolves — so if the CDN fetch fails or hangs (blocked domain, no
+// network, or this file opened directly instead of via a local server),
+// NOTHING on this page runs, including the GPU probe. Loading it
+// dynamically inside a try/catch means a failure here shows an actual
+// error instead of leaving the page silently stuck.
+let webllm = null;
+
+// ---------------------------------------------------------------------
+// Model metadata (company, country of origin, release date, param count)
+// pulled from Jesse's own webllm_chat_models.xlsx research spreadsheet,
+// keyed by the exact model_id string webllm uses. Not every model in
+// webllm's live catalog will have an entry here (the catalog changes
+// over time); code below falls back gracefully when a lookup misses.
+// Value shape: [params, release_date, company, country, notes]
+// ---------------------------------------------------------------------
+const MODEL_META = {
+  'Llama-3.2-1B-Instruct-q4f32_1-MLC': [1200000000, '2024-09-25', 'Meta', 'USA', ''],
+  'Llama-3.2-1B-Instruct-q4f16_1-MLC': [1200000000, '2024-09-25', 'Meta', 'USA', ''],
+  'Llama-3.2-1B-Instruct-q0f32-MLC': [1200000000, '2024-09-25', 'Meta', 'USA', ''],
+  'Llama-3.2-1B-Instruct-q0f16-MLC': [1200000000, '2024-09-25', 'Meta', 'USA', ''],
+  'Llama-3.2-3B-Instruct-q4f32_1-MLC': [3200000000, '2024-09-25', 'Meta', 'USA', ''],
+  'Llama-3.2-3B-Instruct-q4f16_1-MLC': [3200000000, '2024-09-25', 'Meta', 'USA', ''],
+  'Llama-3.1-8B-Instruct-q4f32_1-MLC-1k': [8000000000, '2024-07-23', 'Meta', 'USA', '\'-1k\' = smaller 1024-token context window'],
+  'Llama-3.1-8B-Instruct-q4f16_1-MLC-1k': [8000000000, '2024-07-23', 'Meta', 'USA', '\'-1k\' = smaller 1024-token context window'],
+  'Llama-3.1-8B-Instruct-q4f32_1-MLC': [8000000000, '2024-07-23', 'Meta', 'USA', '\'-1k\' = smaller 1024-token context window'],
+  'Llama-3.1-8B-Instruct-q4f16_1-MLC': [8000000000, '2024-07-23', 'Meta', 'USA', '\'-1k\' = smaller 1024-token context window'],
+  'Llama-3.1-70B-Instruct-q3f16_1-MLC': [70600000000, '2024-07-23', 'Meta', 'USA', 'Needs a very high-VRAM GPU'],
+  'Llama-3-8B-Instruct-q4f32_1-MLC-1k': [8000000000, '2024-04-18', 'Meta', 'USA', ''],
+  'Llama-3-8B-Instruct-q4f16_1-MLC-1k': [8000000000, '2024-04-18', 'Meta', 'USA', ''],
+  'Llama-3-8B-Instruct-q4f32_1-MLC': [8000000000, '2024-04-18', 'Meta', 'USA', ''],
+  'Llama-3-8B-Instruct-q4f16_1-MLC': [8000000000, '2024-04-18', 'Meta', 'USA', ''],
+  'Llama-3-70B-Instruct-q3f16_1-MLC': [70000000000, '2024-04-18', 'Meta', 'USA', 'Needs a very high-VRAM GPU'],
+  'Llama-2-7b-chat-hf-q4f32_1-MLC-1k': [7000000000, '2023-07-18', 'Meta', 'USA', ''],
+  'Llama-2-7b-chat-hf-q4f16_1-MLC-1k': [7000000000, '2023-07-18', 'Meta', 'USA', ''],
+  'Llama-2-7b-chat-hf-q4f32_1-MLC': [7000000000, '2023-07-18', 'Meta', 'USA', ''],
+  'Llama-2-7b-chat-hf-q4f16_1-MLC': [7000000000, '2023-07-18', 'Meta', 'USA', ''],
+  'Llama-2-13b-chat-hf-q4f16_1-MLC': [13000000000, '2023-07-18', 'Meta', 'USA', ''],
+  'DeepSeek-R1-Distill-Qwen-7B-q4f16_1-MLC': [7000000000, '2025-01-20', 'DeepSeek', 'China', 'Reasoning model distilled from Qwen2 7B'],
+  'DeepSeek-R1-Distill-Qwen-7B-q4f32_1-MLC': [7000000000, '2025-01-20', 'DeepSeek', 'China', 'Reasoning model distilled from Qwen2 7B'],
+  'DeepSeek-R1-Distill-Llama-8B-q4f32_1-MLC': [8000000000, '2025-01-20', 'DeepSeek', 'China', 'Reasoning model distilled from Llama 3.1 8B'],
+  'DeepSeek-R1-Distill-Llama-8B-q4f16_1-MLC': [8000000000, '2025-01-20', 'DeepSeek', 'China', 'Reasoning model distilled from Llama 3.1 8B'],
+  'Hermes-2-Theta-Llama-3-8B-q4f16_1-MLC': [8000000000, '2024-06-01', 'Nous Research', 'USA', 'Fine-tune of Llama 3 8B'],
+  'Hermes-2-Theta-Llama-3-8B-q4f32_1-MLC': [8000000000, '2024-06-01', 'Nous Research', 'USA', 'Fine-tune of Llama 3 8B'],
+  'Hermes-2-Pro-Llama-3-8B-q4f16_1-MLC': [8000000000, '2024-06-01', 'Nous Research', 'USA', 'Fine-tune of Llama 3 8B; supports function calling'],
+  'Hermes-2-Pro-Llama-3-8B-q4f32_1-MLC': [8000000000, '2024-06-01', 'Nous Research', 'USA', 'Fine-tune of Llama 3 8B; supports function calling'],
+  'Hermes-3-Llama-3.2-3B-q4f32_1-MLC': [3200000000, '2024-11-01', 'Nous Research', 'USA', 'Fine-tune of Llama 3.2 3B'],
+  'Hermes-3-Llama-3.2-3B-q4f16_1-MLC': [3200000000, '2024-11-01', 'Nous Research', 'USA', 'Fine-tune of Llama 3.2 3B'],
+  'Hermes-3-Llama-3.1-8B-q4f32_1-MLC': [8000000000, '2024-08-01', 'Nous Research', 'USA', 'Fine-tune of Llama 3.1 8B; supports function calling'],
+  'Hermes-3-Llama-3.1-8B-q4f16_1-MLC': [8000000000, '2024-08-01', 'Nous Research', 'USA', 'Fine-tune of Llama 3.1 8B; supports function calling'],
+  'Hermes-2-Pro-Mistral-7B-q4f16_1-MLC': [7000000000, '2024-03-01', 'Nous Research', 'USA', 'Fine-tune of Mistral 7B; supports function calling'],
+  'OpenHermes-2.5-Mistral-7B-q4f16_1-MLC': [7000000000, '2023-11-01', 'Teknium (indep., w/ Nous Research)', 'USA', 'Fine-tune of Mistral 7B'],
+  'NeuralHermes-2.5-Mistral-7B-q4f16_1-MLC': [7000000000, '2024-01-01', 'mlabonne (independent researcher)', 'Belgium', 'DPO fine-tune of OpenHermes 2.5'],
+  'WizardMath-7B-V1.1-q4f16_1-MLC': [7000000000, '2024-01-01', 'Microsoft / Peking University (WizardLM team)', 'USA / China', 'Math-focused fine-tune of Mistral 7B'],
+  'Phi-3.5-mini-instruct-q4f16_1-MLC': [3800000000, '2024-08-20', 'Microsoft', 'USA', ''],
+  'Phi-3.5-mini-instruct-q4f32_1-MLC': [3800000000, '2024-08-20', 'Microsoft', 'USA', ''],
+  'Phi-3.5-mini-instruct-q4f16_1-MLC-1k': [3800000000, '2024-08-20', 'Microsoft', 'USA', ''],
+  'Phi-3.5-mini-instruct-q4f32_1-MLC-1k': [3800000000, '2024-08-20', 'Microsoft', 'USA', ''],
+  'Phi-3.5-vision-instruct-q4f16_1-MLC': [4200000000, '2024-08-20', 'Microsoft', 'USA', 'Vision-language (image) model'],
+  'Phi-3.5-vision-instruct-q4f32_1-MLC': [4200000000, '2024-08-20', 'Microsoft', 'USA', 'Vision-language (image) model'],
+  'Phi-4-mini-instruct-q4f16_1-MLC': [3800000000, '2025-02-01', 'Microsoft', 'USA', ''],
+  'Phi-4-mini-instruct-q4f32_1-MLC': [3800000000, '2025-02-01', 'Microsoft', 'USA', ''],
+  'Phi-3-mini-4k-instruct-q4f16_1-MLC': [3800000000, '2024-04-23', 'Microsoft', 'USA', 'Superseded by Phi-3.5-mini'],
+  'Phi-3-mini-4k-instruct-q4f32_1-MLC': [3800000000, '2024-04-23', 'Microsoft', 'USA', 'Superseded by Phi-3.5-mini'],
+  'Phi-3-mini-4k-instruct-q4f16_1-MLC-1k': [3800000000, '2024-04-23', 'Microsoft', 'USA', 'Superseded by Phi-3.5-mini'],
+  'Phi-3-mini-4k-instruct-q4f32_1-MLC-1k': [3800000000, '2024-04-23', 'Microsoft', 'USA', 'Superseded by Phi-3.5-mini'],
+  'Mistral-7B-Instruct-v0.3-q4f16_1-MLC': [7300000000, '2024-05-22', 'Mistral AI', 'France', ''],
+  'Mistral-7B-Instruct-v0.3-q4f32_1-MLC': [7300000000, '2024-05-22', 'Mistral AI', 'France', ''],
+  'Mistral-7B-Instruct-v0.2-q4f16_1-MLC': [7300000000, '2023-12-11', 'Mistral AI', 'France', ''],
+  'SmolLM2-1.7B-Instruct-q4f16_1-MLC': [1700000000, '2024-11-01', 'Hugging Face', 'France / USA', ''],
+  'SmolLM2-1.7B-Instruct-q4f32_1-MLC': [1700000000, '2024-11-01', 'Hugging Face', 'France / USA', ''],
+  'SmolLM2-360M-Instruct-q0f16-MLC': [360000000, '2024-11-01', 'Hugging Face', 'France / USA', ''],
+  'SmolLM2-360M-Instruct-q0f32-MLC': [360000000, '2024-11-01', 'Hugging Face', 'France / USA', ''],
+  'SmolLM2-360M-Instruct-q4f16_1-MLC': [360000000, '2024-11-01', 'Hugging Face', 'France / USA', ''],
+  'SmolLM2-360M-Instruct-q4f32_1-MLC': [360000000, '2024-11-01', 'Hugging Face', 'France / USA', ''],
+  'SmolLM2-135M-Instruct-q0f16-MLC': [135000000, '2024-11-01', 'Hugging Face', 'France / USA', 'Smallest model in the list'],
+  'SmolLM2-135M-Instruct-q0f32-MLC': [135000000, '2024-11-01', 'Hugging Face', 'France / USA', 'Smallest model in the list'],
+  'SmolLM2-135M-Instruct-q4f16_1-MLC': [135000000, '2024-11-01', 'Hugging Face', 'France / USA', 'Smallest model in the list'],
+  'SmolLM2-135M-Instruct-q4f32_1-MLC': [135000000, '2024-11-01', 'Hugging Face', 'France / USA', 'Smallest model in the list'],
+  'SmolLM-1.7B-Instruct-q0f16-MLC': [1700000000, '2024-07-16', 'Hugging Face', 'France / USA', 'Superseded by SmolLM2'],
+  'SmolLM-1.7B-Instruct-q0f32-MLC': [1700000000, '2024-07-16', 'Hugging Face', 'France / USA', 'Superseded by SmolLM2'],
+  'SmolLM-1.7B-Instruct-q4f16_1-MLC': [1700000000, '2024-07-16', 'Hugging Face', 'France / USA', 'Superseded by SmolLM2'],
+  'SmolLM-1.7B-Instruct-q4f32_1-MLC': [1700000000, '2024-07-16', 'Hugging Face', 'France / USA', 'Superseded by SmolLM2'],
+  'SmolLM-360M-Instruct-q0f16-MLC': [360000000, '2024-07-16', 'Hugging Face', 'France / USA', 'Superseded by SmolLM2'],
+  'SmolLM-360M-Instruct-q0f32-MLC': [360000000, '2024-07-16', 'Hugging Face', 'France / USA', 'Superseded by SmolLM2'],
+  'SmolLM-360M-Instruct-q4f16_1-MLC': [360000000, '2024-07-16', 'Hugging Face', 'France / USA', 'Superseded by SmolLM2'],
+  'SmolLM-360M-Instruct-q4f32_1-MLC': [360000000, '2024-07-16', 'Hugging Face', 'France / USA', 'Superseded by SmolLM2'],
+  'SmolLM-135M-Instruct-q0f16-MLC': [135000000, '2024-07-16', 'Hugging Face', 'France / USA', 'Superseded by SmolLM2'],
+  'SmolLM-135M-Instruct-q0f32-MLC': [135000000, '2024-07-16', 'Hugging Face', 'France / USA', 'Superseded by SmolLM2'],
+  'SmolLM-135M-Instruct-q4f16_1-MLC': [135000000, '2024-07-16', 'Hugging Face', 'France / USA', 'Superseded by SmolLM2'],
+  'SmolLM-135M-Instruct-q4f32_1-MLC': [135000000, '2024-07-16', 'Hugging Face', 'France / USA', 'Superseded by SmolLM2'],
+  'gemma-2-9b-it-q4f16_1-MLC': [9200000000, '2024-06-27', 'Google DeepMind', 'USA', ''],
+  'gemma-2-9b-it-q4f32_1-MLC': [9200000000, '2024-06-27', 'Google DeepMind', 'USA', ''],
+  'gemma-2-2b-it-q4f16_1-MLC': [2600000000, '2024-07-31', 'Google DeepMind', 'USA', ''],
+  'gemma-2-2b-it-q4f32_1-MLC': [2600000000, '2024-07-31', 'Google DeepMind', 'USA', ''],
+  'gemma-2-2b-it-q4f16_1-MLC-1k': [2600000000, '2024-07-31', 'Google DeepMind', 'USA', ''],
+  'gemma-2-2b-it-q4f32_1-MLC-1k': [2600000000, '2024-07-31', 'Google DeepMind', 'USA', ''],
+  'gemma-2-2b-jpn-it-q4f16_1-MLC': [2600000000, '2024-10-01', 'Google DeepMind', 'USA', 'Japanese-tuned variant'],
+  'gemma-2-2b-jpn-it-q4f32_1-MLC': [2600000000, '2024-10-01', 'Google DeepMind', 'USA', 'Japanese-tuned variant'],
+  'gemma-2b-it-q4f16_1-MLC': [2500000000, '2024-02-21', 'Google DeepMind', 'USA', 'Superseded by Gemma 2'],
+  'gemma-2b-it-q4f32_1-MLC': [2500000000, '2024-02-21', 'Google DeepMind', 'USA', 'Superseded by Gemma 2'],
+  'gemma-2b-it-q4f16_1-MLC-1k': [2500000000, '2024-02-21', 'Google DeepMind', 'USA', 'Superseded by Gemma 2'],
+  'gemma-2b-it-q4f32_1-MLC-1k': [2500000000, '2024-02-21', 'Google DeepMind', 'USA', 'Superseded by Gemma 2'],
+  'Qwen2.5-7B-Instruct-q4f16_1-MLC': [7600000000, '2024-09-19', 'Alibaba Cloud (Qwen team)', 'China', ''],
+  'Qwen2.5-7B-Instruct-q4f32_1-MLC': [7600000000, '2024-09-19', 'Alibaba Cloud (Qwen team)', 'China', ''],
+  'Qwen2.5-3B-Instruct-q4f16_1-MLC': [3100000000, '2024-09-19', 'Alibaba Cloud (Qwen team)', 'China', ''],
+  'Qwen2.5-3B-Instruct-q4f32_1-MLC': [3100000000, '2024-09-19', 'Alibaba Cloud (Qwen team)', 'China', ''],
+  'Qwen2.5-1.5B-Instruct-q4f16_1-MLC': [1500000000, '2024-09-19', 'Alibaba Cloud (Qwen team)', 'China', ''],
+  'Qwen2.5-1.5B-Instruct-q4f32_1-MLC': [1500000000, '2024-09-19', 'Alibaba Cloud (Qwen team)', 'China', ''],
+  'Qwen2.5-0.5B-Instruct-q4f16_1-MLC': [500000000, '2024-09-19', 'Alibaba Cloud (Qwen team)', 'China', ''],
+  'Qwen2.5-0.5B-Instruct-q4f32_1-MLC': [500000000, '2024-09-19', 'Alibaba Cloud (Qwen team)', 'China', ''],
+  'Qwen2.5-0.5B-Instruct-q0f16-MLC': [500000000, '2024-09-19', 'Alibaba Cloud (Qwen team)', 'China', ''],
+  'Qwen2.5-0.5B-Instruct-q0f32-MLC': [500000000, '2024-09-19', 'Alibaba Cloud (Qwen team)', 'China', ''],
+  'Qwen2.5-Coder-7B-Instruct-q4f16_1-MLC': [7600000000, '2024-09-01', 'Alibaba Cloud (Qwen team)', 'China', 'Code-specialized; full release Nov 2024'],
+  'Qwen2.5-Coder-7B-Instruct-q4f32_1-MLC': [7600000000, '2024-09-01', 'Alibaba Cloud (Qwen team)', 'China', 'Code-specialized; full release Nov 2024'],
+  'Qwen2.5-Coder-1.5B-Instruct-q4f16_1-MLC': [1500000000, '2024-09-01', 'Alibaba Cloud (Qwen team)', 'China', 'Code-specialized; full release Nov 2024. Note: WebLLM\'s config lists an unusually large VRAM figure for the q4f16_1 build of this one -- treat that specific value with caution'],
+  'Qwen2.5-Coder-1.5B-Instruct-q4f32_1-MLC': [1500000000, '2024-09-01', 'Alibaba Cloud (Qwen team)', 'China', 'Code-specialized; full release Nov 2024. Note: WebLLM\'s config lists an unusually large VRAM figure for the q4f16_1 build of this one -- treat that specific value with caution'],
+  'Qwen2.5-Math-1.5B-Instruct-q4f16_1-MLC': [1500000000, '2024-09-01', 'Alibaba Cloud (Qwen team)', 'China', 'Math-specialized'],
+  'Qwen2.5-Math-1.5B-Instruct-q4f32_1-MLC': [1500000000, '2024-09-01', 'Alibaba Cloud (Qwen team)', 'China', 'Math-specialized'],
+  'Qwen2-7B-Instruct-q4f16_1-MLC': [7600000000, '2024-06-07', 'Alibaba Cloud (Qwen team)', 'China', 'Superseded by Qwen2.5'],
+  'Qwen2-7B-Instruct-q4f32_1-MLC': [7600000000, '2024-06-07', 'Alibaba Cloud (Qwen team)', 'China', 'Superseded by Qwen2.5'],
+  'Qwen2-1.5B-Instruct-q4f16_1-MLC': [1500000000, '2024-06-07', 'Alibaba Cloud (Qwen team)', 'China', 'Superseded by Qwen2.5'],
+  'Qwen2-1.5B-Instruct-q4f32_1-MLC': [1500000000, '2024-06-07', 'Alibaba Cloud (Qwen team)', 'China', 'Superseded by Qwen2.5'],
+  'Qwen2-0.5B-Instruct-q4f16_1-MLC': [500000000, '2024-06-07', 'Alibaba Cloud (Qwen team)', 'China', 'Superseded by Qwen2.5'],
+  'Qwen2-0.5B-Instruct-q0f16-MLC': [500000000, '2024-06-07', 'Alibaba Cloud (Qwen team)', 'China', 'Superseded by Qwen2.5'],
+  'Qwen2-0.5B-Instruct-q0f32-MLC': [500000000, '2024-06-07', 'Alibaba Cloud (Qwen team)', 'China', 'Superseded by Qwen2.5'],
+  'Qwen2-Math-7B-Instruct-q4f16_1-MLC': [7600000000, '2024-08-01', 'Alibaba Cloud (Qwen team)', 'China', 'Math-specialized'],
+  'Qwen2-Math-7B-Instruct-q4f32_1-MLC': [7600000000, '2024-08-01', 'Alibaba Cloud (Qwen team)', 'China', 'Math-specialized'],
+  'Qwen2-Math-1.5B-Instruct-q4f16_1-MLC': [1500000000, '2024-08-01', 'Alibaba Cloud (Qwen team)', 'China', 'Math-specialized'],
+  'Qwen2-Math-1.5B-Instruct-q4f32_1-MLC': [1500000000, '2024-08-01', 'Alibaba Cloud (Qwen team)', 'China', 'Math-specialized'],
+  'stablelm-2-zephyr-1_6b-q4f16_1-MLC': [1600000000, '2024-01-01', 'Stability AI', 'UK / USA', ''],
+  'stablelm-2-zephyr-1_6b-q4f32_1-MLC': [1600000000, '2024-01-01', 'Stability AI', 'UK / USA', ''],
+  'stablelm-2-zephyr-1_6b-q4f16_1-MLC-1k': [1600000000, '2024-01-01', 'Stability AI', 'UK / USA', ''],
+  'stablelm-2-zephyr-1_6b-q4f32_1-MLC-1k': [1600000000, '2024-01-01', 'Stability AI', 'UK / USA', ''],
+  'RedPajama-INCITE-Chat-3B-v1-q4f16_1-MLC': [3000000000, '2023-05-01', 'Together AI (with partners)', 'USA', ''],
+  'RedPajama-INCITE-Chat-3B-v1-q4f32_1-MLC': [3000000000, '2023-05-01', 'Together AI (with partners)', 'USA', ''],
+  'RedPajama-INCITE-Chat-3B-v1-q4f16_1-MLC-1k': [3000000000, '2023-05-01', 'Together AI (with partners)', 'USA', ''],
+  'RedPajama-INCITE-Chat-3B-v1-q4f32_1-MLC-1k': [3000000000, '2023-05-01', 'Together AI (with partners)', 'USA', ''],
+  'TinyLlama-1.1B-Chat-v1.0-q4f16_1-MLC': [1100000000, '2024-01-01', 'TinyLlama project (StatNLP, Singapore Univ. of Tech. & Design)', 'Singapore', ''],
+  'TinyLlama-1.1B-Chat-v1.0-q4f32_1-MLC': [1100000000, '2024-01-01', 'TinyLlama project (StatNLP, Singapore Univ. of Tech. & Design)', 'Singapore', ''],
+  'TinyLlama-1.1B-Chat-v1.0-q4f16_1-MLC-1k': [1100000000, '2024-01-01', 'TinyLlama project (StatNLP, Singapore Univ. of Tech. & Design)', 'Singapore', ''],
+  'TinyLlama-1.1B-Chat-v1.0-q4f32_1-MLC-1k': [1100000000, '2024-01-01', 'TinyLlama project (StatNLP, Singapore Univ. of Tech. & Design)', 'Singapore', ''],
+  'TinyLlama-1.1B-Chat-v0.4-q4f16_1-MLC': [1100000000, '2023-11-01', 'TinyLlama project (StatNLP, Singapore Univ. of Tech. & Design)', 'Singapore', 'Earlier checkpoint, superseded by v1.0'],
+  'TinyLlama-1.1B-Chat-v0.4-q4f32_1-MLC': [1100000000, '2023-11-01', 'TinyLlama project (StatNLP, Singapore Univ. of Tech. & Design)', 'Singapore', 'Earlier checkpoint, superseded by v1.0'],
+  'TinyLlama-1.1B-Chat-v0.4-q4f16_1-MLC-1k': [1100000000, '2023-11-01', 'TinyLlama project (StatNLP, Singapore Univ. of Tech. & Design)', 'Singapore', 'Earlier checkpoint, superseded by v1.0'],
+  'TinyLlama-1.1B-Chat-v0.4-q4f32_1-MLC-1k': [1100000000, '2023-11-01', 'TinyLlama project (StatNLP, Singapore Univ. of Tech. & Design)', 'Singapore', 'Earlier checkpoint, superseded by v1.0'],
+  'phi-2-q4f16_1-MLC': [2700000000, '2023-12-01', 'Microsoft', 'USA', ''],
+  'phi-2-q4f32_1-MLC': [2700000000, '2023-12-01', 'Microsoft', 'USA', ''],
+  'phi-2-q4f16_1-MLC-1k': [2700000000, '2023-12-01', 'Microsoft', 'USA', ''],
+  'phi-2-q4f32_1-MLC-1k': [2700000000, '2023-12-01', 'Microsoft', 'USA', ''],
+  'phi-1_5-q4f16_1-MLC': [1300000000, '2023-09-01', 'Microsoft', 'USA', ''],
+  'phi-1_5-q4f32_1-MLC': [1300000000, '2023-09-01', 'Microsoft', 'USA', ''],
+  'phi-1_5-q4f16_1-MLC-1k': [1300000000, '2023-09-01', 'Microsoft', 'USA', ''],
+  'phi-1_5-q4f32_1-MLC-1k': [1300000000, '2023-09-01', 'Microsoft', 'USA', ''],
+  'snowflake-arctic-embed-m-q0f32-MLC-b32': [109000000, '2024-04-01', 'Snowflake', 'USA', 'Embedding model, not a chat model'],
+  'snowflake-arctic-embed-m-q0f32-MLC-b4': [109000000, '2024-04-01', 'Snowflake', 'USA', 'Embedding model, not a chat model'],
+  'snowflake-arctic-embed-s-q0f32-MLC-b32': [33000000, '2024-04-01', 'Snowflake', 'USA', 'Embedding model, not a chat model'],
+  'snowflake-arctic-embed-s-q0f32-MLC-b4': [33000000, '2024-04-01', 'Snowflake', 'USA', 'Embedding model, not a chat model'],
+  'gemma3-1b-it-q4f16_1-MLC': [1000000000, '2025-03-12', 'Google DeepMind', 'USA', ''],
+  'Qwen2.5-Coder-0.5B-Instruct-q4f16_1-MLC': [500000000, '2024-11-12', 'Alibaba Cloud (Qwen team)', 'China', 'Code-specialized; part of the full Qwen2.5-Coder family release'],
+  'Qwen2.5-Coder-0.5B-Instruct-q4f32_1-MLC': [500000000, '2024-11-12', 'Alibaba Cloud (Qwen team)', 'China', 'Code-specialized; part of the full Qwen2.5-Coder family release'],
+  'Qwen2.5-Coder-0.5B-Instruct-q0f16-MLC': [500000000, '2024-11-12', 'Alibaba Cloud (Qwen team)', 'China', 'Code-specialized; part of the full Qwen2.5-Coder family release'],
+  'Qwen2.5-Coder-0.5B-Instruct-q0f32-MLC': [500000000, '2024-11-12', 'Alibaba Cloud (Qwen team)', 'China', 'Code-specialized; part of the full Qwen2.5-Coder family release'],
+  'Qwen2.5-Coder-3B-Instruct-q4f16_1-MLC': [3100000000, '2024-11-12', 'Alibaba Cloud (Qwen team)', 'China', 'Code-specialized; part of the full Qwen2.5-Coder family release'],
+  'Qwen2.5-Coder-3B-Instruct-q4f32_1-MLC': [3100000000, '2024-11-12', 'Alibaba Cloud (Qwen team)', 'China', 'Code-specialized; part of the full Qwen2.5-Coder family release'],
+  'Qwen3-0.6B-q4f16_1-MLC': [600000000, '2025-04-29', 'Alibaba Cloud (Qwen team)', 'China', 'Hybrid reasoning model'],
+  'Qwen3-0.6B-q4f32_1-MLC': [600000000, '2025-04-29', 'Alibaba Cloud (Qwen team)', 'China', 'Hybrid reasoning model'],
+  'Qwen3-0.6B-q0f16-MLC': [600000000, '2025-04-29', 'Alibaba Cloud (Qwen team)', 'China', 'Hybrid reasoning model'],
+  'Qwen3-0.6B-q0f32-MLC': [600000000, '2025-04-29', 'Alibaba Cloud (Qwen team)', 'China', 'Hybrid reasoning model'],
+  'Qwen3-1.7B-q4f16_1-MLC': [1700000000, '2025-04-29', 'Alibaba Cloud (Qwen team)', 'China', 'Hybrid reasoning model'],
+  'Qwen3-1.7B-q4f32_1-MLC': [1700000000, '2025-04-29', 'Alibaba Cloud (Qwen team)', 'China', 'Hybrid reasoning model'],
+  'Qwen3-4B-q4f16_1-MLC': [4000000000, '2025-04-29', 'Alibaba Cloud (Qwen team)', 'China', 'Hybrid reasoning model'],
+  'Qwen3-4B-q4f32_1-MLC': [4000000000, '2025-04-29', 'Alibaba Cloud (Qwen team)', 'China', 'Hybrid reasoning model'],
+  'Qwen3-8B-q4f16_1-MLC': [8000000000, '2025-04-29', 'Alibaba Cloud (Qwen team)', 'China', 'Hybrid reasoning model'],
+  'Qwen3-8B-q4f32_1-MLC': [8000000000, '2025-04-29', 'Alibaba Cloud (Qwen team)', 'China', 'Hybrid reasoning model'],
+  'Qwen3.5-0.8B-q4f16_1-MLC': [800000000, '2026-03-02', 'Alibaba Cloud (Qwen team)', 'China', 'Native multimodal (vision-language)'],
+  'Qwen3.5-0.8B-q4f32_1-MLC': [800000000, '2026-03-02', 'Alibaba Cloud (Qwen team)', 'China', 'Native multimodal (vision-language)'],
+  'Qwen3.5-0.8B-q0f16-MLC': [800000000, '2026-03-02', 'Alibaba Cloud (Qwen team)', 'China', 'Native multimodal (vision-language)'],
+  'Qwen3.5-2B-q4f16_1-MLC': [2000000000, '2026-03-02', 'Alibaba Cloud (Qwen team)', 'China', 'Native multimodal (vision-language)'],
+  'Qwen3.5-2B-q4f32_1-MLC': [2000000000, '2026-03-02', 'Alibaba Cloud (Qwen team)', 'China', 'Native multimodal (vision-language)'],
+  'Qwen3.5-4B-q4f16_1-MLC': [4000000000, '2026-03-02', 'Alibaba Cloud (Qwen team)', 'China', 'Native multimodal (vision-language)'],
+  'Qwen3.5-4B-q4f32_1-MLC': [4000000000, '2026-03-02', 'Alibaba Cloud (Qwen team)', 'China', 'Native multimodal (vision-language)'],
+  'Qwen3.5-9B-q4f16_1-MLC': [9000000000, '2026-03-02', 'Alibaba Cloud (Qwen team)', 'China', 'Native multimodal (vision-language)'],
+  'Qwen3.5-9B-q4f32_1-MLC': [9000000000, '2026-03-02', 'Alibaba Cloud (Qwen team)', 'China', 'Native multimodal (vision-language)'],
+  'Ministral-3-3B-Base-2512-q4f16_1-MLC': [3000000000, '2025-12-02', 'Mistral AI', 'France', 'Base (non-instruct) checkpoint'],
+  'Ministral-3-3B-Base-2512-q4f32_1-MLC': [3000000000, '2025-12-02', 'Mistral AI', 'France', 'Base (non-instruct) checkpoint'],
+  'Ministral-3-3B-Reasoning-2512-q4f16_1-MLC': [3000000000, '2025-12-02', 'Mistral AI', 'France', 'Reasoning-tuned variant'],
+  'Ministral-3-3B-Reasoning-2512-q4f32_1-MLC': [3000000000, '2025-12-02', 'Mistral AI', 'France', 'Reasoning-tuned variant'],
+  'Ministral-3-3B-Instruct-2512-BF16-q4f16_1-MLC': [3000000000, '2025-12-02', 'Mistral AI', 'France', 'Instruction-tuned, released in BF16 precision'],
+  'Ministral-3-3B-Instruct-2512-BF16-q4f32_1-MLC': [3000000000, '2025-12-02', 'Mistral AI', 'France', 'Instruction-tuned, released in BF16 precision'],
+  'OLMo-2-0425-1B-Instruct-q4f16_1-MLC': [1000000000, '2025-04-01', 'Allen Institute for AI', 'USA', 'Fully open model — weights, data, and training code all public'],
+  'OLMo-2-0425-1B-Instruct-q4f32_1-MLC': [1000000000, '2025-04-01', 'Allen Institute for AI', 'USA', 'Fully open model — weights, data, and training code all public'],
+  'OLMo-2-1124-7B-Instruct-q4f16_1-MLC': [7300000000, '2024-11-01', 'Allen Institute for AI', 'USA', 'Fully open model — weights, data, and training code all public'],
+  'OLMo-2-1124-7B-Instruct-q4f32_1-MLC': [7300000000, '2024-11-01', 'Allen Institute for AI', 'USA', 'Fully open model — weights, data, and training code all public'],
+};
+
+const BRANDS = [
+  { re: /Meta/i, label: 'Meta', hue: 240 },
+  { re: /Microsoft/i, label: 'Microsoft', hue: 330 },
+  { re: /Google/i, label: 'Google DeepMind', hue: 120 },
+  { re: /Alibaba/i, label: 'Alibaba (Qwen)', hue: 30 },
+  { re: /Mistral/i, label: 'Mistral AI', hue: 355 },
+  { re: /DeepSeek/i, label: 'DeepSeek', hue: 180 },
+  { re: /Nous Research/i, label: 'Nous Research', hue: 270 },
+  { re: /Hugging Face/i, label: 'Hugging Face', hue: 48 },
+  { re: /Stability/i, label: 'Stability AI', hue: 300 },
+  { re: /Together/i, label: 'Together AI', hue: 150 },
+  { re: /TinyLlama/i, label: 'TinyLlama project', hue: 95 },
+  { re: /Snowflake/i, label: 'Snowflake', hue: 205 },
+  { re: /Teknium|mlabonne/i, label: 'Independent', hue: null },
+  { re: /Allen Institute|\bAI2\b/i, label: 'Allen Institute for AI', hue: 65 },
+];
+
+// Fallback for models added to webllm's catalog after the spreadsheet was
+// built (no MODEL_META entry, so no company string to match) — inferred
+// from the model_id's own family prefix instead, reusing the same brand
+// colors so e.g. "Qwen3-0.6B" still reads as Alibaba/Qwen-orange.
+const FAMILY_BRAND_PATTERNS = [
+  { re: /^Llama/i, label: 'Meta', hue: 240 },
+  { re: /^Qwen/i, label: 'Alibaba (Qwen)', hue: 30 },
+  { re: /^gemma/i, label: 'Google DeepMind', hue: 120 },
+  { re: /^phi-/i, label: 'Microsoft', hue: 330 },
+  { re: /^Ministral|^Mistral/i, label: 'Mistral AI', hue: 355 },
+  { re: /^SmolLM/i, label: 'Hugging Face', hue: 48 },
+  { re: /^TinyLlama/i, label: 'TinyLlama project', hue: 95 },
+  { re: /^DeepSeek/i, label: 'DeepSeek', hue: 180 },
+  { re: /^stablelm/i, label: 'Stability AI', hue: 300 },
+  { re: /^RedPajama/i, label: 'Together AI', hue: 150 },
+  { re: /^snowflake/i, label: 'Snowflake', hue: 205 },
+  { re: /^(OpenHermes|NeuralHermes|Hermes)/i, label: 'Nous Research', hue: 270 },
+  { re: /^WizardMath|^WizardLM/i, label: 'Microsoft', hue: 330 },
+  { re: /^OLMo/i, label: 'Allen Institute for AI', hue: 65 },
+];
+
+function brandOf(company, modelId) {
+  if (company) {
+    for (const b of BRANDS) { if (b.re.test(company)) return { label: b.label, hue: b.hue }; }
+    return { label: company, hue: null };
+  }
+  if (modelId) {
+    for (const b of FAMILY_BRAND_PATTERNS) { if (b.re.test(modelId)) return { label: b.label, hue: b.hue }; }
+  }
+  return { label: 'Unknown', hue: null };
+}
+
+function brandColors(hue) {
+  if (hue == null) {
+    return { row: 'var(--panel-2)', bar: 'var(--text-faint)', badgeBg: 'var(--border)', badgeText: 'var(--text-dim)' };
+  }
+  return {
+    row: `hsl(${hue} 65% 96%)`,
+    bar: `hsl(${hue} 60% 55%)`,
+    badgeBg: `hsl(${hue} 65% 90%)`,
+    badgeText: `hsl(${hue} 55% 32%)`,
+  };
+}
+
+function formatParams(n) {
+  n = Number(n);
+  if (!n) return '—';
+  if (n >= 1e9) return (n / 1e9).toFixed(n >= 10e9 ? 0 : 1) + 'B';
+  if (n >= 1e6) return Math.round(n / 1e6) + 'M';
+  return String(n);
+}
+
+const COUNTRY_ABBR = {
+  usa: 'US', china: 'CN', belgium: 'BE', france: 'FR', singapore: 'SG', uk: 'UK',
+};
+function abbreviateCountry(country) {
+  if (!country) return '—';
+  return country.split('/').map(part => {
+    const key = part.trim().toLowerCase();
+    return COUNTRY_ABBR[key] || part.trim();
+  }).join('/');
+}
+
+function formatDateShort(iso) {
+  if (!iso) return '—';
+  const [y, m] = iso.split('-');
+  return `${y.slice(2)}-${m}`;
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+// The one rule this whole file is built around: engine lifecycle state
+// (which model is loaded) and generation-parameter state (temperature,
+// top_p, etc.) are two separate objects that nothing but explicit user
+// actions touch. Opening/closing the settings drawer only edits
+// `genParams`. Only clicking "Load model" ever calls engine.reload().
+// ---------------------------------------------------------------------
+
+const genParams = {
+  temperature: 0.8,
+  top_p: 0.95,
+  repetition_penalty: 1.1,
+  max_tokens: 512,
+  system: "",
+};
+
+let engine = null;
+let loadedModelId = null;
+let pendingModelId = null;
+let isGenerating = false;
+const chatHistory = []; // {role, content}
+
+// Shell-style recall for the prompt box: Up/Down walk through previously
+// sent messages, oldest to newest. Separate from chatHistory so recall
+// still works after "Clear chat" wipes the conversation.
+const promptHistory = [];
+let historyIndex = 0; // === promptHistory.length means "not browsing, on the live draft"
+let historyDraft = ''; // whatever was being typed before Up was first pressed
+
+const els = {
+  sidebar: document.getElementById('sidebar'),
+  collapseBtn: document.getElementById('collapse-btn'),
+  gpuReport: document.getElementById('gpu-report'),
+  search: document.getElementById('search'),
+  modelList: document.getElementById('model-list'),
+  loadBtn: document.getElementById('load-btn'),
+  loadBarTrack: document.getElementById('load-bar-track'),
+  loadBar: document.getElementById('load-bar'),
+  loadProgress: document.getElementById('load-progress'),
+  activeName: document.getElementById('active-name'),
+  activeId: document.getElementById('active-id'),
+  transcript: document.getElementById('transcript'),
+  emptyState: document.getElementById('empty-state'),
+  messages: document.getElementById('messages'),
+  prompt: document.getElementById('prompt'),
+  sendBtn: document.getElementById('send-btn'),
+  stopBtn: document.getElementById('stop-btn'),
+  copyMdBtn: document.getElementById('copy-md-btn'),
+  clearChatBtn: document.getElementById('clear-chat-btn'),
+  settingsBtn: document.getElementById('settings-btn'),
+  closeSettings: document.getElementById('close-settings'),
+  settings: document.getElementById('settings'),
+  scrim: document.getElementById('settings-scrim'),
+};
+
+// ---------------------------------------------------------------------
+// GPU capability probe. We can't read real free VRAM (browsers block
+// that for fingerprinting reasons) but we CAN read hard browser-imposed
+// ceilings and feature support, which catch real "this will not load"
+// cases rather than just guessing.
+// ---------------------------------------------------------------------
+let gpuCaps = { supported: false, hasShaderF16: false, maxBufferMB: 0 };
+
+function withTimeout(promise, ms, label) {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => setTimeout(() => reject(new Error(`${label} timed out after ${ms}ms`)), ms)),
+  ]);
+}
+
+async function probeGPU() {
+  if (location.protocol === 'file:') {
+    els.gpuReport.innerHTML = `<span class="flag-bad">Opened via file://</span> — model caching and the CDN import likely won't work here. Serve this folder instead: <code>python3 -m http.server</code>, then open <code>http://localhost:8000/...</code>.`;
+  }
+  if (!('gpu' in navigator)) {
+    els.gpuReport.innerHTML = `<span class="flag-bad">No WebGPU in this browser.</span> Use a recent Chrome or Edge.`;
+    return;
+  }
+  try {
+    const adapter = await withTimeout(navigator.gpu.requestAdapter(), 8000, 'requestAdapter()');
+    if (!adapter) {
+      els.gpuReport.innerHTML = `<span class="flag-bad">WebGPU adapter unavailable.</span> Check chrome://gpu or try a different browser profile.`;
+      return;
+    }
+    const hasF16 = adapter.features.has('shader-f16');
+    const maxBufferMB = Math.round((adapter.limits.maxBufferSize || 0) / (1024 * 1024));
+    let label = 'GPU adapter';
+    try {
+      const info = adapter.info || (await adapter.requestAdapterInfo?.());
+      if (info?.description) label = info.description;
+      else if (info?.vendor) label = `${info.vendor} adapter`;
+    } catch { /* adapter info is not always exposed; not fatal */ }
+
+    gpuCaps = { supported: true, hasShaderF16: hasF16, maxBufferMB };
+    els.gpuReport.innerHTML = `
+      <div class="row"><span>Adapter</span><b>${label}</b></div>
+      <div class="row"><span>shader-f16</span><b class="${hasF16 ? 'flag-good' : 'flag-bad'}">${hasF16 ? 'yes' : 'no'}</b></div>
+      <div class="row"><span>Max buffer</span><b>${maxBufferMB.toLocaleString()} MB</b></div>
+    `;
+  } catch (err) {
+    els.gpuReport.innerHTML = `<span class="flag-bad">WebGPU probe failed:</span> ${err.message}`;
+  }
+}
+
+// ---------------------------------------------------------------------
+// Model catalog: pull straight from webllm's own config, so it's never
+// out of sync with what the library can actually load.
+// ---------------------------------------------------------------------
+function parseModelId(id) {
+  // e.g. "Llama-3.1-8B-Instruct-q4f16_1-MLC-1k" ->
+  //   family: "Llama-3.1-8B-Instruct", quant: "q4f16_1", ctx: "1k"
+  const m = id.match(/^(.*?)-(q[0-9]f[0-9]+(?:_[0-9])?)-MLC(?:-(\d+k))?$/i);
+  if (m) return { family: m[1], quant: m[2], ctx: m[3] || '' };
+  return { family: id, quant: '', ctx: '' };
+}
+
+function fitBadge(record) {
+  const needsF16 = /q[0-9]f16/i.test(record.model_id);
+  if (needsF16 && gpuCaps.supported && !gpuCaps.hasShaderF16) {
+    return { cls: 'bad', label: 'needs shader-f16, unavailable' };
+  }
+  if (gpuCaps.supported && gpuCaps.maxBufferMB && record.vram_required_MB > gpuCaps.maxBufferMB) {
+    return { cls: 'bad', label: 'exceeds browser buffer limit' };
+  }
+  if (record.low_resource_required) return { cls: 'good', label: 'low resource' };
+  if (record.vram_required_MB > 6000) return { cls: 'warn', label: 'needs a strong GPU' };
+  return { cls: 'good', label: 'should fit most GPUs' };
+}
+
+let allModels = [];
+function buildCatalog() {
+  allModels = webllm.prebuiltAppConfig.model_list
+    .filter(r => !/embed/i.test(r.model_id)) // this is a chat console, not an embeddings tool
+    .map(r => {
+      const metaRow = MODEL_META[r.model_id];
+      const meta = metaRow
+        ? { params: metaRow[0], release_date: metaRow[1], company: metaRow[2], country: metaRow[3], notes: metaRow[4] }
+        : null;
+      return {
+        ...r,
+        parsed: parseModelId(r.model_id),
+        fit: fitBadge(r),
+        meta,
+        brand: brandOf(meta?.company, r.model_id),
+      };
+    });
+}
+
+// Spreadsheet-style sortable table. Default sort: download size, smallest
+// first, per Jesse's request. Every column in a row shares that row's
+// brand-derived color (left accent bar + tinted background + a colored
+// company badge), so scanning by brand works across the whole row, not
+// just the Company column.
+const SORT_KEYS = {
+  name: r => r.parsed.family.toLowerCase(),
+  params: r => Number(r.meta?.params || 0),
+  quant: r => r.parsed.quant,
+  size: r => r.vram_required_MB || 0,
+  company: r => (r.brand.label || '').toLowerCase(),
+  country: r => (r.meta?.country || '').toLowerCase(),
+  released: r => r.meta?.release_date || '',
+};
+let sortState = { key: 'size', dir: 'asc' };
+
+const TABLE_COLS = [
+  { key: 'name', label: 'Model' },
+  { key: 'params', label: 'Params', extra: true },
+  { key: 'quant', label: 'Quant' },
+  { key: 'size', label: 'Size (GB)' },
+  { key: 'company', label: 'Company' },
+  { key: 'country', label: 'Country', extra: true },
+  { key: 'released', label: 'Released', extra: true },
+];
+
+function renderList(filterText) {
+  const q = (filterText || '').toLowerCase();
+  let rows = allModels.filter(r => {
+    if (!q) return true;
+    return r.model_id.toLowerCase().includes(q)
+      || r.brand.label.toLowerCase().includes(q)
+      || (r.meta?.country || '').toLowerCase().includes(q);
+  });
+
+  const keyFn = SORT_KEYS[sortState.key];
+  rows = rows.slice().sort((a, b) => {
+    const av = keyFn(a), bv = keyFn(b);
+    const cmp = av < bv ? -1 : av > bv ? 1 : 0;
+    return sortState.dir === 'asc' ? cmp : -cmp;
+  });
+
+  const thead = `<thead><tr><th></th>${TABLE_COLS.map(c => `<th data-key="${c.key}" class="${c.extra ? 'col-extra' : ''}">${c.label}${sortState.key === c.key ? `<span class="arrow">${sortState.dir === 'asc' ? '▲' : '▼'}</span>` : ''}</th>`).join('')}</tr></thead>`;
+
+  const bodyRows = rows.map(r => {
+    const colors = brandColors(r.brand.hue);
+    const isSelected = r.model_id === pendingModelId;
+    const isLoaded = r.model_id === loadedModelId;
+    const rowStyle = `background:${colors.row};border-left:3px solid ${colors.bar};`
+      + (isSelected ? 'outline:1.5px solid var(--accent);outline-offset:-1.5px;' : '');
+    const nameCell = `${escapeHtml(r.parsed.family)}`
+      + (r.parsed.ctx ? ` <span style="color:var(--text-faint);">· ${r.parsed.ctx}</span>` : '')
+      + (isLoaded ? ` <span class="loaded-tag">loaded</span>` : '');
+    const sizeGb = r.vram_required_MB ? (r.vram_required_MB / 1024).toFixed(2) : '?';
+    const notesTitle = r.meta?.notes ? escapeHtml(r.meta.notes) : r.fit.label;
+    return `<tr data-id="${r.model_id}" style="${rowStyle}" title="${notesTitle}">
+        <td><span class="dot ${r.fit.cls}" title="${escapeHtml(r.fit.label)}"></span></td>
+        <td class="col-name">${nameCell}</td>
+        <td class="col-extra">${formatParams(r.meta?.params)}</td>
+        <td>${r.parsed.quant}</td>
+        <td>${sizeGb}</td>
+        <td><span class="badge" style="background:${colors.badgeBg};color:${colors.badgeText};">${escapeHtml(r.brand.label)}</span></td>
+        <td class="col-extra">${abbreviateCountry(r.meta?.country)}</td>
+        <td class="col-extra" title="${r.meta?.release_date || ''}">${formatDateShort(r.meta?.release_date)}</td>
+      </tr>`;
+  }).join('');
+
+  els.modelList.innerHTML = `<table id="model-table">${thead}<tbody>${bodyRows}</tbody></table>`;
+
+  els.modelList.querySelectorAll('thead th[data-key]').forEach(th => {
+    th.addEventListener('click', () => {
+      const key = th.dataset.key;
+      if (sortState.key === key) sortState.dir = sortState.dir === 'asc' ? 'desc' : 'asc';
+      else { sortState.key = key; sortState.dir = 'asc'; }
+      renderList(els.search.value);
+    });
+  });
+  els.modelList.querySelectorAll('tbody tr').forEach(tr => {
+    tr.addEventListener('click', () => {
+      const id = tr.dataset.id;
+      pendingModelId = id;
+      els.loadBtn.disabled = false;
+      els.loadBtn.textContent = id === loadedModelId ? 'Reload model' : 'Load model';
+      renderList(els.search.value);
+    });
+  });
+}
+
+els.search.addEventListener('input', () => renderList(els.search.value));
+
+els.collapseBtn.addEventListener('click', () => {
+  const compact = els.sidebar.classList.toggle('compact');
+  els.collapseBtn.textContent = compact ? 'Expand' : 'Compact';
+});
+
+// ---------------------------------------------------------------------
+// Loading a model is the ONLY thing that touches the engine's lifecycle.
+// ---------------------------------------------------------------------
+els.loadBtn.addEventListener('click', async () => {
+  if (!pendingModelId || isGenerating) return;
+  els.loadBtn.disabled = true;
+  els.prompt.disabled = true;
+  els.sendBtn.disabled = true;
+  els.loadBarTrack.style.display = 'block';
+
+  const onProgress = (p) => {
+    els.loadProgress.textContent = p.text || '';
+    if (typeof p.progress === 'number') els.loadBar.style.width = `${Math.round(p.progress * 100)}%`;
+  };
+
+  const previousModelId = loadedModelId;
+  try {
+    if (!engine) {
+      engine = new webllm.MLCEngine({ initProgressCallback: onProgress });
+    }
+    await engine.reload(pendingModelId);
+    loadedModelId = pendingModelId;
+    els.activeName.textContent = allModels.find(m => m.model_id === loadedModelId)?.parsed.family || loadedModelId;
+    els.activeId.textContent = loadedModelId;
+    els.loadBtn.textContent = 'Reload model';
+    els.prompt.disabled = false;
+    els.sendBtn.disabled = false;
+    els.loadProgress.textContent = 'Ready.';
+    if (chatHistory.length > 0 && previousModelId !== loadedModelId) {
+      addModelSwitchDivider(els.activeName.textContent);
+    }
+  } catch (err) {
+    els.loadProgress.textContent = `Failed to load: ${err.message}`;
+  } finally {
+    els.loadBtn.disabled = false;
+    els.loadBarTrack.style.display = 'none';
+    renderList(els.search.value);
+  }
+});
+
+// ---------------------------------------------------------------------
+// Settings drawer — pure UI overlay. Nothing in here ever touches
+// `engine`, only `genParams`, which the send handler reads at call time.
+// ---------------------------------------------------------------------
+function openSettings() { els.settings.classList.add('open'); els.scrim.classList.add('open'); }
+function closeSettings() { els.settings.classList.remove('open'); els.scrim.classList.remove('open'); }
+els.settingsBtn.addEventListener('click', openSettings);
+els.closeSettings.addEventListener('click', closeSettings);
+els.scrim.addEventListener('click', closeSettings);
+
+function setAccentFromTemp(t) {
+  // 0 -> cool blue (210deg), 2.5 -> hot red/orange (10deg). Only ever
+  // touches the CSS custom property — every consumer (buttons, badges,
+  // and the slider fill/thumb below) reacts to that on its own via
+  // ordinary background/color rules, which repaint reliably. Nothing
+  // here forces per-element style directly; that approach was tried
+  // for the sliders and caused a worse flicker (see updateSliderFill).
+  const hue = 210 - Math.min(t / 2.5, 1) * 200;
+  document.documentElement.style.setProperty('--accent-h', hue.toFixed(0));
+}
+
+// Range inputs are unstyled (appearance:none) with no native fill at all;
+// this paints the "filled up to the thumb" look as a plain background
+// gradient recomputed from the current value. Plain background painting,
+// unlike the native accent-color feature, has no known repaint bugs —
+// this is what actually fixed the black/white flicker, not any amount of
+// tweaking of the old accent-color-based approach.
+function updateSliderFill(el) {
+  const min = parseFloat(el.min), max = parseFloat(el.max), val = parseFloat(el.value);
+  const pct = ((val - min) / (max - min)) * 100;
+  el.style.background = `linear-gradient(to right, var(--accent) ${pct}%, var(--panel-2) ${pct}%)`;
+}
+
+const bindings = [
+  ['temp', 'temp-val', v => genParams.temperature = v, v => v.toFixed(2)],
+  ['topp', 'topp-val', v => genParams.top_p = v, v => v.toFixed(2)],
+  ['reppen', 'reppen-val', v => genParams.repetition_penalty = v, v => v.toFixed(2)],
+  ['maxtok', 'maxtok-val', v => genParams.max_tokens = v, v => Math.round(v)],
+];
+for (const [inputId, valId, setter, fmt] of bindings) {
+  const input = document.getElementById(inputId);
+  const out = document.getElementById(valId);
+  updateSliderFill(input);
+  input.addEventListener('input', () => {
+    const v = parseFloat(input.value);
+    setter(v);
+    out.textContent = fmt(v);
+    updateSliderFill(input);
+    if (inputId === 'temp') setAccentFromTemp(v);
+  });
+}
+document.getElementById('sysprompt').addEventListener('input', (e) => {
+  genParams.system = e.target.value;
+});
+
+const PRESETS = {
+  coherent: { temperature: 0.7, top_p: 0.9, repetition_penalty: 1.1 },
+  chaotic: { temperature: 1.5, top_p: 0.98, repetition_penalty: 1.15 },
+  feral: { temperature: 2.2, top_p: 1.0, repetition_penalty: 1.0 },
+};
+function applyPreset(name) {
+  const p = PRESETS[name];
+  Object.assign(genParams, p);
+  const tempEl = document.getElementById('temp');
+  const toppEl = document.getElementById('topp');
+  const reppenEl = document.getElementById('reppen');
+  tempEl.value = p.temperature;
+  document.getElementById('temp-val').textContent = p.temperature.toFixed(2);
+  toppEl.value = p.top_p;
+  document.getElementById('topp-val').textContent = p.top_p.toFixed(2);
+  reppenEl.value = p.repetition_penalty;
+  document.getElementById('reppen-val').textContent = p.repetition_penalty.toFixed(2);
+  updateSliderFill(tempEl);
+  updateSliderFill(toppEl);
+  updateSliderFill(reppenEl);
+  setAccentFromTemp(p.temperature);
+}
+document.querySelectorAll('.preset-btn').forEach(btn => {
+  btn.addEventListener('click', () => applyPreset(btn.dataset.preset));
+});
+
+// ---------------------------------------------------------------------
+// Chat
+// ---------------------------------------------------------------------
+function addMessageEl(role) {
+  els.emptyState.classList.add('hidden');
+  const wrap = document.createElement('div');
+  wrap.className = `msg ${role}`;
+  wrap.innerHTML = `<div class="role">${role === 'user' ? 'you' : 'ai'}</div><div class="content"></div>`;
+  els.messages.appendChild(wrap);
+  els.transcript.scrollTop = els.transcript.scrollHeight;
+  return wrap.querySelector('.content');
+}
+
+// Switching models mid-conversation already works structurally — chat
+// history lives independently of the engine, so a reload never clears
+// it. This divider just makes that switch visible in the transcript
+// instead of leaving it silent.
+function addModelSwitchDivider(label) {
+  els.emptyState.classList.add('hidden');
+  const div = document.createElement('div');
+  div.className = 'model-switch-divider';
+  div.textContent = `— switched to ${label}, conversation continues —`;
+  els.messages.appendChild(div);
+  els.transcript.scrollTop = els.transcript.scrollHeight;
+}
+
+async function sendMessage() {
+  const text = els.prompt.value.trim();
+  if (!text || !engine || isGenerating) return;
+  els.prompt.value = '';
+  els.prompt.style.height = 'auto';
+
+  if (promptHistory[promptHistory.length - 1] !== text) promptHistory.push(text);
+  historyIndex = promptHistory.length;
+  historyDraft = '';
+
+  chatHistory.push({ role: 'user', content: text });
+  addMessageEl('user').textContent = text;
+
+  const assistantEl = addMessageEl('assistant');
+  assistantEl.classList.add('pending');
+
+  isGenerating = true;
+  els.sendBtn.disabled = true;
+  els.stopBtn.style.display = 'inline-block';
+  els.prompt.disabled = true;
+
+  const requestMessages = genParams.system
+    ? [{ role: 'system', content: genParams.system }, ...chatHistory]
+    : [...chatHistory];
+
+  try {
+    const stream = await engine.chat.completions.create({
+      messages: requestMessages,
+      stream: true,
+      temperature: genParams.temperature,
+      top_p: genParams.top_p,
+      max_tokens: genParams.max_tokens,
+      repetition_penalty: genParams.repetition_penalty,
+    });
+    let full = '';
+    for await (const chunk of stream) {
+      const delta = chunk.choices?.[0]?.delta?.content || '';
+      full += delta;
+      assistantEl.textContent = full;
+      els.transcript.scrollTop = els.transcript.scrollHeight;
+    }
+    chatHistory.push({ role: 'assistant', content: full });
+  } catch (err) {
+    assistantEl.textContent = `[reply stopped: ${err.message}]`;
+  } finally {
+    assistantEl.classList.remove('pending');
+    isGenerating = false;
+    els.sendBtn.disabled = false;
+    els.stopBtn.style.display = 'none';
+    els.prompt.disabled = false;
+    els.prompt.focus();
+  }
+}
+
+function recallHistory(direction) {
+  if (promptHistory.length === 0) return;
+  if (historyIndex === promptHistory.length) historyDraft = els.prompt.value;
+  historyIndex = Math.max(0, Math.min(promptHistory.length, historyIndex + direction));
+  els.prompt.value = historyIndex === promptHistory.length ? historyDraft : promptHistory[historyIndex];
+  els.prompt.selectionStart = els.prompt.selectionEnd = els.prompt.value.length;
+  els.prompt.style.height = 'auto';
+  els.prompt.style.height = Math.min(els.prompt.scrollHeight, 160) + 'px';
+}
+
+els.sendBtn.addEventListener('click', sendMessage);
+els.prompt.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); return; }
+  // Recall always moves the caret to the end of the recalled text, which
+  // would otherwise fail an "atStart" check on the very next Up press —
+  // so once a history walk is underway, Up/Down keep working regardless
+  // of caret position. Only the *first* press (before browsing starts)
+  // is gated on caret position, so it never fights with moving the
+  // cursor inside a multi-line draft you're still typing.
+  const browsing = historyIndex !== promptHistory.length;
+  const atStart = els.prompt.selectionStart === 0 && els.prompt.selectionEnd === 0;
+  const atEnd = els.prompt.selectionStart === els.prompt.value.length && els.prompt.selectionEnd === els.prompt.value.length;
+  if (e.key === 'ArrowUp' && (browsing || atStart)) { e.preventDefault(); recallHistory(-1); }
+  else if (e.key === 'ArrowDown' && (browsing || atEnd)) { e.preventDefault(); recallHistory(1); }
+});
+els.prompt.addEventListener('input', () => {
+  els.prompt.style.height = 'auto';
+  els.prompt.style.height = Math.min(els.prompt.scrollHeight, 160) + 'px';
+});
+els.stopBtn.addEventListener('click', () => {
+  if (engine) engine.interruptGenerate();
+});
+els.clearChatBtn.addEventListener('click', () => {
+  chatHistory.length = 0;
+  els.messages.innerHTML = '';
+  els.emptyState.classList.remove('hidden');
+});
+
+function chatToMarkdown() {
+  if (chatHistory.length === 0) return '';
+  const lines = [`# Conversation — ${loadedModelId || '(no model loaded)'}`, ''];
+  for (const m of chatHistory) {
+    lines.push(m.role === 'user' ? '### You' : '### Assistant', '', m.content, '');
+  }
+  return lines.join('\n').trim() + '\n';
+}
+
+els.copyMdBtn.addEventListener('click', async () => {
+  const resetLabel = 'Copy as Markdown';
+  const md = chatToMarkdown();
+  if (!md) {
+    els.copyMdBtn.textContent = 'Nothing to copy';
+    setTimeout(() => els.copyMdBtn.textContent = resetLabel, 1200);
+    return;
+  }
+  try {
+    await navigator.clipboard.writeText(md);
+    els.copyMdBtn.textContent = 'Copied!';
+  } catch (err) {
+    els.copyMdBtn.textContent = 'Copy failed';
+    console.error('Clipboard write failed', err);
+  } finally {
+    setTimeout(() => els.copyMdBtn.textContent = resetLabel, 1200);
+  }
+});
+
+// ---------------------------------------------------------------------
+const WEBLLM_CDNS = [
+  "https://esm.run/@mlc-ai/web-llm",
+  "https://cdn.jsdelivr.net/npm/@mlc-ai/web-llm/+esm",
+];
+
+async function loadWebLLMLibrary() {
+  let lastErr = null;
+  for (const url of WEBLLM_CDNS) {
+    try {
+      els.loadProgress.textContent = `Fetching WebLLM from ${url}…`;
+      webllm = await withTimeout(import(url), 15000, `import from ${url}`);
+      els.loadProgress.textContent = '';
+      return;
+    } catch (err) {
+      lastErr = err;
+      console.error(`Failed to load WebLLM from ${url}`, err);
+    }
+  }
+  throw lastErr;
+}
+
+// Zero-effort starting point: the smallest model in the catalog, a
+// reasonable ("coherent") sampling preset, and the compact column view —
+// so the console is immediately usable without any setup. Anyone who
+// wants something else just picks a different model or preset.
+const DEFAULT_MODEL_ID = 'SmolLM2-135M-Instruct-q0f16-MLC';
+
+(async function init() {
+  // Run first and independently — must show a result even if the
+  // library CDN below is unreachable.
+  await probeGPU();
+
+  try {
+    await loadWebLLMLibrary();
+    buildCatalog();
+    renderList('');
+
+    els.sidebar.classList.add('compact');
+    els.collapseBtn.textContent = 'Expand';
+    applyPreset('coherent');
+
+    if (allModels.some(m => m.model_id === DEFAULT_MODEL_ID)) {
+      pendingModelId = DEFAULT_MODEL_ID;
+      renderList('');
+      els.loadBtn.disabled = false;
+      els.loadBtn.click();
+    }
+  } catch (err) {
+    els.modelList.innerHTML = `
+      <div style="padding:14px;color:var(--bad);font-size:12px;line-height:1.6;">
+        Couldn't load the WebLLM library from either CDN.<br><br>
+        <b>${err.message}</b><br><br>
+        Check: are you online, does a browser extension/ad-blocker/corporate
+        proxy block esm.run or cdn.jsdelivr.net, and is this page served over
+        http(s) rather than opened as a local file? Open devtools → Console
+        for the underlying network error.
+      </div>`;
+    els.loadBtn.textContent = 'Library failed to load';
+  }
+})();
+</script>
+</body>
+</html>
