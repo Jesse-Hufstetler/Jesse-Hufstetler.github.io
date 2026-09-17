@@ -391,6 +391,14 @@
             animation-timing-function: ease-in-out;
         }
 
+        div.wiggle-div {
+            height: 100%;
+            width: 100%;
+            animation-name: wiggle;
+            animation-duration: 150s;
+            animation-iteration-count: infinite;
+            animation-timing-function: linear;
+        }
 
 
         #time {
@@ -411,6 +419,20 @@
 
             100% {
                 transform: scale(0.9, 0.9) translate(0vh, -20vh);
+            }
+        }
+
+        @keyframes wiggle {
+            0% {
+                transform: translate(3vh, 0vh);
+            }
+
+            50% {
+                transform: translate(-3vh, 0vh);
+            }
+
+            100% {
+                transform: translate(3vh, 0vh);
             }
         }
 
@@ -438,6 +460,7 @@
     <div class="page">
         <content>
             <div class='outer-div'>
+                <div class='wiggle-div'>
                 <div class='middle-div'>
                     <div style="font-size: 20vh; padding: 0;margin: 0;">
                         <span>&nbsp;</span>
@@ -461,6 +484,7 @@
                     <div style="font-size: 20vh; padding: 0;margin: 0;">
                         <span>&nbsp;</span>
                     </div>
+                </div>
                 </div>
             </div>
 
