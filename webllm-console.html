@@ -311,6 +311,14 @@
     </div>
 
     <div class="field">
+      <label style="justify-content:flex-start;gap:8px;align-items:center;">
+        <input type="checkbox" id="inject-random" style="width:auto;margin:0;" />
+        <span>Random word injector</span>
+      </label>
+      <div class="hint">Appends a random wildcard element to every message you send, e.g. "continue (work in: a rogue vending machine)". Small models tend to loop when "continue" gives them nothing new to react to — sampling settings alone can't fix that, since a loop can restate the same idea in fresh words without ever repeating a literal phrase. This forces new material into the context each turn instead.</div>
+    </div>
+
+    <div class="field">
       <label>System prompt</label>
       <textarea id="sysprompt" rows="3" style="width:100%;background:var(--panel-2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--sans);font-size:13px;padding:8px;" placeholder="Optional"></textarea>
     </div>
@@ -618,7 +626,50 @@ const genParams = {
   repetition_penalty: 1.1,
   max_tokens: 512,
   system: "",
+  injectRandomWord: false,
 };
+
+// Grab-bag of concrete, unrelated nouns/characters for the random word
+// injector. The point isn't cleverness, just novelty: small models fall
+// into semantic loops (restating the same idea in new words) when a
+// prompt like "continue" gives them nothing fresh to react to, and
+// repetition penalty can't catch that since no literal phrase repeats.
+// Forcing an unrelated concrete noun into the message each turn gives
+// the model something concrete it has to incorporate, which breaks the
+// loop far more reliably than raising temperature does.
+const WORD_BANK = [
+  'a flamingo', 'a rubber chicken', 'a nuclear reactor', "grandma's ghost",
+  'a sentient toaster', 'a wizard accountant', 'a swarm of bees',
+  'a talking cactus', 'a rogue Roomba', 'an alien tax auditor',
+  'a haunted vending machine', 'a time-traveling mailman', 'a disco ball',
+  'a herd of alpacas', 'a black hole', 'a mime', 'a conspiracy-theorist pigeon',
+  'a karaoke machine', 'an evil twin', 'a magic 8-ball', 'a spontaneous parade',
+  'an underground casino', 'a rogue vending machine', 'a giant kazoo',
+  'a submarine', 'a talking fridge', 'a discount wizard', 'a lawn gnome army',
+  'a runaway Zamboni', 'a psychic goldfish', 'a broken elevator',
+  'a self-aware GPS', 'a traveling circus', 'a vampire dentist',
+  'a UFO made of cheese', 'a sarcastic parrot', 'a haunted typewriter',
+  'a rogue Roomba army', 'a marching band', 'a grumpy sasquatch',
+  'a malfunctioning jetpack', 'a cursed vending machine receipt',
+  'an overenthusiastic mascot costume', 'a secret tunnel', 'a robot butler',
+  'a fortune-telling microwave', 'a herd of escaped llamas',
+  'a bureaucratic dragon', 'a glitching hologram', 'a smuggled penguin',
+  'a talking fire hydrant', 'a rogue weather balloon', 'a cursed mirror',
+  'an alien exchange student', 'a sentient pile of laundry',
+  'a caffeinated squirrel', 'a broken time machine', 'a nosy houseplant',
+  'a discount superhero', 'a rogue garden gnome', 'a moonlit heist',
+  'a talking traffic cone', 'a runaway hot air balloon',
+];
+
+function randomInjection() {
+  const count = Math.random() < 0.15 ? 2 : 1;
+  const picks = [];
+  while (picks.length < count) {
+    const w = WORD_BANK[Math.floor(Math.random() * WORD_BANK.length)];
+    if (!picks.includes(w)) picks.push(w);
+  }
+  return picks.join(' and ');
+}
 
 let engine = null;
 let loadedModelId = null;
@@ -941,11 +992,14 @@ for (const [inputId, valId, setter, fmt] of bindings) {
 document.getElementById('sysprompt').addEventListener('input', (e) => {
   genParams.system = e.target.value;
 });
+document.getElementById('inject-random').addEventListener('change', (e) => {
+  genParams.injectRandomWord = e.target.checked;
+});
 
 const PRESETS = {
   coherent: { temperature: 0.7, top_p: 0.9, repetition_penalty: 1.1 },
-  chaotic: { temperature: 1.5, top_p: 0.98, repetition_penalty: 1.15 },
-  feral: { temperature: 2.2, top_p: 1.0, repetition_penalty: 1.0 },
+  chaotic: { temperature: 0.99, top_p: 0.98, repetition_penalty: 1.15 },
+  feral: { temperature: 1.10, top_p: 1.0, repetition_penalty: 1.0 },
 };
 function applyPreset(name) {
   const p = PRESETS[name];
@@ -995,14 +1049,22 @@ function addModelSwitchDivider(label) {
 }
 
 async function sendMessage() {
-  const text = els.prompt.value.trim();
-  if (!text || !engine || isGenerating) return;
+  const original = els.prompt.value.trim();
+  if (!original || !engine || isGenerating) return;
   els.prompt.value = '';
   els.prompt.style.height = 'auto';
 
-  if (promptHistory[promptHistory.length - 1] !== text) promptHistory.push(text);
+  // History recall (Up/Down) should hand back the clean text you typed,
+  // not a random injection from three messages ago — so the original is
+  // what's recorded here, while the injected version below is only what
+  // gets shown in the transcript and sent to the model.
+  if (promptHistory[promptHistory.length - 1] !== original) promptHistory.push(original);
   historyIndex = promptHistory.length;
   historyDraft = '';
+
+  const text = genParams.injectRandomWord
+    ? `${original} (work in: ${randomInjection()})`
+    : original;
 
   chatHistory.push({ role: 'user', content: text });
   addMessageEl('user').textContent = text;
