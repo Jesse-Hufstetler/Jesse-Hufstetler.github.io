@@ -117,6 +117,22 @@
         vertical-align: middle;
     }
 
+    #vrbtn {
+        position: absolute;
+        right: 10px;
+        bottom: 10px;
+        display: none;
+        background: #e8590c;
+        color: #fff;
+        border: 0;
+        border-radius: 8px;
+        padding: 10px 18px;
+        font-size: 15px;
+        font-weight: bold;
+        cursor: pointer;
+        box-shadow: 0 2px 12px rgba(0, 0, 0, .4);
+    }
+
     @media (max-width: 700px) {
         #info p {
             display: none;
@@ -134,9 +150,10 @@
         <h1>How big is a pile of money?</h1>
         <p>Every bill is a $20 bill, 156 &times; 66 mm and 0.11 mm thick, stacked flat. Fly around: drag to look, <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> to move,
             <kbd>E</kbd>/<kbd>Q</kbd> up/down, <kbd>Shift</kbd> for boost, mouse wheel to change speed. Fly right up to the big
-            blocks to see the individual bills in the edges.</p>
+            blocks to see the individual bills in the edges. In a VR headset browser an <b>Enter VR</b> button appears.</p>
     </div>
     <div id="nav" class="panel"></div>
+    <button id="vrbtn">Enter VR</button>
     <div id="hud" class="panel">
         <div id="readout"></div>
         <div><label><input id="autospeed" type="checkbox" checked> Auto speed (slows near things)</label></div>
@@ -485,7 +502,7 @@
     function updateBlocks() {
         for (const { m, counts } of billBlocks) {
             m.updateMatrixWorld();
-            m.worldToLocal(_loc.copy(camera.position));
+            m.worldToLocal(_loc.copy(getEye()));
             const u = m.material.uniforms;
             const cn = [counts.x, counts.y, counts.z];
             // clamp so the integer base cell stays below 2^24 (exact in float32)
@@ -529,7 +546,28 @@
 
     // ---------------------------------------------------------------- camera / controls
     let yaw = 0, pitch = 0;
-    const pos = camera.position;
+    // The camera rides on a rig so VR can move the "room" while the headset moves the camera.
+    const rig = new THREE.Group();
+    rig.add(camera);
+    scene.add(rig);
+    renderer.xr.enabled = true;
+    renderer.xr.setReferenceSpaceType('local-floor');
+    const inXR = () => renderer.xr.isPresenting;
+    const _eye = new THREE.Vector3(), _dir = new THREE.Vector3();
+    // world-space position of the viewer's head (== camera.position outside VR)
+    const getEye = () => inXR() ? camera.getWorldPosition(_eye) : _eye.copy(camera.position);
+    const shiftBase = d => (inXR() ? rig.position : camera.position).add(d);
+    function rotateRig(a) {            // spin the room around the viewer's head
+        const before = camera.getWorldPosition(new THREE.Vector3());
+        rig.rotation.y += a;
+        const after = camera.getWorldPosition(new THREE.Vector3());
+        rig.position.add(before.sub(after));
+    }
+    function faceYaw(target) {
+        camera.getWorldDirection(_dir);
+        rotateRig(target - Math.atan2(-_dir.x, -_dir.z));
+    }
+    const pos = new THREE.Vector3();   // working copy of the eye position, written back each frame
     function lookAt(from, to) {
         const d = to.clone().sub(from);
         return { yaw: Math.atan2(-d.x, -d.z), pitch: Math.atan2(d.y, Math.hypot(d.x, d.z)) };
@@ -558,13 +596,21 @@
         if (b) flyTo(presets[+b.dataset.i]);
     });
 
-    let tween = null;
+    let tween = null, presetIdx = 0;
     function flyTo(p) {
-        const r = lookAt(p.from, p.to);
+        presetIdx = presets.indexOf(p);
+        let from = p.from;
+        if (inXR()) { // don't park a headset 3 cm from a bill: keep at least 35 cm away
+            const d = p.from.clone().sub(p.to);
+            if (d.length() < 0.35) from = p.to.clone().addScaledVector(d.normalize(), 0.35);
+        }
+        const r = lookAt(from, p.to);
+        if (inXR()) faceYaw(r.yaw);
         let dy = r.yaw - yaw;
         dy = Math.atan2(Math.sin(dy), Math.cos(dy));
-        tween = { t: 0, from: pos.clone(), to: p.from.clone(), yaw0: yaw, dyaw: dy, pitch0: pitch, pitch1: r.pitch,
-            dur: Math.min(3.5, 1 + Math.log10(1 + pos.distanceTo(p.from)) * 0.6) };
+        pos.copy(getEye());
+        tween = { t: 0, from: pos.clone(), to: from.clone(), yaw0: yaw, dyaw: dy, pitch0: pitch, pitch1: r.pitch,
+            dur: Math.min(3.5, 1 + Math.log10(1 + pos.distanceTo(from)) * 0.6) };
     }
     flyTo(presets[0]); tween.dur = 0.001;
 
@@ -602,7 +648,8 @@
         return Math.max(d, 0.003);
     }
     function pushOut() {
-        if (pos.y < 0.01) pos.y = 0.01;
+        const minY = inXR() ? 0.25 : 0.01;
+        if (pos.y < minY) pos.y = minY;
         for (const ex of exhibits) {
             const b = ex.box;
             if (!b.containsPoint(pos)) continue;
@@ -619,9 +666,76 @@
     const fwd = new THREE.Vector3(), right = new THREE.Vector3(), want = new THREE.Vector3();
     let last = performance.now(), curSpeed = 0;
 
+    // ---- VR controllers: left stick fly, right stick turn (snap) + up/down, grips boost,
+    // A / B next / previous exhibit, Y back to street level.
+    const dead = v => Math.abs(v) < 0.15 ? 0 : v;
+    const stick = g => g ? [dead(g.axes[2] ?? g.axes[0] ?? 0), dead(g.axes[3] ?? g.axes[1] ?? 0)] : [0, 0];
+    const wasDown = {};
+    let snapReady = true;
+    function pressed(key, g, i) {
+        const down = !!(g && g.buttons[i] && g.buttons[i].pressed), was = wasDown[key];
+        wasDown[key] = down;
+        return down && !was;
+    }
+    let vrHint = null, hintUntil = 0;
+    function makeHint() {
+        const c = document.createElement('canvas');
+        c.width = 768; c.height = 380;
+        const g = c.getContext('2d');
+        g.fillStyle = 'rgba(25,25,25,.85)';
+        g.beginPath(); g.roundRect(4, 4, 760, 372, 28); g.fill();
+        g.fillStyle = '#ffb27a'; g.font = 'bold 44px system-ui, sans-serif'; g.textAlign = 'center';
+        g.fillText('VR controls', 384, 66);
+        g.fillStyle = '#fff'; g.font = '32px system-ui, sans-serif'; g.textAlign = 'left';
+        ['Left stick: fly where you look', 'Right stick: turn (left/right), up/down', 'Grip buttons: boost', 'A / B: next / previous exhibit', 'Left Y: back to street level']
+            .forEach((t, i) => g.fillText(t, 48, 125 + i * 52));
+        const t = new THREE.CanvasTexture(c);
+        t.colorSpace = THREE.SRGBColorSpace;
+        const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: t, transparent: true, depthTest: false }));
+        sp.scale.set(1.2, 1.2 * 380 / 768, 1);
+        sp.renderOrder = 10;
+        sp.visible = false;
+        scene.add(sp);
+        return sp;
+    }
+    vrHint = makeHint();
+
+    function vrControls(dt, now) {
+        const session = renderer.xr.getSession();
+        let L = null, R = null;
+        if (session) for (const src of session.inputSources) {
+            if (!src.gamepad) continue;
+            if (src.handedness === 'left') L = src.gamepad; else if (src.handedness === 'right') R = src.gamepad;
+        }
+        const [lx, ly] = stick(L), [rx, ry] = stick(R);
+        if (pressed('A', R, 4)) flyTo(presets[(presetIdx + 1) % presets.length]);
+        if (pressed('B', R, 5)) flyTo(presets[(presetIdx + presets.length - 1) % presets.length]);
+        if (pressed('Y', L, 5)) flyTo(presets[0]);
+        if (Math.abs(rx) > 0.7 && snapReady) { rotateRig(-Math.sign(rx) * Math.PI / 6); snapReady = false; }
+        if (Math.abs(rx) < 0.3) snapReady = true;
+        if (lx || ly || rx || ry) vrHint.visible = false;
+        else if (now > hintUntil) vrHint.visible = false;
+        camera.getWorldDirection(_dir);
+        fwd.copy(_dir);
+        right.set(-_dir.z, 0, _dir.x).normalize();
+        want.set(0, 0, 0).addScaledVector(fwd, -ly).addScaledVector(right, lx);
+        want.y += -ry;
+        const boost = ((L && L.buttons[1] && L.buttons[1].pressed) || (R && R.buttons[1] && R.buttons[1].pressed)) ? 5 : 1;
+        const mult = Math.pow(10, +$('speed').value);
+        // gentler than the desktop cap: fast smooth motion is rough on the stomach
+        curSpeed = Math.min(($('autospeed').checked ? nearest() * 1.5 : 4) * mult * boost, 80);
+        const mag = Math.min(want.length(), 1);
+        if (want.lengthSq()) want.normalize().multiplyScalar(curSpeed * mag);
+        vel.lerp(want, 1 - Math.exp(-dt * 6));
+        pos.addScaledVector(vel, dt);
+    }
+
     function frame(now) {
         const dt = Math.min((now - last) / 1000, 0.1), last0 = last;
         last = now;
+        const xr = inXR();
+        pos.copy(getEye());
+        const eye0 = pos.clone();
 
         if (tween) {
             tween.t += (now - last0) / 1000 / tween.dur;
@@ -631,6 +745,9 @@
             pitch = tween.pitch0 + (tween.pitch1 - tween.pitch0) * e;
             if (k >= 1) tween = null;
             vel.set(0, 0, 0);
+            if (xr) vrControls(0, now / 1000);   // still read buttons mid-flight
+        } else if (xr) {
+            vrControls(dt, now / 1000);
         } else {
             fwd.set(-Math.sin(yaw) * Math.cos(pitch), Math.sin(pitch), -Math.cos(yaw) * Math.cos(pitch));
             right.set(Math.cos(yaw), 0, -Math.sin(yaw));
@@ -649,13 +766,13 @@
             pos.addScaledVector(vel, dt);
         }
         pushOut();
-        applyRot();
+        shiftBase(pos.clone().sub(eye0));       // write the new eye position back to the camera / rig
+        if (!xr) applyRot();
         updateBlocks();
         animateBirds(now / 1000);
         $('mult').textContent = '×' + Math.pow(10, +$('speed').value).toFixed(2);
         $('readout').textContent = 'Speed ' + fmtLen(vel.length()) + '/s · altitude ' + fmtLen(pos.y);
         renderer.render(scene, camera);
-        requestAnimationFrame(frame);
     }
     function fmtLen(m) {
         if (m >= 1000) return (m / 1000).toFixed(2) + ' km';
@@ -665,6 +782,7 @@
     }
 
     function resize() {
+        if (renderer.xr.isPresenting) return;
         const w = innerWidth, h = innerHeight;
         renderer.setSize(w, h);
         camera.aspect = w / h;
@@ -673,7 +791,42 @@
     addEventListener('resize', resize);
     new ResizeObserver(resize).observe(document.body);
     resize();
-    requestAnimationFrame(frame);
+    renderer.setAnimationLoop(frame);
+
+    // ---------------------------------------------------------------- VR (button only appears when supported)
+    const vrbtn = $('vrbtn');
+    if (navigator.xr && navigator.xr.isSessionSupported) {
+        navigator.xr.isSessionSupported('immersive-vr').then(ok => { if (ok) vrbtn.style.display = 'block'; }).catch(() => {});
+    }
+    vrbtn.addEventListener('click', async () => {
+        try {
+            const session = await navigator.xr.requestSession('immersive-vr', { optionalFeatures: ['local-floor', 'bounded-floor'] });
+            await renderer.xr.setSession(session);
+        } catch (err) { console.warn('Could not start VR', err); }
+    });
+    renderer.xr.addEventListener('sessionstart', () => {
+        vrbtn.style.display = 'none';
+        // put the room's floor under the viewer, facing the way they were looking
+        const eye = camera.position.clone();
+        tween = null; vel.set(0, 0, 0);
+        camera.position.set(0, 0, 0);
+        rig.rotation.set(0, yaw, 0);
+        rig.position.set(eye.x, Math.max(eye.y - 1.6, 0), eye.z);
+        camera.getWorldDirection(_dir);
+        vrHint.position.copy(rig.position).add(new THREE.Vector3(-Math.sin(yaw) * 1.6, 1.5, -Math.cos(yaw) * 1.6));
+        vrHint.visible = true;
+        hintUntil = performance.now() / 1000 + 45;
+    });
+    renderer.xr.addEventListener('sessionend', () => {
+        const eye = camera.getWorldPosition(new THREE.Vector3());
+        camera.getWorldDirection(_dir);
+        yaw = Math.atan2(-_dir.x, -_dir.z); pitch = 0;
+        rig.position.set(0, 0, 0); rig.rotation.set(0, 0, 0);
+        camera.position.copy(eye);
+        vrHint.visible = false;
+        vrbtn.style.display = 'block';
+        resize();
+    });
     </script>
 </body>
 
