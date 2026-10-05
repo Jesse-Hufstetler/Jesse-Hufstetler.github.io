@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
+    <title>H3 Globe</title>
+    <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.6.0/dist/maplibre-gl.css">
+    <script src="https://unpkg.com/maplibre-gl@5.6.0/dist/maplibre-gl.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/h3-js@4.2.1/dist/h3-js.umd.js"></script>
+    <style>
+    html,
+    body {
+        margin: 0;
+        height: 100%;
+        font-family: system-ui, sans-serif;
+        font-size: 14px;
+    }
+
+    #map {
+        position: absolute;
+        inset: 0;
+        background: #141414;
+    }
+
+    .panel {
+        position: absolute;
+        background: rgba(30, 30, 30, .88);
+        color: #eee;
+        border-radius: 10px;
+        padding: 10px 14px;
+        box-shadow: 0 2px 12px rgba(0, 0, 0, .4);
+        backdrop-filter: blur(4px);
+    }
+
+    #controls {
+        top: 10px;
+        left: 10px;
+        width: 270px;
+        max-height: calc(100% - 60px);
+        overflow-y: auto;
+    }
+
+    #controls h1 {
+        font-size: 16px;
+        margin: 0 0 8px;
+    }
+
+    #level {
+        font-size: 26px;
+        font-weight: bold;
+        line-height: 1.1;
+    }
+
+    #level small {
+        font-size: 12px;
+        font-weight: normal;
+        opacity: .75;
+    }
+
+    #res {
+        width: 100%;
+        margin: 6px 0;
+    }
+
+    input {
+        accent-color: #e8590c;
+    }
+
+    #back {
+        color: #ffb27a;
+        font-size: 12px;
+        text-decoration: none;
+    }
+
+    #back:hover {
+        text-decoration: underline;
+    }
+
+    #landcount {
+        font-size: 12px;
+        margin-top: 8px;
+        padding-top: 6px;
+        border-top: 1px solid #555;
+    }
+
+    #landcount b {
+        font-size: 15px;
+    }
+
+    .row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-top: 6px;
+    }
+
+    .row label {
+        cursor: pointer;
+    }
+
+    .seg {
+        display: flex;
+        border: 1px solid #777;
+        border-radius: 6px;
+        overflow: hidden;
+    }
+
+    .seg button {
+        background: none;
+        color: #eee;
+        border: 0;
+        padding: 4px 12px;
+        cursor: pointer;
+    }
+
+    .seg button.on {
+        background: #e8590c;
+        color: #fff;
+    }
+
+    #status {
+        font-size: 12px;
+        opacity: .75;
+        margin-top: 6px;
+    }
+
+    #info {
+        bottom: 28px;
+        left: 10px;
+        width: 330px;
+        max-width: calc(100% - 44px);
+        font-size: 13px;
+    }
+
+    #info .idx {
+        font-family: ui-monospace, Consolas, monospace;
+        font-size: 17px;
+        font-weight: bold;
+        color: #ffb27a;
+        word-break: break-all;
+    }
+
+    #info table {
+        border-collapse: collapse;
+        margin-top: 4px;
+        width: 100%;
+    }
+
+    #info td {
+        padding: 1px 0;
+        vertical-align: top;
+    }
+
+    #info td:first-child {
+        opacity: .65;
+        padding-right: 10px;
+        white-space: nowrap;
+    }
+
+    #info .mono {
+        font-family: ui-monospace, Consolas, monospace;
+        word-break: break-all;
+    }
+
+    #info .hint {
+        opacity: .65;
+    }
+
+    #info button {
+        background: #3a3a3a;
+        color: #eee;
+        border: 1px solid #777;
+        border-radius: 5px;
+        cursor: pointer;
+        padding: 2px 8px;
+        margin-top: 6px;
+    }
+
+    @media (max-width: 600px) {
+        #info {
+            bottom: 34px;
+        }
+    }
+    </style>
+</head>
+
+<body>
+    <div id="map"></div>
+
+    <div id="controls" class="panel">
+        <a id="back" href="index.html">&larr; Back to index</a>
+        <h1>H3 Hexagons on a Globe</h1>
+        <div id="level">Res 0 <small id="levelnote"></small></div>
+        <input id="res" type="range" min="0" max="15" step="1" value="3">
+        <div class="row"><label><input id="auto" type="checkbox" checked> Auto resolution</label></div>
+        <div class="row"><label><input id="labels" type="checkbox" checked> Labels (when there's room)</label></div>
+        <div class="row"><label for="opacity">Hex fill opacity</label>
+            <input id="opacity" type="range" min="0" max="100" step="1" value="20" style="flex:1"><span id="opv" style="width:34px;text-align:right">20%</span></div>
+        <div class="row"><label><input id="borders" type="checkbox" checked> Country &amp; state borders</label></div>
+        <div class="row"><label><input id="ocean" type="checkbox"> Show hexagons that don't touch land</label></div>
+        <div class="row">
+            <span>Basemap</span>
+            <div class="seg"><button id="bm-map">Map</button><button id="bm-sat" class="on">Satellite</button></div>
+        </div>
+        <div id="status"></div>
+        <div id="landcount"></div>
+    </div>
+
+    <div id="info" class="panel"></div>
+
+    <script>
+    const MAX_CELLS = 1500; // auto-res budget
+    const HARD_CAP = 20000; // manual-res refusal threshold
+    const GLYPHS = 'https://tiles.openfreemap.org/fonts/{fontstack}/{range}.pbf';
+    const LABEL_FONT = ['Noto Sans Regular'];
+    const R_KM = 6371.0088;
+    const PALETTE = ['#ff6b6b', '#ffa94d', '#ffd43b', '#69db7c', '#38d9a9', '#4dabf7', '#9775fa'];
+
+    const STYLES = {
+        map: 'https://tiles.openfreemap.org/styles/liberty',
+        sat: {
+            version: 8,
+            glyphs: GLYPHS,
+            sources: {
+                esri: {
+                    type: 'raster',
+                    tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'],
+                    tileSize: 256,
+                    maxzoom: 19,
+                    attribution: 'Imagery © Esri, Maxar, Earthstar Geographics'
+                }
+            },
+            layers: [{ id: 'esri', type: 'raster', source: 'esri' }]
+        }
+    };
+
+    const $ = id => document.getElementById(id);
+    const emptyFC = { type: 'FeatureCollection', features: [] };
+
+    const map = new maplibregl.Map({
+        container: 'map',
+        style: STYLES.sat,
+        center: [-111.9, 40.7],
+        zoom: 3,
+        projection: { type: 'globe' },
+        maxPitch: 70,
+        hash: true
+    });
+    map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), 'top-right');
+    map.addControl(new maplibregl.GlobeControl(), 'top-right');
+
+    // ---------- H3 helpers ----------
+    const coarseCache = {}; // res -> {cells, lat[], lng[]}
+    function coarse(res) {
+        if (coarseCache[res]) return coarseCache[res];
+        let cells = h3.getRes0Cells();
+        for (let r = 1; r <= res; r++) cells = cells.flatMap(c => h3.cellToChildren(c, r));
+        const lat = new Float32Array(cells.length), lng = new Float32Array(cells.length);
+        cells.forEach((c, i) => { const [a, b] = h3.cellToLatLng(c); lat[i] = a; lng[i] = b; });
+        return coarseCache[res] = { cells, lat, lng };
+    }
+
+    // H3 index -> {base, digits[]}  (3 bits per digit, res1 highest)
+    function address(h) {
+        const idx = BigInt('0x' + h), res = h3.getResolution(h);
+        const base = Number((idx >> 45n) & 0x7Fn);
+        const digits = [];
+        for (let i = 1; i <= res; i++) digits.push(Number((idx >> BigInt(3 * (15 - i))) & 7n));
+        return { base, digits };
+    }
+
+    function ring(h, res) {
+        let pts = h3.cellToBoundary(h, true);
+        if (res <= 4) { // densify so edges bow roughly geodesically at coarse levels
+            const out = [];
+            for (let i = 0; i < pts.length; i++) {
+                const a = pts[i], b = pts[(i + 1) % pts.length];
+                let dl = b[0] - a[0];
+                if (dl > 180) dl -= 360; else if (dl < -180) dl += 360;
+                for (let k = 0; k < 6; k++) out.push([a[0] + dl * k / 6, a[1] + (b[1] - a[1]) * k / 6]);
+            }
+            pts = out;
+        }
+        // unwrap across the antimeridian
+        let mn = Infinity, mx = -Infinity;
+        for (const p of pts) { mn = Math.min(mn, p[0]); mx = Math.max(mx, p[0]); }
+        if (mx - mn > 180) pts = pts.map(p => [p[0] < 0 ? p[0] + 360 : p[0], p[1]]);
+        pts.push(pts[0]);
+        return pts;
+    }
+
+    function viewBounds() {
+        const b = map.getBounds();
+        let w = b.getWest(), e = b.getEast(), s = b.getSouth(), n = b.getNorth();
+        const full = (e - w) >= 340;
+        return { w, e, s: Math.max(s, -89.5), n: Math.min(n, 89.5), full };
+    }
+
+    function viewAreaKm2(vb) {
+        const dl = Math.min(vb.e - vb.w, 360) * Math.PI / 180;
+        const a = R_KM * R_KM * dl * (Math.sin(vb.n * Math.PI / 180) - Math.sin(vb.s * Math.PI / 180));
+        return Math.min(a, 4 * Math.PI * R_KM * R_KM);
+    }
+
+    // Depends only on the on-screen scale and canvas size (not latitude/bounds), so panning never changes it.
+    function autoRes() {
+        const cv = map.getCanvas();
+        // Measure the true on-screen scale at the view center. (On the globe, getZoom() drifts
+        // as you pan toward the poles, but the globe's apparent size does not.)
+        const c = map.getCenter(), d = c.lat > 0 ? -0.5 : 0.5;
+        const a = map.project(c), b = map.project([c.lng, c.lat + d]);
+        const kmPerPx = 0.5 * Math.PI * R_KM / 180 / Math.max(Math.hypot(a.x - b.x, a.y - b.y), 1e-6);
+        const area = Math.min(cv.clientWidth * cv.clientHeight * kmPerPx * kmPerPx, 4 * Math.PI * R_KM * R_KM);
+        const n = r => area / h3.getHexagonAreaAvg(r, 'km2');
+        // hysteresis: keep the previous level while it's still reasonable, so small scale
+        // wobbles near a threshold don't flip the resolution
+        if (lastAuto >= 0 && n(lastAuto) <= MAX_CELLS * 1.5 && n(lastAuto) > MAX_CELLS * 0.1) return lastAuto;
+        let r = 15;
+        while (r > 0 && n(r) > MAX_CELLS) r--;
+        return lastAuto = r;
+    }
+    let lastAuto = -1;
+
+    function cellsInView(res, vb) {
+        const edgeDeg = h3.getHexagonEdgeLengthAvg(res, 'km') / R_KM * 180 / Math.PI;
+        const pad = Math.max(edgeDeg * 1.5, (vb.e - vb.w) * 0.05);
+        let w = vb.w - pad, e = vb.e + pad, s = Math.max(vb.s - pad, -89.9), n = Math.min(vb.n + pad, 89.9);
+        const all = vb.full || e - w >= 360;
+        if (res <= 3) {
+            const c = coarse(res);
+            if (all) return c.cells;
+            const out = [];
+            for (let i = 0; i < c.cells.length; i++) {
+                if (c.lat[i] < s || c.lat[i] > n) continue;
+                let l = c.lng[i];
+                while (l < w) l += 360;
+                if (l <= e) out.push(c.cells[i]);
+            }
+            return out;
+        }
+        if (all) { w = -180; e = 180; }
+        const set = new Set(), STEP = 30;
+        for (let lo = Math.floor(w / STEP) * STEP; lo < e; lo += STEP) {
+            const a = Math.max(lo, w), b = Math.min(lo + STEP, e);
+            const shift = 360 * Math.floor((lo + 180) / 360);
+            const poly = [[a - shift, s], [b - shift, s], [b - shift, n], [a - shift, n], [a - shift, s]];
+            for (const c of h3.polygonToCells([poly], res, true)) set.add(c);
+        }
+        return [...set];
+    }
+
+    // ---------- layers ----------
+    let current = { res: 3, cells: [] };
+
+    function addLayers() {
+        if (map.getSource('h3')) return;
+        map.addSource('h3', { type: 'geojson', data: emptyFC });
+        map.addSource('h3-labels', { type: 'geojson', data: emptyFC });
+        map.addSource('h3-sel', { type: 'geojson', data: emptyFC });
+        map.addLayer({ id: 'h3-fill', type: 'fill', source: 'h3', paint: { 'fill-color': ['get', 'c'], 'fill-opacity': +$('opacity').value / 100 } });
+        map.addLayer({ id: 'h3-line', type: 'line', source: 'h3', paint: { 'line-color': '#fff', 'line-opacity': 0.85, 'line-width': 1.1 } });
+        // country / state borders from OpenFreeMap's vector tiles (works over satellite too)
+        map.addSource('omt-borders', { type: 'vector', url: 'https://tiles.openfreemap.org/planet' });
+        const vis = $('borders').checked ? 'visible' : 'none';
+        const notMaritime = ['!=', ['get', 'maritime'], 1];
+        map.addLayer({
+            id: 'bnd-state-casing', type: 'line', source: 'omt-borders', 'source-layer': 'boundary', minzoom: 2.5,
+            filter: ['all', ['==', ['get', 'admin_level'], 4], notMaritime], layout: { visibility: vis },
+            paint: { 'line-color': '#000', 'line-opacity': 0.55, 'line-width': 3.5, 'line-blur': 1 }
+        });
+        map.addLayer({
+            id: 'bnd-state', type: 'line', source: 'omt-borders', 'source-layer': 'boundary', minzoom: 2.5,
+            filter: ['all', ['==', ['get', 'admin_level'], 4], notMaritime], layout: { visibility: vis },
+            paint: { 'line-color': '#ffd43b', 'line-width': 1.8 }
+        });
+        map.addLayer({
+            id: 'bnd-country-casing', type: 'line', source: 'omt-borders', 'source-layer': 'boundary',
+            filter: ['all', ['==', ['get', 'admin_level'], 2], notMaritime], layout: { visibility: vis },
+            paint: { 'line-color': '#000', 'line-opacity': 0.6, 'line-width': 4.5, 'line-blur': 1 }
+        });
+        map.addLayer({
+            id: 'bnd-country', type: 'line', source: 'omt-borders', 'source-layer': 'boundary',
+            filter: ['all', ['==', ['get', 'admin_level'], 2], notMaritime], layout: { visibility: vis },
+            paint: { 'line-color': '#fff', 'line-width': 2.5 }
+        });
+        map.addLayer({
+            id: 'h3-sel-fill', type: 'fill', source: 'h3-sel', filter: ['==', ['get', 'k'], 'hover'],
+            paint: { 'fill-color': '#fff', 'fill-opacity': 0.3 }
+        });
+        map.addLayer({
+            id: 'h3-sel-line', type: 'line', source: 'h3-sel',
+            paint: {
+                'line-color': ['match', ['get', 'k'], 'parent', '#ffd43b', 'pin', '#ff4d4d', '#ffffff'],
+                'line-width': ['match', ['get', 'k'], 'parent', 2.5, 3],
+                'line-dasharray': [1, 0]
+            }
+        });
+        map.addLayer({
+            id: 'h3-labels', type: 'symbol', source: 'h3-labels',
+            layout: {
+                'text-field': ['get', 't'],
+                'text-font': LABEL_FONT,
+                'text-size': ['interpolate', ['linear'], ['get', 'px'], 80, 9, 300, 16],
+                'text-allow-overlap': false
+            },
+            paint: { 'text-color': '#fff', 'text-halo-color': 'rgba(0,0,0,.7)', 'text-halo-width': 1 }
+        });
+        refresh();
+        drawSel();
+    }
+
+    let pending = 0;
+    function schedule() { if (!pending) pending = setTimeout(() => { pending = 0; refresh(false); }, 120); }
+
+    // Caches keep each cell's color/geometry and its land verdict stable between refreshes
+    // (the verdict depends on raster resolution, which shifts as the view moves).
+    const featCache = new Map(), landCache = new Map();
+    let drawn = { res: -1, ocean: null, set: new Set() };
+
+    function featureFor(h, res) {
+        let f = featCache.get(h);
+        if (!f) {
+            const c = res > 0 ? PALETTE[Number(h3.cellToChildPos(h, res - 1)) % 7] : PALETTE[h3.getBaseCellNumber(h) % 7];
+            f = { type: 'Feature', properties: { h, c }, geometry: { type: 'Polygon', coordinates: [ring(h, res)] } };
+            if (featCache.size > 60000) featCache.clear();
+            featCache.set(h, f);
+        }
+        return f;
+    }
+
+    // final=false while the camera is moving: only ever add cells, so nothing pops out mid-drag
+    function refresh(final = true) {
+        if (!map.getSource('h3')) return;
+        const vb = viewBounds();
+        const auto = $('auto').checked;
+        let res;
+        if (auto) { res = autoRes(); $('res').value = res; } else res = +$('res').value;
+        $('level').firstChild.textContent = 'Res ' + res + ' ';
+        $('levelnote').textContent = (auto ? 'auto · ' : '') + '~' + fmtArea(h3.getHexagonAreaAvg(res, 'km2')) + ' / cell';
+
+        const est = viewAreaKm2(vb) / h3.getHexagonAreaAvg(res, 'km2');
+        if (est > HARD_CAP) {
+            current = { res, cells: [] };
+            map.getSource('h3').setData(emptyFC);
+            map.getSource('h3-labels').setData(emptyFC);
+            $('status').textContent = '~' + Math.round(est).toLocaleString() + ' cells in view: too many to draw. Zoom in or lower the resolution.';
+            return;
+        }
+        let cells = cellsInView(res, vb), hiddenOcean = 0;
+        if (!$('ocean').checked && land) {
+            const before = cells.length;
+            cells = landTouching(cells, res, vb);
+            hiddenOcean = before - cells.length;
+        }
+        const oceanOn = $('ocean').checked;
+        let set = new Set(cells);
+        if (!final && drawn.res === res && drawn.ocean === oceanOn && drawn.set.size < 8000) {
+            for (const h of drawn.set) set.add(h);
+        }
+        const changed = drawn.res !== res || drawn.ocean !== oceanOn || set.size !== drawn.set.size ||
+            [...set].some(h => !drawn.set.has(h));
+        drawn = { res, ocean: oceanOn, set };
+        current = { res, cells: set };
+        if (changed) {
+            map.getSource('h3').setData({ type: 'FeatureCollection', features: [...set].map(h => featureFor(h, res)) });
+        }
+
+        // labels only when cells are big enough on screen to hold them
+        const ctr = map.getCenter();
+        const edgeDeg = h3.getHexagonEdgeLengthAvg(res, 'km') / R_KM * 180 / Math.PI;
+        const p1 = map.project(ctr), p2 = map.project([ctr.lng, Math.max(-85, Math.min(85, ctr.lat + edgeDeg))]);
+        const px = Math.hypot(p1.x - p2.x, p1.y - p2.y) * 1.73; // approx on-screen cell width
+        const showLabels = $('labels').checked && px > 80 && cells.length <= 800;
+        let lf = [];
+        if (showLabels) {
+            lf = cells.map(h => {
+                const [la, ln] = h3.cellToLatLng(h);
+                return { type: 'Feature', properties: { t: h, px }, geometry: { type: 'Point', coordinates: [ln, la] } };
+            });
+        }
+        map.getSource('h3-labels').setData({ type: 'FeatureCollection', features: lf });
+        $('status').textContent = cells.length.toLocaleString() + ' cells drawn' +
+            (!$('ocean').checked ? (land ? ' (' + hiddenOcean.toLocaleString() + ' ocean hidden)' : ' · loading land data…') : '') +
+            (showLabels ? '' : ($('labels').checked ? ' · labels hidden (not enough room)' : ''));
+        showLandCount(res);
+    }
+
+    // ---------- land data ----------
+    let land = null; // { path: Path2D-able rings, counts: [] }
+    fetch('h3-globe-data/land.json').then(r => r.json()).then(d => { land = d; refresh(); })
+        .catch(() => { $('landcount').textContent = 'Land data failed to load; showing all hexagons.'; });
+
+    function showLandCount(res) {
+        const el = $('landcount');
+        if (!land) { el.textContent = 'Loading land data…'; return; }
+        const total = h3.getNumCells(res);
+        const n = land.counts[res] !== undefined ? land.counts[res] : extrapolateLand(res);
+        const approx = land.counts[res] === undefined;
+        el.innerHTML = 'Res ' + res + ' cells touching land: <b>' + (approx ? '≈ ' : '') + n.toLocaleString() + '</b><br>' +
+            '<span style="opacity:.7">of ' + total.toLocaleString() + ' worldwide (' + (100 * n / total).toFixed(1) + '%)' +
+            (approx ? ' · estimated beyond res 6' : '') + '</span>';
+    }
+
+    // N(r) = a*7^r (interior) + b*sqrt(7)^r (coast), fit to the exact res 5 and 6 counts
+    function extrapolateLand(res) {
+        const c = land.counts, s = Math.sqrt(7);
+        const [n5, n6] = [c[5], c[6]];
+        const det = Math.pow(7, 5) * Math.pow(s, 6) - Math.pow(7, 6) * Math.pow(s, 5);
+        const a = (n5 * Math.pow(s, 6) - n6 * Math.pow(s, 5)) / det;
+        const b = (Math.pow(7, 5) * n6 - Math.pow(7, 6) * n5) / det;
+        return Math.round(a * Math.pow(7, res) + b * Math.pow(s, res));
+    }
+
+    let landPath = null;
+    function buildLandPath() {
+        landPath = new Path2D();
+        for (const r of land.rings) {
+            landPath.moveTo(r[0], r[1]);
+            for (let i = 2; i < r.length; i += 2) landPath.lineTo(r[i], r[i + 1]);
+            landPath.closePath();
+        }
+    }
+
+    // Rasterize land over the current view in lon/lat space, then sample each cell's
+    // center, vertices and edge midpoints. A cell "touches land" if any sample is land
+    // (coastlines are stroked ~1.5px so slivers still register).
+    function landTouching(cells, res, vb) {
+        if (cells.every(h => landCache.has(h))) return cells.filter(h => landCache.get(h));
+        if (landCache.size > 200000) landCache.clear();
+        if (!landPath) buildLandPath();
+        const edgeDeg = h3.getHexagonEdgeLengthAvg(res, 'km') / R_KM * 180 / Math.PI;
+        const pad = Math.max(edgeDeg * 2, (vb.e - vb.w) * 0.06);
+        const w = vb.full ? -180 : vb.w - pad, e = vb.full ? 180 : vb.e + pad;
+        const s = Math.max(vb.s - pad, -90), n = Math.min(vb.n + pad, 90);
+        const lonSpan = Math.min(e - w, 360), latSpan = n - s;
+        const ppd = Math.min(4096 / lonSpan, 2048 / latSpan, 6 / edgeDeg);
+        const cw = Math.max(2, Math.ceil(lonSpan * ppd)), ch = Math.max(2, Math.ceil(latSpan * ppd));
+        const cv = document.createElement('canvas');
+        cv.width = cw; cv.height = ch;
+        const ctx = cv.getContext('2d', { willReadFrequently: true });
+        ctx.fillStyle = ctx.strokeStyle = '#000';
+        ctx.lineWidth = 1.5 / ppd;
+        ctx.lineJoin = 'round';
+        for (let k = -1; k <= 1; k++) {
+            ctx.setTransform(ppd, 0, 0, -ppd, (-w + 360 * k) * ppd, n * ppd);
+            ctx.fill(landPath, 'evenodd');
+            ctx.stroke(landPath);
+        }
+        const px = ctx.getImageData(0, 0, cw, ch).data;
+        const isLand = (lng, lat) => {
+            let l = lng; // bring into [w, w+360)
+            l = w + (((l - w) % 360) + 360) % 360;
+            const x = Math.floor((l - w) * ppd), y = Math.floor((n - lat) * ppd);
+            return x >= 0 && x < cw && y >= 0 && y < ch && px[(y * cw + x) * 4 + 3] > 0;
+        };
+        const test = h => {
+            const [la, ln] = h3.cellToLatLng(h);
+            if (isLand(ln, la)) return true;
+            const b = h3.cellToBoundary(h, true);
+            for (let i = 0; i < b.length; i++) {
+                const p = b[i], q = b[(i + 1) % b.length];
+                if (isLand(p[0], p[1])) return true;
+                let dl = q[0] - p[0];
+                if (dl > 180) dl -= 360; else if (dl < -180) dl += 360;
+                if (isLand(p[0] + dl / 2, (p[1] + q[1]) / 2)) return true;
+            }
+            return false;
+        };
+        for (const h of cells) if (!landCache.has(h)) landCache.set(h, test(h));
+        return cells.filter(h => landCache.get(h));
+    }
+
+    function fmtArea(km2) {
+        if (km2 >= 100) return Math.round(km2).toLocaleString() + ' km²';
+        if (km2 >= 1) return km2.toFixed(2) + ' km²';
+        return Math.round(km2 * 1e6).toLocaleString() + ' m²';
+    }
+    function fmtLen(km) { return km >= 1 ? km.toFixed(2) + ' km' : (km * 1000).toFixed(1) + ' m'; }
+
+    // ---------- selection / info ----------
+    let hovered = null, pinned = null;
+
+    function selFeatures(h, kind) {
+        const res = h3.getResolution(h);
+        const out = [{ type: 'Feature', properties: { k: kind }, geometry: { type: 'Polygon', coordinates: [ring(h, res)] } }];
+        if (kind === 'hover' && res > 0) {
+            const p = h3.cellToParent(h, res - 1);
+            out.push({ type: 'Feature', properties: { k: 'parent' }, geometry: { type: 'Polygon', coordinates: [ring(p, res - 1)] } });
+        }
+        return out;
+    }
+
+    function drawSel() {
+        const src = map.getSource('h3-sel');
+        if (!src) return;
+        const f = [];
+        if (pinned) f.push(...selFeatures(pinned, 'pin'));
+        if (hovered && hovered !== pinned) f.push(...selFeatures(hovered, 'hover'));
+        src.setData({ type: 'FeatureCollection', features: f });
+        showInfo(hovered || pinned);
+    }
+
+    function showInfo(h) {
+        const el = $('info');
+        if (!h) {
+            el.innerHTML = '<span class="hint">Hover a hexagon to see its H3 address. Click to pin it.</span>';
+            return;
+        }
+        const res = h3.getResolution(h), a = address(h), [lat, lng] = h3.cellToLatLng(h);
+        const path = ['Base ' + a.base, ...a.digits].join(' › ');
+        const parent = res > 0 ? h3.cellToParent(h, res - 1) : '—';
+        const nb = h3.gridDisk(h, 1).length - 1;
+        el.innerHTML =
+            '<div class="idx">' + h + '</div>' +
+            '<table>' +
+            '<tr><td>Resolution</td><td>' + res + (h === pinned ? ' &nbsp;<b style="color:#ff6b6b">(pinned)</b>' : '') + '</td></tr>' +
+            '<tr><td>Address</td><td class="mono">' + path + '</td></tr>' +
+            '<tr><td>Parent</td><td class="mono">' + parent + '</td></tr>' +
+            '<tr><td>Center</td><td class="mono">' + lat.toFixed(5) + ', ' + lng.toFixed(5) + '</td></tr>' +
+            '<tr><td>Area</td><td>' + fmtArea(h3.cellArea(h, 'km2')) + '</td></tr>' +
+            '<tr><td>Avg edge</td><td>' + fmtLen(h3.getHexagonEdgeLengthAvg(res, 'km')) + '</td></tr>' +
+            '<tr><td>Shape</td><td>' + (h3.isPentagon(h) ? 'pentagon (5 neighbors)' : 'hexagon (' + nb + ' neighbors)') + '</td></tr>' +
+            '</table>' +
+            '<button id="copy">Copy index</button> <button id="unpin" style="' + (pinned ? '' : 'display:none') + '">Unpin</button>';
+        $('copy').onclick = () => { navigator.clipboard && navigator.clipboard.writeText(h); $('copy').textContent = 'Copied'; };
+        $('unpin').onclick = () => { pinned = null; drawSel(); };
+    }
+
+    map.on('mousemove', e => {
+        if (!map.getLayer('h3-fill')) return;
+        const f = map.queryRenderedFeatures(e.point, { layers: ['h3-fill'] })[0];
+        const h = f ? f.properties.h : null;
+        map.getCanvas().style.cursor = h ? 'pointer' : '';
+        if (h !== hovered) { hovered = h; drawSel(); }
+    });
+    map.on('mouseout', () => { hovered = null; drawSel(); });
+    map.on('click', e => {
+        if (!map.getLayer('h3-fill')) return;
+        const f = map.queryRenderedFeatures(e.point, { layers: ['h3-fill'] })[0];
+        pinned = f ? (f.properties.h === pinned ? null : f.properties.h) : null;
+        hovered = pinned ? null : hovered;
+        drawSel();
+    });
+
+    // ---------- wiring ----------
+    map.on('style.load', () => {
+        map.setProjection({ type: 'globe' });
+        // make sure label glyphs exist whichever basemap is active
+        if (typeof map.setGlyphs === 'function') map.setGlyphs(GLYPHS);
+        addLayers();
+    });
+    map.on('move', schedule);
+    map.on('moveend', refresh);
+    map.on('resize', refresh);
+
+    $('res').addEventListener('input', () => { $('auto').checked = false; refresh(); });
+    $('auto').addEventListener('change', refresh);
+    $('labels').addEventListener('change', refresh);
+    $('ocean').addEventListener('change', refresh);
+    $('opacity').addEventListener('input', () => {
+        const v = +$('opacity').value;
+        $('opv').textContent = v + '%';
+        if (map.getLayer('h3-fill')) map.setPaintProperty('h3-fill', 'fill-opacity', v / 100);
+    });
+    $('borders').addEventListener('change', () => {
+        for (const id of ['bnd-state-casing', 'bnd-state', 'bnd-country-casing', 'bnd-country']) {
+            if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', $('borders').checked ? 'visible' : 'none');
+        }
+    });
+
+    function setBasemap(k) {
+        $('bm-map').classList.toggle('on', k === 'map');
+        $('bm-sat').classList.toggle('on', k === 'sat');
+        map.setStyle(STYLES[k]);
+    }
+    $('bm-map').onclick = () => setBasemap('map');
+    $('bm-sat').onclick = () => setBasemap('sat');
+
+    new ResizeObserver(() => map.resize()).observe($('map'));
+    showInfo(null);
+    </script>
+</body>
+
+</html>
