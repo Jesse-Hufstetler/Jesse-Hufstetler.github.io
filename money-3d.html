@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
+    <title>Big Money in 3D</title>
+    <style>
+    html,
+    body {
+        margin: 0;
+        height: 100%;
+        overflow: hidden;
+        background: #9ec3e0;
+        font-family: system-ui, sans-serif;
+        font-size: 14px;
+    }
+
+    canvas {
+        display: block;
+        cursor: grab;
+        touch-action: none;
+    }
+
+    canvas.drag {
+        cursor: grabbing;
+    }
+
+    .panel {
+        position: absolute;
+        background: rgba(30, 30, 30, .86);
+        color: #eee;
+        border-radius: 10px;
+        padding: 10px 14px;
+        box-shadow: 0 2px 12px rgba(0, 0, 0, .4);
+        backdrop-filter: blur(4px);
+    }
+
+    #info {
+        top: 10px;
+        left: 10px;
+        max-width: 300px;
+    }
+
+    #info h1 {
+        font-size: 16px;
+        margin: 4px 0 6px;
+    }
+
+    #info a {
+        color: #ffb27a;
+        font-size: 12px;
+        text-decoration: none;
+    }
+
+    #info p {
+        margin: 6px 0 0;
+        font-size: 12px;
+        opacity: .8;
+        line-height: 1.45;
+    }
+
+    #info kbd {
+        background: #444;
+        border-radius: 3px;
+        padding: 0 4px;
+    }
+
+    #nav {
+        top: 10px;
+        right: 10px;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    #nav button {
+        background: #3a3a3a;
+        color: #eee;
+        border: 1px solid #777;
+        border-radius: 6px;
+        padding: 5px 10px;
+        cursor: pointer;
+        text-align: left;
+        font-size: 13px;
+    }
+
+    #nav button:hover {
+        background: #e8590c;
+        border-color: #e8590c;
+        color: #fff;
+    }
+
+    #nav small {
+        opacity: .6;
+        margin-right: 6px;
+    }
+
+    #hud {
+        bottom: 10px;
+        left: 10px;
+        font-size: 12px;
+        line-height: 1.5;
+    }
+
+    #hud label {
+        cursor: pointer;
+    }
+
+    input {
+        accent-color: #e8590c;
+    }
+
+    #hud input[type=range] {
+        width: 120px;
+        vertical-align: middle;
+    }
+
+    @media (max-width: 700px) {
+        #info p {
+            display: none;
+        }
+    }
+    </style>
+    <script type="importmap">
+    { "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js" } }
+    </script>
+</head>
+
+<body>
+    <div id="info" class="panel">
+        <a href="index.html">&larr; Back to index</a>
+        <h1>How big is a pile of money?</h1>
+        <p>Every bill is a $20 bill, 156 &times; 66 mm and 0.11 mm thick, stacked flat. Fly around: drag to look, <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> to move,
+            <kbd>E</kbd>/<kbd>Q</kbd> up/down, <kbd>Shift</kbd> for boost, mouse wheel to change speed. Fly right up to the big
+            blocks to see the individual bills in the edges.</p>
+    </div>
+    <div id="nav" class="panel"></div>
+    <div id="hud" class="panel">
+        <div id="readout"></div>
+        <div><label><input id="autospeed" type="checkbox" checked> Auto speed (slows near things)</label></div>
+        <div>Speed <input id="speed" type="range" min="-3" max="3" step="0.05" value="0"> <span id="mult"></span></div>
+    </div>
+
+    <script type="module">
+    import * as THREE from 'three';
+
+    const $ = id => document.getElementById(id);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true, logarithmicDepthBuffer: true });
+    renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+    document.body.prepend(renderer.domElement);
+
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x9ec3e0);
+    const camera = new THREE.PerspectiveCamera(60, 1, 0.001, 30000);
+    camera.rotation.order = 'YXZ';
+
+    scene.add(new THREE.HemisphereLight(0xdfeaff, 0x7a7566, 0.9));
+    const sun = new THREE.DirectionalLight(0xfff2dd, 1.7);
+    sun.position.set(0.5, 1, 0.8);
+    scene.add(sun);
+
+    // ---------------------------------------------------------------- helpers
+    const mat = (c, o = {}) => new THREE.MeshLambertMaterial({ color: c, ...o });
+    function box(w, h, d, m, x, y, z, parent = scene) {
+        const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m);
+        mesh.position.set(x, y, z);
+        parent.add(mesh);
+        return mesh;
+    }
+
+    // ---------------------------------------------------------------- ground, street, sidewalks
+    box(9000, 0.02, 9000, mat(0x7c8f6a), 0, -0.01, 0);                 // grass
+    box(260, 0.04, 140, mat(0xbdbbb5), 40, 0.01, 62);                    // plaza paving
+    box(1200, 0.05, 16, mat(0x3b3b3d), 100, 0.025, 0);                   // asphalt
+    for (let x = -480; x < 680; x += 8) box(3.5, 0.06, 0.18, mat(0xe8e2c0), x, 0.03, 0); // center dashes
+    box(1200, 0.06, 0.12, mat(0xf2f2f2), 100, 0.03, 7.2);               // edge lines
+    box(1200, 0.06, 0.12, mat(0xf2f2f2), 100, 0.03, -7.2);
+    const walk = mat(0xa9a7a2);
+    box(1200, 0.18, 4, walk, 100, 0.09, 10);                             // south sidewalk
+    box(1200, 0.18, 4, walk, 100, 0.09, -10);                            // north sidewalk
+    for (let s = -1; s <= 1; s += 2) box(1200, 0.2, 0.2, mat(0x8d8b86), 100, 0.1, s * 8.1); // curbs
+    for (let i = 0; i < 8; i++) box(0.5, 0.06, 16, mat(0xf2f2f2), -6 + i * 1.0, 0.035, 0); // crosswalk
+
+    // street lamps
+    const lampM = mat(0x55575a);
+    for (let x = -460; x <= 660; x += 30) {
+        for (const s of [-1, 1]) {
+            const g = new THREE.Group();
+            box(0.12, 6, 0.12, lampM, 0, 3, 0, g);
+            box(0.1, 0.1, 1.4, lampM, 0, 6, -s * 0.7, g);
+            box(0.3, 0.12, 0.5, mat(0xfff3c4, { emissive: 0x887744 }), 0, 5.95, -s * 1.35, g);
+            g.position.set(x, 0.18, s * 11.5);
+            scene.add(g);
+        }
+    }
+
+    // ---------------------------------------------------------------- buildings
+    function windowTexture(wall, glass, frame) {
+        const c = document.createElement('canvas');
+        c.width = c.height = 128;
+        const g = c.getContext('2d');
+        g.fillStyle = wall; g.fillRect(0, 0, 128, 128);
+        g.fillStyle = frame; g.fillRect(14, 16, 100, 88);
+        g.fillStyle = glass; g.fillRect(18, 20, 92, 80);
+        g.fillStyle = 'rgba(255,255,255,.18)'; g.fillRect(18, 20, 92, 22);
+        const t = new THREE.CanvasTexture(c);
+        t.wrapS = t.wrapT = THREE.RepeatWrapping;
+        t.colorSpace = THREE.SRGBColorSpace;
+        t.anisotropy = 8;
+        return t;
+    }
+    const styles = [
+        windowTexture('#8e9399', '#3a4a58', '#6e7378'),
+        windowTexture('#b4a690', '#4a5560', '#8d8068'),
+        windowTexture('#5d646b', '#27323c', '#464c52'),
+        windowTexture('#c9c9c4', '#566a7a', '#9a9a95')
+    ];
+    let seed = 7;
+    const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+
+    function building(x, z, w, d, h, style) {
+        const tex = styles[style % styles.length];
+        const sideMat = (repX) => {
+            const t = tex.clone(); t.needsUpdate = true;
+            t.repeat.set(repX, h / 3.6);
+            return new THREE.MeshLambertMaterial({ map: t });
+        };
+        const mx = sideMat(d / 3), mz = sideMat(w / 3), roof = mat(0x6a6a6a);
+        const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), [mx, mx, roof, roof, mz, mz]);
+        m.position.set(x, h / 2, z);
+        scene.add(m);
+        if (h > 120) { // stepped crown + antenna
+            box(w * 0.6, h * 0.08, d * 0.6, mat(0x777a7d), x, h + h * 0.04, z);
+            box(0.6, h * 0.12, 0.6, mat(0xaaaaaa), x, h + h * 0.14, z);
+        }
+    }
+    // north side of the street, right behind the sidewalk
+    let x = -260;
+    while (x < 480) {
+        const w = 18 + rnd() * 34, d = 24 + rnd() * 30;
+        const r = rnd();
+        const h = r < 0.35 ? 14 + rnd() * 30 : r < 0.7 ? 60 + rnd() * 80 : 150 + rnd() * 170;
+        building(x + w / 2, -12 - 2.5 - d / 2, w, d, h, Math.floor(rnd() * 4));
+        x += w + 3 + rnd() * 6;
+    }
+    // a second, farther row and some skyline behind the exhibits to the south
+    x = -300;
+    while (x < 560) {
+        const w = 30 + rnd() * 40, d = 30 + rnd() * 40, h = 120 + rnd() * 240;
+        building(x + w / 2, -110 - d / 2, w, d, h, Math.floor(rnd() * 4));
+        const sx = x + w / 2 + 20, sz = 190 + d / 2 + rnd() * 120, sh = 80 + rnd() * 200, ss = Math.floor(rnd() * 4);
+        const clear = sx + w / 2 < 130 || sx - w / 2 > 410 || sz + d / 2 < 60 || sz - d / 2 > 340; // keep the 100 trillion cube's lot clear
+        if (clear) building(sx, sz, w, d, sh, ss);
+        x += w + 20 + rnd() * 30;
+    }
+
+    // ---------------------------------------------------------------- person & car
+    function person(shirt, pants) {
+        const g = new THREE.Group();
+        const skin = mat(0xd9a77f);
+        box(0.13, 0.85, 0.18, mat(pants), -0.1, 0.425, 0, g);
+        box(0.13, 0.85, 0.18, mat(pants), 0.1, 0.425, 0, g);
+        box(0.42, 0.6, 0.24, mat(shirt), 0, 1.15, 0, g);
+        box(0.1, 0.58, 0.12, mat(shirt), -0.26, 1.15, 0, g);
+        box(0.1, 0.58, 0.12, mat(shirt), 0.26, 1.15, 0, g);
+        box(0.1, 0.1, 0.1, skin, -0.26, 0.8, 0, g);
+        box(0.1, 0.1, 0.1, skin, 0.26, 0.8, 0, g);
+        const head = new THREE.Mesh(new THREE.SphereGeometry(0.115, 16, 12), skin);
+        head.position.y = 1.62;
+        g.add(head);
+        const hair = new THREE.Mesh(new THREE.SphereGeometry(0.12, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2), mat(0x3a2a20));
+        hair.position.y = 1.63;
+        g.add(hair);
+        return g;
+    }
+    function car(color) {
+        const g = new THREE.Group();
+        box(4.5, 0.7, 1.8, mat(color), 0, 0.7, 0, g);
+        box(2.4, 0.62, 1.64, mat(color), -0.2, 1.36, 0, g);
+        const glass = mat(0x1d252c);
+        box(2.42, 0.45, 1.66, glass, -0.2, 1.38, 0, g).scale.set(0.97, 1, 0.97);
+        box(0.05, 0.2, 1.4, mat(0xfff3c4, { emissive: 0x665500 }), 2.26, 0.75, 0, g);
+        box(0.05, 0.2, 1.4, mat(0xaa1111, { emissive: 0x330000 }), -2.26, 0.75, 0, g);
+        const wheelG = new THREE.CylinderGeometry(0.34, 0.34, 0.25, 20), wheelM = mat(0x151515);
+        for (const [wx, wz] of [[1.4, 0.9], [1.4, -0.9], [-1.4, 0.9], [-1.4, -0.9]]) {
+            const w = new THREE.Mesh(wheelG, wheelM);
+            w.rotation.x = Math.PI / 2;
+            w.position.set(wx, 0.34, wz);
+            g.add(w);
+        }
+        return g;
+    }
+    const p1 = person(0xb23a3a, 0x33425a); p1.position.set(-1.8, 0.18, 12.8); p1.rotation.y = 0.6; scene.add(p1);
+    const p2 = person(0x3a7a4a, 0x444444); p2.position.set(2.5, 0.18, 10.5); p2.rotation.y = -0.4; scene.add(p2);
+    const c1 = car(0xb8312f); c1.position.set(-9, 0.05, 3.8); scene.add(c1);
+    const c2 = car(0xd8d8d0); c2.position.set(14, 0.05, -3.8); c2.rotation.y = Math.PI; scene.add(c2);
+    const c3 = car(0x2f5d86); c3.position.set(-28, 0.05, -3.8); c3.rotation.y = Math.PI; scene.add(c3);
+    // scale references standing next to the big blocks
+    const p3 = person(0x2d5fa6, 0x2a2a2a); p3.position.set(9.5, 0, 16); p3.rotation.y = 0.3; scene.add(p3);
+    const p4 = person(0xd0a020, 0x333333); p4.position.set(29, 0, 48); p4.rotation.y = 0.2; scene.add(p4);
+    const c4 = car(0xe0e0e0); c4.position.set(26, 0.05, 66); c4.rotation.y = Math.PI / 2; scene.add(c4);
+
+    // ---------------------------------------------------------------- birds
+    function bird(color, span) {
+        const g = new THREE.Group();
+        const m = new THREE.MeshLambertMaterial({ color, side: THREE.DoubleSide });
+        const body = new THREE.Mesh(new THREE.ConeGeometry(span * 0.06, span * 0.38, 6), m);
+        body.rotation.x = -Math.PI / 2;               // point along -z (forward)
+        g.add(body);
+        const wings = [];
+        for (const side of [-1, 1]) {
+            const pivot = new THREE.Group();
+            const geo = new THREE.BufferGeometry();
+            const w = span / 2, c = span * 0.2;
+            geo.setAttribute('position', new THREE.Float32BufferAttribute([
+                0, 0, -c * 0.4, 0, 0, c * 0.6, side * w, 0, c * 0.25
+            ], 3));
+            geo.computeVertexNormals();
+            pivot.add(new THREE.Mesh(geo, m));
+            g.add(pivot);
+            wings.push({ pivot, side });
+        }
+        g.userData.wings = wings;
+        scene.add(g);
+        return g;
+    }
+    const flock = [];
+    // [color, wingspan, orbit center x, y, z, radius, angular speed, phase]
+    for (const [col, span, cx, cy, cz, r, w, ph] of [
+        [0xf2f2f0, 1.4, 40, 45, 0, 90, 0.12, 0.7], [0xf2f2f0, 1.4, 40, 55, 0, 100, 0.11, 2.0],
+        [0x2b2b2e, 1.0, 40, 70, 0, 80, 0.14, 4.1]
+    ]) {
+        const b = bird(col, span);
+        flock.push({ b, cx, cy, cz, r, w, ph, flapRate: 9 + (6 / span) * 2 });
+    }
+    // Birds that cross in front of the biggest blocks, for scale: a V of geese passing the
+    // $100 trillion wall at 120 m, and a pair of gulls passing the $1 trillion block.
+    function lineFlyers(list, line) {
+        for (const [col, span, dx, dz, ph] of list) {
+            flock.push({ b: bird(col, span), line: { ...line, dx, dz }, ph, flapRate: 4 + 3 / span });
+        }
+    }
+    const vee = [[0x2b2b2e, 1.7, 0, 0, 0]];
+    for (let k = 1; k <= 4; k++) for (const sd of [-1, 1]) vee.push([0x2b2b2e, 1.7, k * 3.2, sd * k * 2.6, k * 0.7 + (sd > 0 ? 0.4 : 0)]);
+    lineFlyers(vee, { x0: 60, x1: 500, z: 315, y: 120, speed: 9 });
+    lineFlyers([[0xf2f2f0, 1.1, 0, 0, 0], [0xf2f2f0, 1.1, 5, 3, 1.4]], { x0: 5, x1: 110, z: 96, y: 26, speed: 8 });
+
+    function animateBirds(t) {
+        for (const o of flock) {
+            if (o.line) {
+                const L = o.line;
+                o.b.position.set(L.x0 + ((t * L.speed) % (L.x1 - L.x0)) - L.dx, L.y + Math.sin(t * 0.8 + o.ph) * 0.6, L.z + L.dz);
+                o.b.rotation.set(0, -Math.PI / 2, 0, 'YXZ');
+                const flap = Math.sin(t * o.flapRate + o.ph) * 0.65;
+                for (const { pivot, side } of o.b.userData.wings) pivot.rotation.z = side * flap;
+                continue;
+            }
+            const a = t * o.w + o.ph;
+            const x = o.cx + Math.cos(a) * o.r, z = o.cz + Math.sin(a) * o.r * 0.8;
+            o.b.position.set(x, o.cy + Math.sin(a * 2.3 + o.ph) * 1.5, z);
+            // heading along the direction of travel, banked into the turn
+            o.b.rotation.set(0, Math.atan2(Math.sin(a) * o.r, -Math.cos(a) * o.r * 0.8), 0, 'YXZ');
+            o.b.rotateZ(-0.25);
+            const flap = Math.sin(t * o.flapRate + o.ph) * 0.7;
+            for (const { pivot, side } of o.b.userData.wings) pivot.rotation.z = side * flap;
+        }
+    }
+
+    // table for the small exhibits
+    const wood = mat(0x8a6a48);
+    box(1.4, 0.05, 0.7, wood, -3.2, 0.875, 15);
+    for (const [lx, lz] of [[-0.62, -0.28], [0.62, -0.28], [-0.62, 0.28], [0.62, 0.28]]) box(0.06, 0.85, 0.06, wood, -3.2 + lx, 0.425, 15 + lz);
+
+    // ---------------------------------------------------------------- bill blocks (shader)
+    // A block is an a x b x c grid of $20 bills lying flat (a along the 156 mm length, b along
+    // the 66 mm width, c stacked up at 0.109 mm each), drawn procedurally. Tops show the bill face,
+    // sides show the stacked paper edges, and everything filters to its average tone when a
+    // bill gets sub-pixel. Coordinates are kept camera-relative so even 2 million layers
+    // stay sharp up close in 32-bit floats.
+    const BILL = { L: 0.156, W: 0.0663, T: 0.000109 };
+    const blockVS = `
+        #include <common>
+        #include <logdepthbuf_pars_vertex>
+        uniform vec3 uCounts, uCam, uFrac;   // counts as (x, y, z)
+        varying vec3 vC; varying vec3 vObjN; varying vec3 vWN;
+        void main() {
+            vC = (position - uCam) * uCounts + uFrac;
+            vObjN = normal;
+            vWN = normalize(mat3(modelMatrix) * normal);
+            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+            #include <logdepthbuf_vertex>
+        }`;
+    const blockFS = `
+        #include <common>
+        #include <logdepthbuf_pars_fragment>
+        uniform vec3 uBase;
+        varying vec3 vC; varying vec3 vObjN; varying vec3 vWN;
+        float hash(vec3 p) { p = fract(mod(p, 251.0) * 0.3183099 + 0.1); p *= 17.0; return fract(p.x * p.y * p.z * (p.x + p.y + p.z)); }
+
+        vec3 billFace(vec2 uv, float px, float h) {
+            const float AR = 2.353;                       // length / width
+            vec2 p = vec2(uv.x * AR, uv.y);
+            float pw = px * AR;                           // width-units per pixel
+            float bd = min(min(p.x, AR - p.x), min(p.y, 1.0 - p.y));
+            vec3 green = vec3(0.55, 0.72, 0.47) * (0.94 + 0.12 * h);
+            vec3 dark = vec3(0.27, 0.42, 0.26);
+            float aa = max(pw, 0.004);
+            float ring = 1.0 - smoothstep(0.012, 0.012 + aa, abs(bd - 0.07));
+            vec3 c = mix(green, dark, ring * 0.8);
+            float r = length(p - vec2(AR * 0.5, 0.5));
+            float disc = 1.0 - smoothstep(0.27, 0.27 + aa, r);
+            float discRing = 1.0 - smoothstep(0.012, 0.012 + aa, abs(r - 0.29));
+            c = mix(c, green * 1.15 + 0.03, disc * 0.9);
+            c = mix(c, dark, discRing * 0.7);
+            vec2 cm = abs(vec2(min(p.x, AR - p.x), min(p.y, 1.0 - p.y)) - vec2(0.2, 0.2));
+            float mark = 1.0 - smoothstep(0.05, 0.05 + aa, max(cm.x, cm.y));
+            c = mix(c, dark, mark * 0.8);
+            vec3 meanTop = vec3(0.50, 0.66, 0.44);
+            return mix(c, meanTop, smoothstep(-4.5, -0.5, log2(max(pw, 1e-4))));
+        }
+
+        void main() {
+            #include <logdepthbuf_fragment>
+            vec3 n = normalize(vObjN);
+            float hb = hash(uBase + floor(vC));
+            vec3 col;
+            if (abs(n.y) > 0.5) {
+                vec2 uv = fract(vC.xz);
+                col = billFace(uv, max(fwidth(vC.x), fwidth(vC.z)), hb);
+            } else {
+                float hz = abs(n.x) > 0.5 ? vC.z : vC.x;
+                float fy = fract(vC.y), fh = fract(hz);
+                float pxy = fwidth(vC.y), pxh = fwidth(hz);
+                float ey = min(fy, 1.0 - fy), eh = min(fh, 1.0 - fh);
+                float wy = 0.04 + pxy * 0.6;
+                float lineY = 1.0 - smoothstep(wy, wy + pxy + 0.03, ey);   // gaps between bills
+                float lineH = 1.0 - smoothstep(0.0, 0.02 + pxh * 0.8, eh); // seams between neighbours
+                float lpy = log2(max(pxy, 1e-4)), lph = log2(max(pxh, 1e-4));
+                float tint = mix(hb, 0.5, smoothstep(-5.0, -2.0, lpy));
+                lineY = mix(lineY, 0.1, smoothstep(-4.0, 0.0, lpy));
+                lineH = mix(lineH, 0.04, smoothstep(-4.0, 0.0, lph));
+                vec3 paper = vec3(0.70, 0.80, 0.64) * (0.93 + 0.14 * tint);
+                col = mix(paper, vec3(0.36, 0.50, 0.34), lineY * 0.8);
+                col *= 1.0 - 0.25 * lineH;
+            }
+            vec3 L = normalize(vec3(0.5, 1.0, 0.8));
+            float shade = 0.42 + 0.45 * max(dot(vWN, L), 0.0) + 0.18 * vWN.y;
+            gl_FragColor = vec4(col * shade, 1.0);
+            #include <colorspace_fragment>
+        }`;
+
+    const exhibits = [];
+    const billBlocks = [];
+    // a: bills along the length, b: bills across the width, c: bills stacked up
+    function block(label, sub, a, b, c, cx, baseY, cz, labelW) {
+        const size = new THREE.Vector3(a * BILL.L, c * BILL.T, b * BILL.W);
+        const seg = c > 20000 ? 32 : 1;
+        const counts = new THREE.Vector3(a, c, b);
+        const m = new THREE.Mesh(
+            new THREE.BoxGeometry(1, 1, 1, seg, seg, seg),
+            new THREE.ShaderMaterial({
+                vertexShader: blockVS, fragmentShader: blockFS,
+                uniforms: {
+                    uCounts: { value: counts }, uCam: { value: new THREE.Vector3() },
+                    uFrac: { value: new THREE.Vector3() }, uBase: { value: new THREE.Vector3() }
+                }
+            })
+        );
+        m.scale.copy(size);
+        m.position.set(cx, baseY + size.y / 2, cz);
+        scene.add(m);
+        billBlocks.push({ m, counts });
+        const lab = sprite(label, sub, labelW);
+        lab.position.set(cx, baseY + size.y + labelW * 0.2, cz);
+        scene.add(lab);
+        const ex = { label, size, center: m.position.clone(), box: new THREE.Box3().setFromObject(m) };
+        exhibits.push(ex);
+        return ex;
+    }
+
+    const _loc = new THREE.Vector3();
+    function updateBlocks() {
+        for (const { m, counts } of billBlocks) {
+            m.updateMatrixWorld();
+            m.worldToLocal(_loc.copy(camera.position));
+            const u = m.material.uniforms;
+            const cn = [counts.x, counts.y, counts.z];
+            // clamp so the integer base cell stays below 2^24 (exact in float32)
+            const L = [_loc.x, _loc.y, _loc.z].map((v, i) => Math.max(-8e6 / cn[i], Math.min(8e6 / cn[i], v)));
+            const base = L.map((v, i) => Math.floor((v + 0.5) * cn[i]));
+            u.uCam.value.set(L[0], L[1], L[2]);
+            u.uBase.value.set(base[0], base[1], base[2]);
+            u.uFrac.value.set((L[0] + 0.5) * cn[0] - base[0], (L[1] + 0.5) * cn[1] - base[1], (L[2] + 0.5) * cn[2] - base[2]);
+        }
+    }
+
+    function sprite(title, sub, width) {
+        const c = document.createElement('canvas');
+        c.width = 512; c.height = 160;
+        const g = c.getContext('2d');
+        g.fillStyle = 'rgba(25,25,25,.78)';
+        g.beginPath(); g.roundRect(4, 4, 504, 152, 22); g.fill();
+        g.fillStyle = '#fff'; g.textAlign = 'center';
+        g.font = 'bold 74px system-ui, sans-serif';
+        g.fillText(title, 256, 84);
+        g.fillStyle = '#ffb27a';
+        g.font = '30px system-ui, sans-serif';
+        g.fillText(sub, 256, 134);
+        const t = new THREE.CanvasTexture(c);
+        t.colorSpace = THREE.SRGBColorSpace;
+        const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: t, transparent: true }));
+        s.scale.set(width, width * 160 / 512, 1);
+        return s;
+    }
+
+    const T = 0.9; // table top
+    block('$20', 'one bill · 156 × 66 mm', 1, 1, 1, -3.55, T, 15, 0.12);
+    block('$1,000', '50 bills · 5.5 mm stack', 1, 1, 50, -3.38, T, 15, 0.12);
+    block('$10,000', '500 bills · 5.5 cm stack', 1, 1, 500, -3.22, T, 15, 0.12);
+    block('$100,000', '5,000 bills · 54 cm stack', 1, 1, 5000, -1.6, 0.02, 17, 0.5);
+    block('$1 million', '50,000 bills · 31 × 54 × 33 cm', 2, 5, 5000, -0.6, 0.02, 17.5, 0.6);
+    block('$1 billion', '50 million bills · 3.9 × 4.4 × 3.3 m', 25, 50, 40000, 6, 0.02, 20, 6);
+    block('$1 trillion', '50 billion bills · 39 × 44 × 33 m', 250, 500, 400000, 52, 0.02, 60, 55);
+    box(300, 0.04, 300, mat(0xbdbbb5), 270, 0.01, 200);
+    block('$100 trillion', '5 trillion bills · 156 × 218 × 166 m', 1000, 2500, 2000000, 270, 0.02, 200, 250);
+
+    // ---------------------------------------------------------------- camera / controls
+    let yaw = 0, pitch = 0;
+    const pos = camera.position;
+    function lookAt(from, to) {
+        const d = to.clone().sub(from);
+        return { yaw: Math.atan2(-d.x, -d.z), pitch: Math.atan2(d.y, Math.hypot(d.x, d.z)) };
+    }
+    function applyRot() { camera.rotation.set(pitch, yaw, 0); }
+
+    const V = (x, y, z) => new THREE.Vector3(x, y, z);
+    const presets = [
+        { name: 'Street level', from: V(-6, 1.7, 25), to: V(-3, 2.2, 0) },
+        { name: 'Whole scene', from: V(70, 120, 230), to: V(30, 30, 20) }
+    ];
+    exhibits.forEach(ex => {
+        const s = Math.max(ex.size.x, ex.size.y, ex.size.z);
+        const dist = Math.max(s * 2.4, 0.035);
+        presets.push({
+            name: ex.label,
+            // flat things (a single bill) are viewed from above so you can see the face
+            from: ex.center.clone().add(ex.size.y < 0.4 * Math.max(ex.size.x, ex.size.z) ? V(0, dist * 0.75, dist * 0.65) : V(0, s * 0.25, dist)),
+            to: ex.center.clone()
+        });
+    });
+
+    $('nav').innerHTML = presets.map((p, i) => `<button data-i="${i}"><small>${(i + 1) % 10}</small>${p.name}</button>`).join('');
+    $('nav').addEventListener('click', e => {
+        const b = e.target.closest('button');
+        if (b) flyTo(presets[+b.dataset.i]);
+    });
+
+    let tween = null;
+    function flyTo(p) {
+        const r = lookAt(p.from, p.to);
+        let dy = r.yaw - yaw;
+        dy = Math.atan2(Math.sin(dy), Math.cos(dy));
+        tween = { t: 0, from: pos.clone(), to: p.from.clone(), yaw0: yaw, dyaw: dy, pitch0: pitch, pitch1: r.pitch,
+            dur: Math.min(3.5, 1 + Math.log10(1 + pos.distanceTo(p.from)) * 0.6) };
+    }
+    flyTo(presets[0]); tween.dur = 0.001;
+
+    // input
+    const keys = new Set();
+    addEventListener('keydown', e => {
+        if (e.target.tagName === 'INPUT' && e.key !== 'Escape') return;
+        keys.add(e.code);
+        if (/^Digit[0-9]$/.test(e.code)) { const k = (+e.code.slice(5) + 9) % 10; if (presets[k]) flyTo(presets[k]); }
+        if (e.code === 'Space') e.preventDefault();
+    });
+    addEventListener('keyup', e => keys.delete(e.code));
+    addEventListener('blur', () => keys.clear());
+
+    const cv = renderer.domElement;
+    let dragging = false;
+    cv.addEventListener('pointerdown', e => { dragging = true; cv.setPointerCapture(e.pointerId); cv.classList.add('drag'); tween = null; });
+    cv.addEventListener('pointerup', e => { dragging = false; cv.classList.remove('drag'); });
+    cv.addEventListener('pointermove', e => {
+        if (!dragging) return;
+        yaw -= e.movementX * 0.0035;
+        pitch = Math.max(-1.55, Math.min(1.55, pitch - e.movementY * 0.0035));
+    });
+    cv.addEventListener('wheel', e => {
+        e.preventDefault();
+        const s = $('speed');
+        s.value = Math.max(-3, Math.min(3, +s.value - Math.sign(e.deltaY) * 0.15));
+        if ($('autospeed').checked) { /* wheel adjusts the multiplier on top of auto speed */ }
+    }, { passive: false });
+
+    // distance from point to the nearest exhibit surface / ground / stuff
+    function nearest() {
+        let d = Math.max(pos.y, 0.01);
+        for (const ex of exhibits) d = Math.min(d, ex.box.distanceToPoint(pos));
+        return Math.max(d, 0.003);
+    }
+    function pushOut() {
+        if (pos.y < 0.01) pos.y = 0.01;
+        for (const ex of exhibits) {
+            const b = ex.box;
+            if (!b.containsPoint(pos)) continue;
+            // exit through the nearest face
+            const o = [pos.x - b.min.x, b.max.x - pos.x, pos.y - b.min.y, b.max.y - pos.y, pos.z - b.min.z, b.max.z - pos.z];
+            const i = o.indexOf(Math.min(...o)), eps = 1e-4;
+            if (i === 0) pos.x = b.min.x - eps; else if (i === 1) pos.x = b.max.x + eps;
+            else if (i === 2) pos.y = b.min.y - eps; else if (i === 3) pos.y = b.max.y + eps;
+            else if (i === 4) pos.z = b.min.z - eps; else pos.z = b.max.z + eps;
+        }
+    }
+
+    const vel = new THREE.Vector3();
+    const fwd = new THREE.Vector3(), right = new THREE.Vector3(), want = new THREE.Vector3();
+    let last = performance.now(), curSpeed = 0;
+
+    function frame(now) {
+        const dt = Math.min((now - last) / 1000, 0.1), last0 = last;
+        last = now;
+
+        if (tween) {
+            tween.t += (now - last0) / 1000 / tween.dur;
+            const k = Math.min(tween.t, 1), e = k * k * (3 - 2 * k);
+            pos.lerpVectors(tween.from, tween.to, e);
+            yaw = tween.yaw0 + tween.dyaw * e;
+            pitch = tween.pitch0 + (tween.pitch1 - tween.pitch0) * e;
+            if (k >= 1) tween = null;
+            vel.set(0, 0, 0);
+        } else {
+            fwd.set(-Math.sin(yaw) * Math.cos(pitch), Math.sin(pitch), -Math.cos(yaw) * Math.cos(pitch));
+            right.set(Math.cos(yaw), 0, -Math.sin(yaw));
+            want.set(0, 0, 0);
+            if (keys.has('KeyW') || keys.has('ArrowUp')) want.add(fwd);
+            if (keys.has('KeyS') || keys.has('ArrowDown')) want.sub(fwd);
+            if (keys.has('KeyD') || keys.has('ArrowRight')) want.add(right);
+            if (keys.has('KeyA') || keys.has('ArrowLeft')) want.sub(right);
+            if (keys.has('KeyE') || keys.has('Space')) want.y += 1;
+            if (keys.has('KeyQ') || keys.has('KeyC')) want.y -= 1;
+            const mult = Math.pow(10, +$('speed').value);
+            const boost = (keys.has('ShiftLeft') || keys.has('ShiftRight')) ? 5 : 1;
+            curSpeed = ($('autospeed').checked ? Math.min(nearest() * 1.5, 400) * mult : 4 * mult) * boost;
+            if (want.lengthSq()) want.normalize().multiplyScalar(curSpeed);
+            vel.lerp(want, 1 - Math.exp(-dt * 8));
+            pos.addScaledVector(vel, dt);
+        }
+        pushOut();
+        applyRot();
+        updateBlocks();
+        animateBirds(now / 1000);
+        $('mult').textContent = '×' + Math.pow(10, +$('speed').value).toFixed(2);
+        $('readout').textContent = 'Speed ' + fmtLen(vel.length()) + '/s · altitude ' + fmtLen(pos.y);
+        renderer.render(scene, camera);
+        requestAnimationFrame(frame);
+    }
+    function fmtLen(m) {
+        if (m >= 1000) return (m / 1000).toFixed(2) + ' km';
+        if (m >= 1) return m.toFixed(1) + ' m';
+        if (m >= 0.01) return (m * 100).toFixed(1) + ' cm';
+        return (m * 1000).toFixed(1) + ' mm';
+    }
+
+    function resize() {
+        const w = innerWidth, h = innerHeight;
+        renderer.setSize(w, h);
+        camera.aspect = w / h;
+        camera.updateProjectionMatrix();
+    }
+    addEventListener('resize', resize);
+    new ResizeObserver(resize).observe(document.body);
+    resize();
+    requestAnimationFrame(frame);
+    </script>
+</body>
+
+</html>
