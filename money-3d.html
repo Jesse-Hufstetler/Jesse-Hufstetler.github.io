@@ -825,8 +825,58 @@
         }
     }
 
+    // supercenter (~16,500 m², a typical store) on the north half of the roof, storefront facing +z
+    {
+        const mx = 270, mz = 175, W = 150, D = 110, H = 8;
+        const body = mat(0xd9d3c3), blue = mat(0x0071ce), glass = mat(0x2a4a63);
+        box(W, H, D, body, mx, top100 + H / 2, mz);
+        box(W + 0.4, 1.0, D + 0.4, blue, mx, top100 + H - 0.5, mz);                 // blue band under the roofline
+        box(W + 0.2, 0.5, D + 0.2, mat(0x8a857a), mx, top100 + H + 0.25, mz);       // parapet cap
+        box(22, 6, 7, body, mx, top100 + 3, mz + D / 2 + 3.5);                      // entrance vestibule
+        box(20, 3.6, 0.1, glass, mx, top100 + 1.9, mz + D / 2 + 7.05);              // glass doors
+        box(24, 0.6, 8, blue, mx, top100 + 6.3, mz + D / 2 + 3.5);                  // canopy
+        for (let i = 0; i < 9; i++) box(1.8, 1.8, 1.8, mat(0xa9a9ad), mx - 60 + i * 15, top100 + H + 1.4, mz - 15 + (i % 3) * 14);  // rooftop HVAC
+        // old-school block letters: WAL*MART, each letter a 5x7 grid of little boxes
+        const FONT = {
+            W: ['10001', '10001', '10001', '10101', '10101', '11011', '10001'],
+            A: ['01110', '10001', '10001', '11111', '10001', '10001', '10001'],
+            L: ['10000', '10000', '10000', '10000', '10000', '10000', '11111'],
+            M: ['10001', '11011', '10101', '10101', '10001', '10001', '10001'],
+            R: ['11110', '10001', '10001', '11110', '10100', '10010', '10001'],
+            T: ['11111', '00100', '00100', '00100', '00100', '00100', '00100']
+        };
+        const px = 0.6, adv = 6 * px;
+        const ink = mat(0x0b2a5c), spark = mat(0xffc220);
+        const makeSign = () => {
+            const g = new THREE.Group();
+            let x = 0;
+            for (const ch of 'WAL*MART') {
+                if (ch === '*') {
+                    for (let i = 0; i < 3; i++) {
+                        const bar = box(5 * px, 0.7 * px, 0.5, spark, x + 2.5 * px, 3.5 * px, 0, g);
+                        bar.rotation.z = i * Math.PI / 3;
+                    }
+                } else {
+                    FONT[ch].forEach((row, r) => [...row].forEach((bit, k) => {
+                        if (bit === '1') box(px, px, 0.5, ink, x + (k + 0.5) * px, (6.5 - r) * px, 0, g);
+                    }));
+                }
+                x += adv;
+            }
+            g.children.forEach(m => m.position.x -= (x - px) / 2);          // centre the word
+            return g;
+        };
+        for (const sg of [1, -1]) {
+            const sign = makeSign();
+            sign.position.set(mx - (sg > 0 ? 28 : 0), top100 + H - 6, mz + sg * (D / 2 + 0.25));
+            if (sg < 0) sign.rotation.y = Math.PI;
+            scene.add(sign);
+        }
+        crowd(mx - 6, mz + D / 2 + 10, 1.1, 0.25, 12, Math.PI);                     // shoppers heading in
+    }
+
     // ferris wheel (turns in the x-y plane, boarding at the bottom)
-    const wx = 300, wz = 190, R = 6, hubY = R + 1.6;
+    const wx = 300, wz = 252, R = 6, hubY = R + 1.6;
     const steel = mat(0xd9d9dc), accent = mat(0xe8590c);
     for (const sz of [-1, 1]) for (const sx of [-1, 1]) {            // A-frame legs
         const leg = box(0.25, hubY * 1.12, 0.25, steel, wx + sx * 2.6, top100 + hubY / 2, wz + sz * 1.0);
@@ -873,7 +923,7 @@
     }
 
     // ice cream cart
-    const cx = 235, cz = 215;
+    const cx = 235, cz = 266;
     const cart = new THREE.Group();
     box(1.4, 0.8, 0.8, mat(0xf5f0e6), 0, 0.7, 0, cart);
     box(1.44, 0.15, 0.84, mat(0xe0508a), 0, 1.15, 0, cart);
@@ -940,7 +990,6 @@
             to: ex.center.clone()
         });
     });
-
     $('nav').innerHTML = presets.map((p, i) => `<button data-i="${i}"><small>${(i + 1) % 10}</small>${p.name}</button>`).join('');
     $('nav').addEventListener('click', e => {
         const b = e.target.closest('button');
