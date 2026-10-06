@@ -199,6 +199,7 @@
         <div class="row"><label for="opacity">Hex fill opacity</label>
             <input id="opacity" type="range" min="0" max="100" step="1" value="20" style="flex:1"><span id="opv" style="width:34px;text-align:right">20%</span></div>
         <div class="row"><label><input id="borders" type="checkbox" checked> Country &amp; state borders</label></div>
+        <div class="row"><label><input id="places" type="checkbox" checked> City &amp; street names (satellite)</label></div>
         <div class="row"><label><input id="ocean" type="checkbox"> Show hexagons that don't touch land</label></div>
         <div class="row">
             <span>Basemap</span>
@@ -236,6 +237,7 @@
         }
     };
 
+    let basemap = 'sat';
     const $ = id => document.getElementById(id);
     const emptyFC = { type: 'FeatureCollection', features: [] };
 
@@ -397,6 +399,40 @@
                 'line-dasharray': [1, 0]
             }
         });
+        // The satellite basemap has no text of its own, so draw place and street names from the same
+        // vector tiles. They go in below the hex labels so those keep collision priority.
+        if (basemap === 'sat') {
+            const pv = $('places').checked ? 'visible' : 'none';
+            const name = ['coalesce', ['get', 'name_en'], ['get', 'name']];
+            const halo = { 'text-halo-color': 'rgba(0,0,0,.8)', 'text-halo-width': 1.6 };
+            const place = (id, cls, minzoom, size, extra = []) => map.addLayer({
+                id, type: 'symbol', source: 'omt-borders', 'source-layer': 'place', minzoom,
+                filter: ['all', ['==', ['get', 'class'], cls], ...extra],
+                layout: {
+                    visibility: pv, 'text-field': name, 'text-font': LABEL_FONT, 'text-size': size,
+                    'symbol-sort-key': ['coalesce', ['get', 'rank'], 99], 'text-padding': 4, 'text-max-width': 8
+                },
+                paint: { 'text-color': '#fff', ...halo }
+            });
+            place('pl-country', 'country', 1, ['interpolate', ['linear'], ['zoom'], 1, 11, 6, 17]);
+            place('pl-state', 'state', 4, ['interpolate', ['linear'], ['zoom'], 4, 10, 8, 14]);
+            place('pl-city-major', 'city', 3, ['interpolate', ['linear'], ['zoom'], 3, 11, 10, 20], [['<=', ['coalesce', ['get', 'rank'], 99], 4]]);
+            place('pl-city', 'city', 5, ['interpolate', ['linear'], ['zoom'], 5, 11, 12, 18], [['>', ['coalesce', ['get', 'rank'], 99], 4]]);
+            place('pl-town', 'town', 8, ['interpolate', ['linear'], ['zoom'], 8, 11, 13, 16]);
+            for (const [i, cls] of ['village', 'suburb', 'neighbourhood', 'hamlet'].entries()) place('pl-small-' + i, cls, 11, 12);
+            const road = (id, classes, minzoom, size) => map.addLayer({
+                id, type: 'symbol', source: 'omt-borders', 'source-layer': 'transportation_name', minzoom,
+                filter: ['in', ['get', 'class'], ['literal', classes]],
+                layout: {
+                    visibility: pv, 'symbol-placement': 'line', 'text-field': name, 'text-font': LABEL_FONT,
+                    'text-size': size, 'text-rotation-alignment': 'map', 'symbol-spacing': 300, 'text-padding': 2
+                },
+                paint: { 'text-color': '#fff', ...halo }
+            });
+            road('rd-major', ['motorway', 'trunk', 'primary'], 10, ['interpolate', ['linear'], ['zoom'], 10, 10, 16, 14]);
+            road('rd-mid', ['secondary', 'tertiary'], 13, ['interpolate', ['linear'], ['zoom'], 13, 10, 17, 14]);
+            road('rd-minor', ['minor', 'service', 'track', 'path'], 15, ['interpolate', ['linear'], ['zoom'], 15, 10, 18, 14]);
+        }
         map.addLayer({
             id: 'h3-labels', type: 'symbol', source: 'h3-labels',
             layout: {
@@ -664,6 +700,11 @@
         $('opv').textContent = v + '%';
         if (map.getLayer('h3-fill')) map.setPaintProperty('h3-fill', 'fill-opacity', v / 100);
     });
+    $('places').addEventListener('change', () => {
+        for (const l of map.getStyle().layers) {
+            if (/^(pl|rd)-/.test(l.id)) map.setLayoutProperty(l.id, 'visibility', $('places').checked ? 'visible' : 'none');
+        }
+    });
     $('borders').addEventListener('change', () => {
         for (const id of ['bnd-state-casing', 'bnd-state', 'bnd-country-casing', 'bnd-country']) {
             if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', $('borders').checked ? 'visible' : 'none');
@@ -673,6 +714,7 @@
     function setBasemap(k) {
         $('bm-map').classList.toggle('on', k === 'map');
         $('bm-sat').classList.toggle('on', k === 'sat');
+        basemap = k;
         map.setStyle(STYLES[k]);
     }
     $('bm-map').onclick = () => setBasemap('map');
