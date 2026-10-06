@@ -133,6 +133,75 @@
         box-shadow: 0 2px 12px rgba(0, 0, 0, .4);
     }
 
+    #nav {
+        max-height: calc(100% - 40px);
+        overflow-y: auto;
+    }
+
+    /* on-screen flight controls, shown only on touch devices */
+    #touch {
+        display: none;
+        user-select: none;
+        -webkit-user-select: none;
+    }
+
+    .coarse #touch {
+        display: block;
+    }
+
+    #joy {
+        position: absolute;
+        right: 22px;
+        bottom: 26px;
+        width: 130px;
+        height: 130px;
+        border-radius: 50%;
+        background: rgba(30, 30, 30, .45);
+        border: 2px solid rgba(255, 255, 255, .5);
+        touch-action: none;
+    }
+
+    #knob {
+        position: absolute;
+        left: 40px;
+        top: 40px;
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        background: rgba(232, 89, 12, .85);
+        pointer-events: none;
+    }
+
+    #touch .tbtn {
+        position: absolute;
+        right: 168px;
+        width: 56px;
+        height: 56px;
+        border-radius: 50%;
+        border: 2px solid rgba(255, 255, 255, .5);
+        background: rgba(30, 30, 30, .55);
+        color: #fff;
+        font-size: 22px;
+        touch-action: none;
+    }
+
+    #touch .tbtn.on {
+        background: rgba(232, 89, 12, .9);
+    }
+
+    #tup { bottom: 92px; }
+    #tdown { bottom: 26px; }
+    #tboost { bottom: 158px; font-size: 13px; }
+
+    .coarse #vrbtn {
+        bottom: 170px;
+    }
+
+    .coarse #hud {
+        font-size: 11px;
+        max-width: 55vw;
+    }
+
     @media (max-width: 700px) {
         #info p {
             display: none;
@@ -154,6 +223,12 @@
     </div>
     <div id="nav" class="panel"></div>
     <button id="vrbtn">Enter VR</button>
+    <div id="touch">
+        <button class="tbtn" id="tboost">Boost</button>
+        <button class="tbtn" id="tup">&#9650;</button>
+        <button class="tbtn" id="tdown">&#9660;</button>
+        <div id="joy"><div id="knob"></div></div>
+    </div>
     <div id="hud" class="panel">
         <div id="readout"></div>
         <div><label><input id="autospeed" type="checkbox" checked> Auto speed (slows near things)</label></div>
@@ -190,7 +265,47 @@
 
     // ---------------------------------------------------------------- ground, street, sidewalks
     box(9000, 0.02, 9000, mat(0x7c8f6a), 0, -0.01, 0);                 // grass
-    box(260, 0.04, 140, mat(0xbdbbb5), 40, 0.01, 62);                    // plaza paving
+    // textured concrete slabs, so the ground reads as different from the (flat, pale green) bill blocks
+    const slabTex = (() => {
+        const c = document.createElement('canvas');
+        c.width = c.height = 512;
+        const g = c.getContext('2d');
+        let s = 99;
+        const r = () => (s = (s * 16807) % 2147483647) / 2147483647;
+        for (let i = 0; i < 2; i++) for (let j = 0; j < 2; j++) {
+            const v = 118 + Math.floor(r() * 26);
+            g.fillStyle = `rgb(${v + 6},${v + 2},${v - 8})`;
+            g.fillRect(i * 256, j * 256, 256, 256);
+            for (let k = 0; k < 900; k++) {                       // speckle
+                const a = r() * 0.22;
+                g.fillStyle = r() < 0.5 ? `rgba(0,0,0,${a})` : `rgba(255,255,255,${a})`;
+                g.fillRect(i * 256 + r() * 256, j * 256 + r() * 256, 1 + r() * 3, 1 + r() * 3);
+            }
+            for (let k = 0; k < 3; k++) {                         // hairline cracks
+                let x = i * 256 + r() * 256, y = j * 256 + r() * 256;
+                g.strokeStyle = 'rgba(40,36,30,.45)'; g.lineWidth = 1;
+                g.beginPath(); g.moveTo(x, y);
+                for (let q = 0; q < 6; q++) { x += (r() - 0.5) * 40; y += (r() - 0.5) * 40; g.lineTo(x, y); }
+                g.stroke();
+            }
+        }
+        g.strokeStyle = '#4a4741'; g.lineWidth = 5;                 // expansion joints
+        for (const p of [0, 256, 512]) {
+            g.beginPath(); g.moveTo(p, 0); g.lineTo(p, 512); g.stroke();
+            g.beginPath(); g.moveTo(0, p); g.lineTo(512, p); g.stroke();
+        }
+        const t = new THREE.CanvasTexture(c);
+        t.wrapS = t.wrapT = THREE.RepeatWrapping;
+        t.colorSpace = THREE.SRGBColorSpace;
+        t.anisotropy = 8;
+        return t;
+    })();
+    function paving(w, d, x, y, z) {
+        const t = slabTex.clone(); t.needsUpdate = true;
+        t.repeat.set(w / 4, d / 4);
+        return box(w, 0.04, d, new THREE.MeshLambertMaterial({ map: t }), x, y, z);
+    }
+    paving(260, 140, 40, 0.01, 62);                                      // plaza paving
     box(1200, 0.05, 16, mat(0x3b3b3d), 100, 0.025, 0);                   // asphalt
     for (let x = -480; x < 680; x += 8) box(3.5, 0.06, 0.18, mat(0xe8e2c0), x, 0.03, 0); // center dashes
     box(1200, 0.06, 0.12, mat(0xf2f2f2), 100, 0.03, 7.2);               // edge lines
@@ -391,6 +506,62 @@
     box(1.4, 0.05, 0.7, wood, -3.2, 0.875, 15);
     for (const [lx, lz] of [[-0.62, -0.28], [0.62, -0.28], [-0.62, 0.28], [0.62, 0.28]]) box(0.06, 0.85, 0.06, wood, -3.2 + lx, 0.425, 15 + lz);
 
+    // a banana (for scale) on the table, ~18 cm along its curve
+    {
+        // A pentagonal, tapered fruit swept along a curve, with a thin green stalk at one end
+        // and a dark nub at the other. Lies on its side with the ends lifted slightly.
+        const R = 0.11, arc = 1.8, rmax = 0.0215, N = 40, SIDES = 5;
+        const col = new THREE.Color();
+        const radius = s => {
+            if (s < 0.1) return 0.009;
+            if (s < 0.3) { const k = (s - 0.1) / 0.2; return 0.009 + (rmax - 0.009) * k * k * (3 - 2 * k); }
+            if (s > 0.88) return rmax * Math.max(0.22, Math.sqrt(Math.max(0, 1 - ((s - 0.88) / 0.12) ** 2)));
+            return rmax;
+        };
+        const tone = s => {
+            if (s < 0.1) return col.set(0x6f7a2a);
+            if (s < 0.3) return col.set(0x6f7a2a).lerp(new THREE.Color(0xf0cf2a), (s - 0.1) / 0.2);
+            if (s > 0.955) return col.set(0x2e2214);
+            return col.set(0xf0cf2a);
+        };
+        const pos = [], cols = [], idx = [];
+        for (let i = 0; i <= N; i++) {
+            const s = i / N, a = (s - 0.5) * arc;
+            const cx = R * Math.sin(a), cz = R * (1 - Math.cos(a)) - R * 0.5, cy = rmax + 0.012 * (2 * s - 1) ** 2;
+            const nx = -Math.sin(a), nz = Math.cos(a);                       // sideways, in the table plane
+            const r = radius(s), c = tone(s);
+            for (let k = 0; k < SIDES; k++) {
+                const th = (k / SIDES) * Math.PI * 2 + Math.PI / 2;
+                const ox = Math.cos(th) * r * 1.05, oy = Math.sin(th) * r * 0.95;
+                pos.push(cx + nx * ox, cy + oy, cz + nz * ox);
+                cols.push(c.r, c.g, c.b);
+            }
+        }
+        for (let i = 0; i < N; i++) for (let k = 0; k < SIDES; k++) {
+            const a = i * SIDES + k, b = i * SIDES + (k + 1) % SIDES, c = a + SIDES, d = b + SIDES;
+            idx.push(a, c, b, b, c, d);
+        }
+        for (const [ring, flip] of [[0, true], [N, false]]) {                   // end caps
+            const centre = pos.length / 3, i0 = ring * SIDES, s = ring / N, cc = tone(s);
+            let sx = 0, sy = 0, sz = 0;
+            for (let k = 0; k < SIDES; k++) { sx += pos[(i0 + k) * 3]; sy += pos[(i0 + k) * 3 + 1]; sz += pos[(i0 + k) * 3 + 2]; }
+            pos.push(sx / SIDES, sy / SIDES, sz / SIDES); cols.push(cc.r, cc.g, cc.b);
+            for (let k = 0; k < SIDES; k++) {
+                const p = i0 + k, q = i0 + (k + 1) % SIDES;
+                idx.push(centre, flip ? q : p, flip ? p : q);
+            }
+        }
+        const geo = new THREE.BufferGeometry();
+        geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+        geo.setAttribute('color', new THREE.Float32BufferAttribute(cols, 3));
+        geo.setIndex(idx);
+        geo.computeVertexNormals();
+        const banana = new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true, side: THREE.DoubleSide }));
+        banana.position.set(-2.75, 0.9, 15.1);
+        banana.rotation.y = 0.5;
+        scene.add(banana);
+    }
+
     // ---------------------------------------------------------------- bill blocks (shader)
     // A block is an a x b x c grid of $20 bills lying flat (a along the 156 mm length, b along
     // the 66 mm width, c stacked up at 0.109 mm each), drawn procedurally. Tops show the bill face,
@@ -541,8 +712,175 @@
     block('$1 million', '50,000 bills · 31 × 54 × 33 cm', 2, 5, 5000, -0.6, 0.02, 17.5, 0.6);
     block('$1 billion', '50 million bills · 3.9 × 4.4 × 3.3 m', 25, 50, 40000, 6, 0.02, 20, 6);
     block('$1 trillion', '50 billion bills · 39 × 44 × 33 m', 250, 500, 400000, 52, 0.02, 60, 55);
-    box(300, 0.04, 300, mat(0xbdbbb5), 270, 0.01, 200);
+    paving(300, 300, 270, 0.01, 200);
     block('$100 trillion', '5 trillion bills · 156 × 218 × 166 m', 1000, 2500, 2000000, 270, 0.02, 200, 250);
+
+    // ---------------------------------------------------------------- rooftop silliness (all life-size)
+    // Everything is built facing local +z, standing / sitting at local y = 0.
+    function sitter(shirt, pants, g) {
+        const skin = mat(0xd9a77f), pm = mat(pants), sm = mat(shirt);
+        for (const sx of [-1, 1]) {
+            box(0.14, 0.13, 0.46, pm, sx * 0.1, 0.065, 0.23, g);           // thighs
+            box(0.12, 0.46, 0.13, pm, sx * 0.1, -0.22, 0.46, g);           // shins, hanging
+            box(0.12, 0.08, 0.2, mat(0x222222), sx * 0.1, -0.45, 0.52, g); // shoes
+            box(0.1, 0.5, 0.12, sm, sx * 0.26, 0.43, 0.02, g);             // arms
+            box(0.1, 0.1, 0.1, skin, sx * 0.26, 0.15, 0.03, g);            // hands
+        }
+        box(0.4, 0.6, 0.22, sm, 0, 0.43, 0.02, g);
+        const head = new THREE.Mesh(new THREE.SphereGeometry(0.115, 16, 12), skin);
+        head.position.set(0, 0.88, 0.03); g.add(head);
+        const hair = new THREE.Mesh(new THREE.SphereGeometry(0.12, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2), mat(0x3a2a20));
+        hair.position.set(0, 0.89, 0.02); g.add(hair);
+        return g;
+    }
+    function place(g, x, y, z, ry) { g.position.set(x, y, z); g.rotation.y = ry; scene.add(g); return g; }
+
+    // a guy sitting on the back (street side, -z) edge of the $1 billion block, legs dangling
+    const bn = exhibits.find(e => e.label === '$1 billion');
+    place(sitter(0xc0562b, 0x3b4a66, new THREE.Group()), bn.center.x - 0.7, bn.box.max.y, bn.box.min.z + 0.4, Math.PI);
+
+    const top = exhibits.find(e => e.label === '$1 trillion').box.max.y + 0.005;
+    const tx = 52;
+
+    // couch + guy + TV
+    const couch = new THREE.Group(), fab = mat(0x6b3f7a);
+    box(1.7, 0.3, 0.85, fab, 0, 0.15, 0, couch);
+    box(1.5, 0.15, 0.7, mat(0x80508f), 0, 0.375, 0.05, couch);
+    box(1.7, 0.5, 0.2, fab, 0, 0.55, -0.33, couch);
+    for (const sx of [-1, 1]) box(0.15, 0.3, 0.85, fab, sx * 0.78, 0.45, 0, couch);
+    const guy = new THREE.Group();
+    sitter(0x2f7d5b, 0x555a63, guy);
+    guy.position.set(0, 0.45, -0.1);
+    couch.add(guy);
+    box(0.2, 0.12, 0.2, mat(0xd8d2c4), 0.55, 0.51, 0.1, couch);             // snack bowl on the cushion
+    place(couch, tx - 5, top, 63, Math.PI / 2);
+    const tv = new THREE.Group(), tvStand = mat(0x6a4a2e);
+    box(0.9, 0.45, 0.4, tvStand, 0, 0.225, 0, tv);
+    box(0.95, 0.6, 0.07, mat(0x111111), 0, 0.75, 0, tv);
+    const screenM = new THREE.MeshBasicMaterial({ color: 0x6aa8ff });
+    box(0.85, 0.5, 0.02, screenM, 0, 0.75, 0.04, tv);
+    place(tv, tx - 1.6, top, 63, -Math.PI / 2);
+
+    // the cat, life-size (~45 cm nose to rump), sitting near the front edge looking down at everyone
+    function makeCat(furColor) {
+        const cat = new THREE.Group(), fur = mat(furColor);
+        box(0.17, 0.18, 0.38, fur, 0, 0.22, -0.02, cat);
+        for (const [lx, lz] of [[-0.06, 0.12], [0.06, 0.12], [-0.06, -0.15], [0.06, -0.15]]) box(0.05, 0.14, 0.06, fur, lx, 0.07, lz, cat);
+        box(0.14, 0.13, 0.13, fur, 0, 0.36, 0.2, cat);
+        for (const sx of [-1, 1]) {
+            const ear = new THREE.Mesh(new THREE.ConeGeometry(0.03, 0.06, 4), fur);
+            ear.position.set(sx * 0.05, 0.45, 0.2); cat.add(ear);
+            box(0.025, 0.025, 0.01, mat(0x3a8f4a, { emissive: 0x1a5a2a }), sx * 0.035, 0.375, 0.27, cat);
+        }
+        const tail = box(0.04, 0.04, 0.34, fur, 0, 0.34, -0.3, cat); tail.rotation.x = 0.7; tail.position.y = 0.4;
+        return cat;
+    }
+    place(makeCat(0xe08a2e), tx + 14, top, 72, 0.35);
+    // a second cat down on the plaza, ~1 m (a couple of cat lengths) from the $1 million pile, eyeing it
+    place(makeCat(0x4a4a50), 0.45, 0.03, 17.9, -1.9);
+
+    // kiddie pool with a rubber duck, plus a plastic flamingo
+    const pool = new THREE.Mesh(new THREE.CylinderGeometry(0.9, 0.85, 0.25, 24, 1, true), new THREE.MeshLambertMaterial({ color: 0x3b9ad9, side: THREE.DoubleSide }));
+    pool.position.set(tx + 8, top + 0.125, 56); scene.add(pool);
+    const water = new THREE.Mesh(new THREE.CircleGeometry(0.86, 24), new THREE.MeshLambertMaterial({ color: 0x73c6ff }));
+    water.rotation.x = -Math.PI / 2; water.position.set(tx + 8, top + 0.18, 56); scene.add(water);
+    const duck = new THREE.Group(), yel = mat(0xffd21f);
+    const dbody = new THREE.Mesh(new THREE.SphereGeometry(0.11, 14, 10), yel); dbody.scale.set(1, 0.8, 1.3); dbody.position.y = 0.1; duck.add(dbody);
+    const dhead = new THREE.Mesh(new THREE.SphereGeometry(0.065, 12, 10), yel); dhead.position.set(0, 0.22, 0.1); duck.add(dhead);
+    const beak = box(0.05, 0.02, 0.05, mat(0xff8a1f), 0, 0.21, 0.17, duck);
+    place(duck, tx + 8.2, top + 0.17, 56.2, 0.8);
+    const fl = new THREE.Group(), pink = mat(0xff6fa8);
+    for (const sx of [-1, 1]) box(0.015, 0.45, 0.015, mat(0xe8508a), sx * 0.04, 0.225, 0, fl);
+    const fb = new THREE.Mesh(new THREE.SphereGeometry(0.1, 12, 10), pink); fb.scale.set(1, 0.9, 1.4); fb.position.y = 0.55; fl.add(fb);
+    box(0.03, 0.4, 0.03, pink, 0, 0.78, 0.12, fl);
+    box(0.03, 0.03, 0.12, mat(0x222222), 0, 0.97, 0.17, fl);
+    place(fl, tx + 11.5, top, 60, -2.2);
+
+    // ---- on top of the $100 trillion block: a ferris wheel with a queue, and an ice cream cart with a queue
+    const top100 = exhibits.find(e => e.label === '$100 trillion').box.max.y + 0.005;
+    const shirts = [0xb23a3a, 0x3a7a4a, 0x2d5fa6, 0xd0a020, 0x8a3fa0, 0xe07a30, 0x30a0a0, 0xdddddd, 0x444444, 0xd05a8a];
+    const pantsC = [0x33425a, 0x444444, 0x5a4a30, 0x2a2a2a, 0x3a5a3a, 0x6a6a7a];
+    const pick = a => a[Math.floor(rnd() * a.length)];
+    function crowd(x0, z0, dx, dz, n, faceY) {           // n people in a line starting at (x0,z0), stepping (dx,dz)
+        for (let i = 0; i < n; i++) {
+            const p = person(pick(shirts), pick(pantsC));
+            const s = 0.9 + rnd() * 0.2;
+            p.scale.setScalar(s);
+            p.position.set(x0 + dx * i + (rnd() - 0.5) * 0.25, top100, z0 + dz * i + (rnd() - 0.5) * 0.25);
+            p.rotation.y = faceY + (rnd() - 0.5) * 0.4;
+            scene.add(p);
+        }
+    }
+
+    // ferris wheel (turns in the x-y plane, boarding at the bottom)
+    const wx = 300, wz = 190, R = 6, hubY = R + 1.6;
+    const steel = mat(0xd9d9dc), accent = mat(0xe8590c);
+    for (const sz of [-1, 1]) for (const sx of [-1, 1]) {            // A-frame legs
+        const leg = box(0.25, hubY * 1.12, 0.25, steel, wx + sx * 2.6, top100 + hubY / 2, wz + sz * 1.0);
+        leg.rotation.z = sx * Math.atan(2.6 / hubY);
+        leg.position.x = wx + sx * 1.3;
+    }
+    box(0.4, 0.4, 2.6, steel, wx, top100 + hubY, wz);                // axle block
+    const wheel = new THREE.Group();
+    wheel.position.set(wx, top100 + hubY, wz);
+    scene.add(wheel);
+    const gondolas = [];
+    for (const sz of [-0.8, 0.8]) {
+        const rim = new THREE.Mesh(new THREE.TorusGeometry(R, 0.1, 6, 48), steel);
+        rim.position.z = sz; wheel.add(rim);
+        const rim2 = new THREE.Mesh(new THREE.TorusGeometry(R * 0.5, 0.06, 6, 32), steel);
+        rim2.position.z = sz; wheel.add(rim2);
+    }
+    for (let i = 0; i < 12; i++) {
+        const a = i * Math.PI / 6;
+        for (const sz of [-0.8, 0.8]) {
+            const sp = box(0.06, R, 0.06, steel, Math.cos(a) * R / 2, Math.sin(a) * R / 2, sz, wheel);
+            sp.rotation.z = a + Math.PI / 2;
+        }
+        const gd = new THREE.Group();                                  // gondola hangs from the rim
+        box(1.2, 0.08, 1.6, mat(i % 2 ? 0xe8590c : 0x2d8fd0), 0, -0.85, 0, gd);
+        box(1.2, 0.5, 0.06, mat(i % 2 ? 0xe8590c : 0x2d8fd0), 0, -0.6, 0.78, gd);
+        box(1.2, 0.5, 0.06, mat(i % 2 ? 0xe8590c : 0x2d8fd0), 0, -0.6, -0.78, gd);
+        box(0.05, 0.9, 0.05, steel, 0, -0.4, 0, gd);
+        // gondolas sit on the rim by angle; stored so they can be kept level while it turns
+        gd.position.set(Math.cos(a) * R, Math.sin(a) * R, 0);
+        wheel.add(gd);
+        gondolas.push(gd);
+    }
+    box(1.6, 2.2, 1.6, mat(0xb8312f), wx - 4, top100 + 1.1, wz + 6);   // ticket booth
+    box(1.8, 0.2, 1.8, accent, wx - 4, top100 + 2.3, wz + 6);
+    for (let i = 0; i < 7; i++) {                                       // queue rope posts
+        box(0.06, 0.9, 0.06, mat(0x333333), wx - 1.1, top100 + 0.45, wz + 2.5 + i * 1.4);
+        box(0.06, 0.9, 0.06, mat(0x333333), wx + 1.1, top100 + 0.45, wz + 2.5 + i * 1.4);
+    }
+    crowd(wx, wz + 3, 0, 0.75, 12, Math.PI);                            // facing the wheel (-z)
+    function animateWheel(t) {
+        wheel.rotation.z = -t * 0.12;
+        for (const g of gondolas) g.rotation.z = t * 0.12;
+    }
+
+    // ice cream cart
+    const cx = 235, cz = 215;
+    const cart = new THREE.Group();
+    box(1.4, 0.8, 0.8, mat(0xf5f0e6), 0, 0.7, 0, cart);
+    box(1.44, 0.15, 0.84, mat(0xe0508a), 0, 1.15, 0, cart);
+    box(1.44, 0.12, 0.84, mat(0xe0508a), 0, 0.35, 0, cart);
+    for (const sx of [-1, 1]) {
+        const w = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.28, 0.08, 16), mat(0x151515));
+        w.rotation.x = Math.PI / 2; w.position.set(sx * 0.5, 0.28, 0.45); cart.add(w);
+        const w2 = w.clone(); w2.position.z = -0.45; cart.add(w2);
+    }
+    box(0.04, 1.5, 0.04, mat(0xaaaaaa), 0, 1.9, 0, cart);
+    const umb = new THREE.Mesh(new THREE.ConeGeometry(1.1, 0.5, 12), mat(0xe0508a));
+    umb.position.y = 2.9; cart.add(umb);
+    const cone = new THREE.Mesh(new THREE.ConeGeometry(0.22, 0.6, 10), mat(0xd9a05a));
+    cone.rotation.x = Math.PI; cone.position.set(-0.8, 1.9, 0); cart.add(cone);
+    const scoop = new THREE.Mesh(new THREE.SphereGeometry(0.25, 12, 10), mat(0xfff0c8));
+    scoop.position.set(-0.8, 2.3, 0); cart.add(scoop);
+    place(cart, cx, top100, cz, 0);
+    const vendor = person(0xffffff, 0x2a2a2a);                          // behind the cart, facing the customers
+    place(vendor, cx + 1.1, top100, cz, -Math.PI / 2);
+    crowd(cx - 1.6, cz, -0.75, 0, 9, Math.PI / 2);                       // queue stretches away to -x, facing the cart
 
     // ---------------------------------------------------------------- camera / controls
     let yaw = 0, pitch = 0;
@@ -626,14 +964,57 @@
     addEventListener('blur', () => keys.clear());
 
     const cv = renderer.domElement;
-    let dragging = false;
-    cv.addEventListener('pointerdown', e => { dragging = true; cv.setPointerCapture(e.pointerId); cv.classList.add('drag'); tween = null; });
-    cv.addEventListener('pointerup', e => { dragging = false; cv.classList.remove('drag'); });
-    cv.addEventListener('pointermove', e => {
-        if (!dragging) return;
-        yaw -= e.movementX * 0.0035;
-        pitch = Math.max(-1.55, Math.min(1.55, pitch - e.movementY * 0.0035));
+    // look: drag the canvas with one pointer (mouse or a finger); deltas are tracked by hand
+    // because touch pointer events don't reliably report movementX/Y
+    let lookId = null, lastX = 0, lastY = 0;
+    cv.addEventListener('pointerdown', e => {
+        if (lookId !== null) return;
+        lookId = e.pointerId; lastX = e.clientX; lastY = e.clientY;
+        cv.setPointerCapture(e.pointerId); cv.classList.add('drag'); tween = null;
     });
+    const endLook = e => { if (e.pointerId === lookId) { lookId = null; cv.classList.remove('drag'); } };
+    cv.addEventListener('pointerup', endLook);
+    cv.addEventListener('pointercancel', endLook);
+    cv.addEventListener('pointermove', e => {
+        if (e.pointerId !== lookId) return;
+        const k = e.pointerType === 'touch' ? 0.005 : 0.0035;
+        yaw -= (e.clientX - lastX) * k;
+        pitch = Math.max(-1.55, Math.min(1.55, pitch - (e.clientY - lastY) * k));
+        lastX = e.clientX; lastY = e.clientY;
+    });
+
+    // touch flight controls: joystick = move along where you look, buttons = up / down / boost
+    if (matchMedia('(pointer: coarse)').matches || navigator.maxTouchPoints > 0) document.documentElement.classList.add('coarse');
+    const joy = { x: 0, y: 0, up: false, down: false, boost: false };
+    {
+        const base = $('joy'), knob = $('knob'), RAD = 45;
+        let id = null;
+        const set = e => {
+            const r = base.getBoundingClientRect();
+            let dx = e.clientX - (r.left + r.width / 2), dy = e.clientY - (r.top + r.height / 2);
+            const len = Math.hypot(dx, dy);
+            if (len > RAD) { dx *= RAD / len; dy *= RAD / len; }
+            joy.x = dx / RAD; joy.y = dy / RAD;
+            knob.style.transform = `translate(${dx}px, ${dy}px)`;
+        };
+        const stop = e => {
+            if (e.pointerId !== id) return;
+            id = null; joy.x = joy.y = 0; knob.style.transform = '';
+        };
+        base.addEventListener('pointerdown', e => { if (id !== null) return; id = e.pointerId; base.setPointerCapture(id); tween = null; set(e); });
+        base.addEventListener('pointermove', e => { if (e.pointerId === id) set(e); });
+        base.addEventListener('pointerup', stop);
+        base.addEventListener('pointercancel', stop);
+        for (const [btn, key, toggle] of [['tup', 'up'], ['tdown', 'down'], ['tboost', 'boost', true]]) {
+            const el = $(btn);
+            el.addEventListener('pointerdown', e => {
+                e.preventDefault(); tween = null;
+                if (toggle) { joy[key] = !joy[key]; el.classList.toggle('on', joy[key]); }
+                else { joy[key] = true; el.classList.add('on'); el.setPointerCapture(e.pointerId); }
+            });
+            if (!toggle) for (const ev of ['pointerup', 'pointercancel']) el.addEventListener(ev, () => { joy[key] = false; el.classList.remove('on'); });
+        }
+    }
     cv.addEventListener('wheel', e => {
         e.preventDefault();
         const s = $('speed');
@@ -758,10 +1139,14 @@
             if (keys.has('KeyA') || keys.has('ArrowLeft')) want.sub(right);
             if (keys.has('KeyE') || keys.has('Space')) want.y += 1;
             if (keys.has('KeyQ') || keys.has('KeyC')) want.y -= 1;
+            want.addScaledVector(fwd, -joy.y).addScaledVector(right, joy.x);   // touch joystick (analog)
+            if (joy.up) want.y += 1;
+            if (joy.down) want.y -= 1;
             const mult = Math.pow(10, +$('speed').value);
-            const boost = (keys.has('ShiftLeft') || keys.has('ShiftRight')) ? 5 : 1;
+            const boost = (keys.has('ShiftLeft') || keys.has('ShiftRight') || joy.boost) ? 5 : 1;
             curSpeed = ($('autospeed').checked ? Math.min(nearest() * 1.5, 400) * mult : 4 * mult) * boost;
-            if (want.lengthSq()) want.normalize().multiplyScalar(curSpeed);
+            const mag = Math.min(want.length(), 1);
+            if (want.lengthSq()) want.normalize().multiplyScalar(curSpeed * mag);
             vel.lerp(want, 1 - Math.exp(-dt * 8));
             pos.addScaledVector(vel, dt);
         }
@@ -770,6 +1155,8 @@
         if (!xr) applyRot();
         updateBlocks();
         animateBirds(now / 1000);
+        animateWheel(now / 1000);
+        screenM.color.setHSL(0.58 + Math.sin(now / 700) * 0.08, 0.7, 0.55 + Math.sin(now / 90) * 0.08);   // TV flicker
         $('mult').textContent = '×' + Math.pow(10, +$('speed').value).toFixed(2);
         $('readout').textContent = 'Speed ' + fmtLen(vel.length()) + '/s · altitude ' + fmtLen(pos.y);
         renderer.render(scene, camera);
