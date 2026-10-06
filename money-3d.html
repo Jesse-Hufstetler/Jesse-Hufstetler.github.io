@@ -579,8 +579,9 @@
         #include <common>
         #include <logdepthbuf_pars_vertex>
         uniform vec3 uCounts, uCam, uFrac;   // counts as (x, y, z)
-        varying vec3 vC; varying vec3 vObjN; varying vec3 vWN;
+        varying vec3 vC; varying vec3 vObjN; varying vec3 vWN; varying vec3 vP;
         void main() {
+            vP = position;
             vC = (position - uCam) * uCounts + uFrac;
             vObjN = normal;
             vWN = normalize(mat3(modelMatrix) * normal);
@@ -591,7 +592,7 @@
         #include <common>
         #include <logdepthbuf_pars_fragment>
         uniform vec3 uBase;
-        varying vec3 vC; varying vec3 vObjN; varying vec3 vWN;
+        varying vec3 vC; varying vec3 vObjN; varying vec3 vWN; varying vec3 vP;
         float hash(vec3 p) { p = fract(mod(p, 251.0) * 0.3183099 + 0.1); p *= 17.0; return fract(p.x * p.y * p.z * (p.x + p.y + p.z)); }
 
         vec3 billFace(vec2 uv, float px, float h) {
@@ -641,7 +642,8 @@
                 col *= 1.0 - 0.25 * lineH;
             }
             vec3 L = normalize(vec3(0.5, 1.0, 0.8));
-            float shade = 0.42 + 0.45 * max(dot(vWN, L), 0.0) + 0.18 * vWN.y;
+            float shade = 0.30 + 0.62 * max(dot(vWN, L), 0.0) + 0.18 * vWN.y;
+            shade *= 0.8 + 0.4 * smoothstep(-0.5, 0.5, vP.y); // darker toward the base
             gl_FragColor = vec4(col * shade, 1.0);
             #include <colorspace_fragment>
         }`;
@@ -670,6 +672,11 @@
         const lab = sprite(label, sub, labelW);
         lab.position.set(cx, baseY + size.y + labelW * 0.2, cz);
         scene.add(lab);
+        // faint ghost copy drawn over everything so the label shows through its cube
+        const ghost = sprite(label, sub, labelW);
+        ghost.material.depthTest = false; ghost.material.opacity = 0.6; ghost.renderOrder = 10;
+        ghost.position.copy(lab.position);
+        scene.add(ghost);
         const ex = { label, size, center: m.position.clone(), box: new THREE.Box3().setFromObject(m) };
         exhibits.push(ex);
         return ex;
