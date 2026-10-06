@@ -172,9 +172,10 @@
         pointer-events: none;
     }
 
+    /* buttons sit in a row above the joystick so they never run into the speed panel (bottom-left) */
     #touch .tbtn {
         position: absolute;
-        right: 168px;
+        bottom: 170px;
         width: 56px;
         height: 56px;
         border-radius: 50%;
@@ -189,12 +190,17 @@
         background: rgba(232, 89, 12, .9);
     }
 
-    #tup { bottom: 92px; }
-    #tdown { bottom: 26px; }
-    #tboost { bottom: 158px; font-size: 13px; }
+    #tdown { right: 22px; }
+    #tup { right: 86px; }
+    #touch #tboost { right: 150px; font-size: 13px; }
 
     .coarse #vrbtn {
-        bottom: 170px;
+        bottom: 240px;
+    }
+
+    .coarse #nav {
+        max-height: calc(100% - 270px);
+        min-height: 120px;
     }
 
     .coarse #hud {
