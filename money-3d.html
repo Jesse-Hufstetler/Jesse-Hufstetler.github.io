@@ -314,12 +314,12 @@
     paving(260, 140, 40, 0.01, 62);                                      // plaza paving
     box(1200, 0.05, 16, mat(0x3b3b3d), 100, 0.025, 0);                   // asphalt
     for (let x = -480; x < 680; x += 8) box(3.5, 0.06, 0.18, mat(0xe8e2c0), x, 0.03, 0); // center dashes
-    box(1200, 0.06, 0.12, mat(0xf2f2f2), 100, 0.03, 7.2);               // edge lines
+    box(1184, 0.06, 0.12, mat(0xf2f2f2), 92, 0.03, 7.2);               // edge lines
     box(1200, 0.06, 0.12, mat(0xf2f2f2), 100, 0.03, -7.2);
     const walk = mat(0xa9a7a2);
-    box(1200, 0.18, 4, walk, 100, 0.09, 10);                             // south sidewalk
+    box(1188, 0.18, 4, walk, 94, 0.09, 10);                              // south sidewalk (ends where the road turns)
     box(1200, 0.18, 4, walk, 100, 0.09, -10);                            // north sidewalk
-    for (let s = -1; s <= 1; s += 2) box(1200, 0.2, 0.2, mat(0x8d8b86), 100, 0.1, s * 8.1); // curbs
+    for (let s = -1; s <= 1; s += 2) box(s > 0 ? 1192 : 1200, 0.2, 0.2, mat(0x8d8b86), s > 0 ? 96 : 100, 0.1, s * 8.1); // curbs
     for (let i = 0; i < 8; i++) box(0.5, 0.06, 16, mat(0xf2f2f2), -6 + i * 1.0, 0.035, 0); // crosswalk
 
     // street lamps
@@ -390,7 +390,7 @@
         const w = 30 + rnd() * 40, d = 30 + rnd() * 40, h = 120 + rnd() * 240;
         building(x + w / 2, -110 - d / 2, w, d, h, Math.floor(rnd() * 4));
         const sx = x + w / 2 + 20, sz = 190 + d / 2 + rnd() * 120, sh = 80 + rnd() * 200, ss = Math.floor(rnd() * 4);
-        const clear = sx + w / 2 < 130 || sx - w / 2 > 410 || sz + d / 2 < 60 || sz - d / 2 > 340; // keep the 100 trillion cube's lot clear
+        const clear = (sx + w / 2 < 130 || sz + d / 2 < 60 || sz - d / 2 > 340) && sx + w / 2 < 400; // keep the 100 trillion cube's lot and the new city clear
         if (clear) building(sx, sz, w, d, sh, ss);
         x += w + 20 + rnd() * 30;
     }
@@ -814,66 +814,84 @@
     const shirts = [0xb23a3a, 0x3a7a4a, 0x2d5fa6, 0xd0a020, 0x8a3fa0, 0xe07a30, 0x30a0a0, 0xdddddd, 0x444444, 0xd05a8a];
     const pantsC = [0x33425a, 0x444444, 0x5a4a30, 0x2a2a2a, 0x3a5a3a, 0x6a6a7a];
     const pick = a => a[Math.floor(rnd() * a.length)];
-    function crowd(x0, z0, dx, dz, n, faceY) {           // n people in a line starting at (x0,z0), stepping (dx,dz)
+    function crowd(x0, z0, dx, dz, n, faceY, y = top100) {           // n people in a line starting at (x0,z0), stepping (dx,dz)
         for (let i = 0; i < n; i++) {
             const p = person(pick(shirts), pick(pantsC));
             const s = 0.9 + rnd() * 0.2;
             p.scale.setScalar(s);
-            p.position.set(x0 + dx * i + (rnd() - 0.5) * 0.25, top100, z0 + dz * i + (rnd() - 0.5) * 0.25);
+            p.position.set(x0 + dx * i + (rnd() - 0.5) * 0.25, y, z0 + dz * i + (rnd() - 0.5) * 0.25);
             p.rotation.y = faceY + (rnd() - 0.5) * 0.4;
             scene.add(p);
         }
     }
 
-    // supercenter (~16,500 m², a typical store) on the north half of the roof, storefront facing +z
-    {
-        const mx = 270, mz = 175, W = 150, D = 110, H = 8;
-        const body = mat(0xd9d3c3), blue = mat(0x0071ce), glass = mat(0x2a4a63);
-        box(W, H, D, body, mx, top100 + H / 2, mz);
-        box(W + 0.4, 1.0, D + 0.4, blue, mx, top100 + H - 0.5, mz);                 // blue band under the roofline
-        box(W + 0.2, 0.5, D + 0.2, mat(0x8a857a), mx, top100 + H + 0.25, mz);       // parapet cap
-        box(22, 6, 7, body, mx, top100 + 3, mz + D / 2 + 3.5);                      // entrance vestibule
-        box(20, 3.6, 0.1, glass, mx, top100 + 1.9, mz + D / 2 + 7.05);              // glass doors
-        box(24, 0.6, 8, blue, mx, top100 + 6.3, mz + D / 2 + 3.5);                  // canopy
-        for (let i = 0; i < 9; i++) box(1.8, 1.8, 1.8, mat(0xa9a9ad), mx - 60 + i * 15, top100 + H + 1.4, mz - 15 + (i % 3) * 14);  // rooftop HVAC
-        // old-school block letters: WAL*MART, each letter a 5x7 grid of little boxes
-        const FONT = {
-            W: ['10001', '10001', '10001', '10101', '10101', '11011', '10001'],
-            A: ['01110', '10001', '10001', '11111', '10001', '10001', '10001'],
-            L: ['10000', '10000', '10000', '10000', '10000', '10000', '11111'],
-            M: ['10001', '11011', '10101', '10101', '10001', '10001', '10001'],
-            R: ['11110', '10001', '10001', '11110', '10100', '10010', '10001'],
-            T: ['11111', '00100', '00100', '00100', '00100', '00100', '00100']
-        };
-        const px = 0.6, adv = 6 * px;
-        const ink = mat(0x0b2a5c), spark = mat(0xffc220);
-        const makeSign = () => {
-            const g = new THREE.Group();
-            let x = 0;
-            for (const ch of 'WAL*MART') {
-                if (ch === '*') {
-                    for (let i = 0; i < 3; i++) {
-                        const bar = box(5 * px, 0.7 * px, 0.5, spark, x + 2.5 * px, 3.5 * px, 0, g);
-                        bar.rotation.z = i * Math.PI / 3;
-                    }
-                } else {
-                    FONT[ch].forEach((row, r) => [...row].forEach((bit, k) => {
-                        if (bit === '1') box(px, px, 0.5, ink, x + (k + 0.5) * px, (6.5 - r) * px, 0, g);
-                    }));
+    // old-school block letters, each letter a 5x7 grid of little boxes (the '*' is a Walmart-style spark)
+    const FONT = {
+        W: ['10001', '10001', '10001', '10101', '10101', '11011', '10001'],
+        A: ['01110', '10001', '10001', '11111', '10001', '10001', '10001'],
+        L: ['10000', '10000', '10000', '10000', '10000', '10000', '11111'],
+        M: ['10001', '11011', '10101', '10101', '10001', '10001', '10001'],
+        R: ['11110', '10001', '10001', '11110', '10100', '10010', '10001'],
+        T: ['11111', '00100', '00100', '00100', '00100', '00100', '00100'],
+        D: ['11110', '10001', '10001', '10001', '10001', '10001', '11110'],
+        C: ['01111', '10000', '10000', '10000', '10000', '10000', '01111'],
+        E: ['11111', '10000', '10000', '11110', '10000', '10000', '11111'],
+        N: ['10001', '11001', '10101', '10101', '10011', '10001', '10001'],
+        I: ['11111', '00100', '00100', '00100', '00100', '00100', '11111'],
+        S: ['01111', '10000', '10000', '01110', '00001', '00001', '11110'],
+        U: ['10001', '10001', '10001', '10001', '10001', '10001', '01110'],
+        P: ['11110', '10001', '10001', '11110', '10000', '10000', '10000'],
+        O: ['01110', '10001', '10001', '10001', '10001', '10001', '01110'],
+        F: ['11111', '10000', '10000', '11110', '10000', '10000', '10000'],
+        B: ['11110', '10001', '10001', '11110', '10001', '10001', '11110'],
+        K: ['10001', '10010', '10100', '11000', '10100', '10010', '10001'],
+        H: ['10001', '10001', '10001', '11111', '10001', '10001', '10001'],
+        G: ['01111', '10000', '10000', '10011', '10001', '10001', '01111'],
+        Y: ['10001', '10001', '01010', '00100', '00100', '00100', '00100'],
+        ' ': ['00000', '00000', '00000', '00000', '00000', '00000', '00000']
+    };
+    function blockSign(word, px, ink, spark, depth = 0.5) {
+        const g = new THREE.Group();
+        const adv = 6 * px;
+        let x = 0;
+        for (const ch of word) {
+            if (ch === '*') {
+                for (let i = 0; i < 3; i++) {
+                    const bar = box(5 * px, 0.7 * px, depth, spark, x + 2.5 * px, 3.5 * px, 0, g);
+                    bar.rotation.z = i * Math.PI / 3;
                 }
-                x += adv;
+            } else {
+                FONT[ch].forEach((row, r) => [...row].forEach((bit, k) => {
+                    if (bit === '1') box(px, px, depth, ink, x + (k + 0.5) * px, (6.5 - r) * px, 0, g);
+                }));
             }
-            g.children.forEach(m => m.position.x -= (x - px) / 2);          // centre the word
-            return g;
-        };
+            x += adv;
+        }
+        g.children.forEach(m => m.position.x -= (x - px) / 2);          // centre the word
+        return g;
+    }
+
+    // supercenter (~16,500 m², a typical store) with its storefront facing +z; by = height of the ground it stands on
+    function supercenter(mx, mz, by, peopleY) {
+        const W = 150, D = 110, H = 8;
+        const body = mat(0xd9d3c3), blue = mat(0x0071ce), glass = mat(0x2a4a63);
+        box(W, H, D, body, mx, by + H / 2, mz);
+        box(W + 0.4, 1.0, D + 0.4, blue, mx, by + H - 0.5, mz);                 // blue band under the roofline
+        box(W + 0.2, 0.5, D + 0.2, mat(0x8a857a), mx, by + H + 0.25, mz);       // parapet cap
+        box(22, 6, 7, body, mx, by + 3, mz + D / 2 + 3.5);                      // entrance vestibule
+        box(20, 3.6, 0.1, glass, mx, by + 1.9, mz + D / 2 + 7.05);              // glass doors
+        box(24, 0.6, 8, blue, mx, by + 6.3, mz + D / 2 + 3.5);                  // canopy
+        for (let i = 0; i < 9; i++) box(1.8, 1.8, 1.8, mat(0xa9a9ad), mx - 60 + i * 15, by + H + 1.4, mz - 15 + (i % 3) * 14);  // rooftop HVAC
+        const ink = mat(0x0b2a5c), spark = mat(0xffc220);
         for (const sg of [1, -1]) {
-            const sign = makeSign();
-            sign.position.set(mx - (sg > 0 ? 28 : 0), top100 + H - 6, mz + sg * (D / 2 + 0.25));
+            const sign = blockSign('WAL*MART', 0.6, ink, spark);
+            sign.position.set(mx - (sg > 0 ? 28 : 0), by + H - 6, mz + sg * (D / 2 + 0.25));
             if (sg < 0) sign.rotation.y = Math.PI;
             scene.add(sign);
         }
-        crowd(mx - 6, mz + D / 2 + 10, 1.1, 0.25, 12, Math.PI);                     // shoppers heading in
+        crowd(mx - 6, mz + D / 2 + 10, 1.1, 0.25, 12, Math.PI, peopleY);                     // shoppers heading in
     }
+    supercenter(270, 175, top100, top100);
 
     // ferris wheel (turns in the x-y plane, boarding at the bottom)
     const wx = 300, wz = 252, R = 6, hubY = R + 1.6;
@@ -945,6 +963,303 @@
     place(vendor, cx + 1.1, top100, cz, -Math.PI / 2);
     crowd(cx - 1.6, cz, -0.75, 0, 9, Math.PI / 2);                       // queue stretches away to -x, facing the cart
 
+    // ---------------------------------------------------------------- the city keeps going
+    // The road turns the corner at the end of the street, wraps around the AI data center,
+    // and carries on past a Walmart (with a stop light, of course) to a stadium.
+    let stopLight = () => {};
+    function slab(x0, x1, z0, z1, h, m, y0 = 0) { return box(x1 - x0, h, z1 - z0, m, (x0 + x1) / 2, y0 + h / 2, (z0 + z1) / 2); }
+    const asph = mat(0x3b3b3d), dashM = mat(0xe8e2c0), whiteM = mat(0xf2f2f2), curbM = mat(0x8d8b86);
+    function tag(title, sub, w, x, y, z) { const s = sprite(title, sub, w); s.position.set(x, y, z); scene.add(s); return s; }
+    function addLamp(x, z, s, rot) {
+        const g = new THREE.Group();
+        box(0.12, 6, 0.12, lampM, 0, 3, 0, g);
+        box(0.1, 0.1, 1.4, lampM, 0, 6, -s * 0.7, g);
+        box(0.3, 0.12, 0.5, mat(0xfff3c4, { emissive: 0x887744 }), 0, 5.95, -s * 1.35, g);
+        g.position.set(x, 0.18, z); g.rotation.y = rot;
+        scene.add(g);
+    }
+    // north-south leg (x = 700) and the new east-west leg (z = 420)
+    slab(692, 708, -8, 428, 0.05, asph);
+    slab(692, 1500, 412, 428, 0.05, asph);
+    for (let z = 16; z < 408; z += 8) box(0.18, 0.06, 3.5, dashM, 700, 0.03, z);
+    for (let x = 716; x < 1496; x += 8) box(3.5, 0.06, 0.18, dashM, x, 0.03, 420);
+    slab(692.74, 692.86, 8, 412, 0.06, whiteM); slab(707.14, 707.26, -8, 412, 0.06, whiteM);
+    slab(708, 1500, 412.8, 412.92, 0.06, whiteM); slab(708, 1500, 427.08, 427.2, 0.06, whiteM);
+    slab(700, 712, -12, -8, 0.18, walk);                        // sidewalks follow the road round both corners
+    slab(688, 692, 8, 432, 0.18, walk); slab(708, 712, -12, 408, 0.18, walk);
+    slab(708, 1500, 408, 412, 0.18, walk); slab(688, 1500, 428, 432, 0.18, walk);
+    slab(700, 708.2, -8.2, -8, 0.2, curbM); slab(691.8, 692, 8, 428, 0.2, curbM); slab(708, 708.2, -8, 408, 0.2, curbM);
+    slab(708, 1500, 411.8, 412, 0.2, curbM); slab(692, 1500, 428, 428.2, 0.2, curbM);
+    for (let z = 30; z <= 420; z += 30) for (const s of [-1, 1]) addLamp(700 + s * 11.5, z, s, Math.PI / 2);
+    for (let x = 730; x <= 1490; x += 30) for (const s of [-1, 1]) addLamp(x, 420 + s * 11.5, s, 0);
+    for (const [px, pz, ry, col] of [[696, 200, Math.PI / 2, 0xd8d8d0], [704, 330, -Math.PI / 2, 0x2f5d86], [900, 416, Math.PI, 0xb8312f], [1010, 424, 0, 0xe0b020], [1300, 416, Math.PI, 0x4a7a4a]]) {
+        const cc = car(col); cc.position.set(px, 0.05, pz); cc.rotation.y = ry; scene.add(cc);
+    }
+
+    // cheap parked cars (4 meshes each, shared geometry/materials)
+    const pcBody = new THREE.BoxGeometry(4.4, 0.75, 1.8), pcCab = new THREE.BoxGeometry(2.3, 0.6, 1.6), pcSkirt = new THREE.BoxGeometry(3.8, 0.3, 1.9);
+    const pcDark = mat(0x151515), pcGlass = mat(0x1d252c);
+    const pcCols = [0xb8312f, 0xd8d8d0, 0x2f5d86, 0x2a2a2d, 0x8a8f94, 0x3d6b46, 0xe0b020, 0x7a4a2a].map(c => mat(c));
+    function parkedCar(x, z, ry) {
+        const m = pcCols[Math.floor(rnd() * pcCols.length)];
+        const g = new THREE.Group();
+        const b = new THREE.Mesh(pcBody, m); b.position.y = 0.7; g.add(b);
+        const c = new THREE.Mesh(pcCab, m); c.position.set(-0.2, 1.35, 0); g.add(c);
+        const k = new THREE.Mesh(pcSkirt, pcDark); k.position.y = 0.3; g.add(k);
+        const w = new THREE.Mesh(pcCab, pcGlass); w.position.set(-0.2, 1.37, 0); w.scale.set(1.01, 0.7, 0.96); g.add(w);
+        g.position.set(x, 0.04, z); g.rotation.y = ry; scene.add(g);
+    }
+    const trunkM = mat(0x6b4a2e), leafMs = [mat(0x3f7a3c), mat(0x4d8a43), mat(0x336b38)];
+    const trunkG = new THREE.CylinderGeometry(0.25, 0.35, 2.4, 8), leafG = new THREE.IcosahedronGeometry(1.8, 1);
+    function tree(x, z, s = 1) {
+        const t = new THREE.Mesh(trunkG, trunkM); t.position.set(x, 1.2 * s, z); t.scale.setScalar(s); scene.add(t);
+        const l = new THREE.Mesh(leafG, leafMs[Math.floor(rnd() * 3)]); l.position.set(x, 3.6 * s, z); l.scale.setScalar(s); scene.add(l);
+    }
+    function ribTexture(base, rib) {
+        const c = document.createElement('canvas'); c.width = c.height = 64;
+        const g = c.getContext('2d');
+        g.fillStyle = base; g.fillRect(0, 0, 64, 64);
+        g.fillStyle = rib; g.fillRect(0, 0, 3, 64); g.fillRect(32, 0, 2, 64);
+        const t = new THREE.CanvasTexture(c);
+        t.wrapS = t.wrapT = THREE.RepeatWrapping; t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 8;
+        return t;
+    }
+    function ribbedBox(x, z, w, h, d, base, rib, roofCol) {
+        const tex = ribTexture(base, rib);
+        const side = rep => { const t = tex.clone(); t.needsUpdate = true; t.repeat.set(rep, 1); return new THREE.MeshLambertMaterial({ map: t }); };
+        const sx = side(d / 2), sz = side(w / 2), roof = mat(roofCol);
+        const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), [sx, sx, roof, roof, sz, sz]);
+        m.position.set(x, h / 2, z); scene.add(m);
+        return m;
+    }
+
+    // ---- AI data center -------------------------------------------------------------
+    // A typical hyperscale AI campus: one huge windowless hall, rooftop chillers, a row of backup
+    // generators, a substation with transmission lines, cooling towers and a water tank.
+    const DX = 545;
+    {
+        paving(225, 110, 552.5, 0.01, 105);
+        ribbedBox(DX, 105, 170, 14, 70, '#b9bec4', '#9097a0', 0x8a8f95);
+        box(170.6, 0.6, 70.6, mat(0x7a7f85), DX, 14.3, 105);                      // roof cap
+        ribbedBox(DX, 62, 44, 8, 14, '#d4d6d8', '#b3b7bb', 0x777b80);
+        box(36, 4, 0.1, mat(0x2a4a63), DX, 3.2, 54.95);                           // glass lobby
+        box(40, 0.5, 4, mat(0x4a4f55), DX, 6.2, 53);                              // canopy
+        const sign = blockSign('DATA CENTER', 0.7, mat(0x12355f), mat(0x12355f), 0.6);
+        sign.position.set(DX, 9, 69.7); sign.rotation.y = Math.PI; scene.add(sign);
+        // rooftop chillers: boxes with fans on top
+        const units = new THREE.InstancedMesh(new THREE.BoxGeometry(6, 2, 4), mat(0xcfd3d6), 60);
+        const fans = new THREE.InstancedMesh(new THREE.CylinderGeometry(1.5, 1.5, 0.15, 16), mat(0x1c1f22), 120);
+        const m4 = new THREE.Matrix4(); let ui = 0, fi = 0;
+        for (const z of [82, 105, 128]) for (let i = 0; i < 20; i++) {
+            const x = 464.5 + i * 8.4;
+            units.setMatrixAt(ui++, m4.makeTranslation(x, 15.3, z));
+            for (const fx of [-1.5, 1.5]) fans.setMatrixAt(fi++, m4.makeTranslation(x + fx, 16.38, z));
+        }
+        units.frustumCulled = fans.frustumCulled = false;
+        scene.add(units, fans);
+        // backup generators (containers with exhaust stacks)
+        const genM = mat(0x7d8a96), stackM = mat(0x2b2b2e);
+        for (const gx of [641, 653]) for (let i = 0; i < 6; i++) {
+            const gz = 78 + i * 11.5;
+            box(3.4, 3.2, 9, genM, gx, 1.64, gz);
+            const st = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.25, 4.2, 8), stackM);
+            st.position.set(gx, 5.3, gz - 3.2); scene.add(st);
+        }
+        // cooling towers and a water tank behind the hall
+        for (let i = 0; i < 5; i++) {
+            box(9, 6, 9, mat(0xb8bdc2), 482 + i * 14, 3, 150);
+            const f = new THREE.Mesh(new THREE.CylinderGeometry(3.2, 3.2, 0.2, 16), mat(0x1c1f22));
+            f.position.set(482 + i * 14, 6.1, 150); scene.add(f);
+        }
+        const tank = new THREE.Mesh(new THREE.CylinderGeometry(5, 5, 11, 20), mat(0xcdd3d8)); tank.position.set(615, 5.5, 152); scene.add(tank);
+        const dome = new THREE.Mesh(new THREE.SphereGeometry(5, 20, 8, 0, Math.PI * 2, 0, Math.PI / 2), mat(0xb5bcc2)); dome.position.set(615, 11, 152); scene.add(dome);
+        // substation: gravel pad, transformers, a see-through fence
+        slab(412, 438, 80, 122, 0.1, mat(0x77736b));
+        for (const z of [90, 101, 112]) {
+            box(6, 5, 4, mat(0x6f7d86), 425, 2.6, z);
+            box(6.4, 3.4, 0.4, mat(0x56626a), 425, 2.2, z + 2.2);
+            for (const bx of [-1.6, 0, 1.6]) { const b = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.3, 2, 8), mat(0xd9d4c8)); b.position.set(425 + bx, 6.4, z); scene.add(b); }
+        }
+        const fenceM = mat(0x555a5e, { transparent: true, opacity: 0.4 });
+        slab(412, 438, 79.9, 80.1, 2.2, fenceM); slab(412, 438, 121.9, 122.1, 2.2, fenceM);
+        slab(411.9, 412.1, 80, 122, 2.2, fenceM); slab(437.9, 438.1, 80, 122, 2.2, fenceM);
+        // transmission pylons marching across the lot
+        const pylonM = mat(0x8d949a), lineM = mat(0x2b2b2e);
+        const pylons = [45, 165, 285];
+        for (const z of pylons) {
+            const p = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 1.6, 27, 4), pylonM);
+            p.rotation.y = Math.PI / 4; p.position.set(425, 13.5, z); scene.add(p);
+            box(14, 0.3, 0.3, pylonM, 425, 22, z); box(10, 0.3, 0.3, pylonM, 425, 17, z);
+        }
+        for (let i = 0; i < pylons.length - 1; i++) {
+            const zc = (pylons[i] + pylons[i + 1]) / 2, len = pylons[i + 1] - pylons[i];
+            for (const [dx, y] of [[-7, 22], [7, 22], [-5, 17], [5, 17], [0, 27.2]]) box(0.08, 0.08, len, lineM, 425 + dx, y, zc);
+        }
+        // staff parking, driveway and gate house
+        slab(464, 541, 16, 52, 0.05, asph);
+        slab(541, 549, 7.8, 12, 0.22, asph); slab(541, 549, 12, 55, 0.05, asph);
+        for (const [rz, ry] of [[22, Math.PI / 2], [46, -Math.PI / 2]]) for (let i = 0; i < 24; i++) if (rnd() < 0.4) parkedCar(468 + i * 3, rz, ry);
+        box(3, 3, 3, mat(0xd8d3c3), 552, 1.5, 26); box(3.4, 0.3, 3.4, mat(0x555a5e), 552, 3.1, 26);
+        box(0.3, 1.2, 0.3, mat(0xb8312f), 550, 0.6, 24);
+        box(6.5, 0.15, 0.15, mat(0xe8e2c0), 546.6, 1.1, 24);
+        for (let i = 0; i < 9; i++) tree(468 + i * 9.5, 59, 0.9 + rnd() * 0.4);
+        // $10 billion = 500 million $20 bills, on the front lawn
+        const dcMoney = block('$10 billion', 'one big AI data center (rough)', 100, 125, 40000, 585, 0.02, 34, 10);
+        dcMoney.noPreset = true;
+        place(person(0x2d5fa6, 0x2a2a2a), 596, 0, 36, 1.4);
+    }
+
+    // ---- Walmart Supercenter on the ground, with parking, a stop light and its own price tag -------------
+    const WX = 870, WZ = 270;
+    {
+        supercenter(WX, WZ, 0, 0.04);
+        // parking lot: stall lines painted on a canvas texture (8 px per metre)
+        const LX0 = 785, LZ0 = 325, LW = 170, LD = 83, PX = 8;
+        const c = document.createElement('canvas'); c.width = LW * PX; c.height = LD * PX;
+        const g = c.getContext('2d');
+        g.fillStyle = '#3b3b3e'; g.fillRect(0, 0, c.width, c.height);
+        for (let i = 0; i < 3000; i++) { g.fillStyle = rnd() < 0.5 ? 'rgba(0,0,0,.12)' : 'rgba(255,255,255,.06)'; g.fillRect(rnd() * c.width, rnd() * c.height, 2 + rnd() * 6, 2 + rnd() * 6); }
+        g.fillStyle = '#e8e8e0';
+        const bands = [[345, 356], [366, 377], [387, 398]];
+        for (const [z0, z1] of bands) for (let j = 0; j <= 60; j++) g.fillRect(j * 2.8 * PX - 1, (z0 - LZ0) * PX, 3, (z1 - z0) * PX);
+        g.fillStyle = '#e8c82a'; g.fillRect(0, (333 - LZ0) * PX, c.width, 4); g.fillRect(0, (343 - LZ0) * PX, c.width, 4);   // fire lane
+        const lt = new THREE.CanvasTexture(c); lt.colorSpace = THREE.SRGBColorSpace; lt.anisotropy = 8;
+        const lot = new THREE.Mesh(new THREE.PlaneGeometry(LW, LD), new THREE.MeshLambertMaterial({ map: lt }));
+        lot.rotation.x = -Math.PI / 2; lot.position.set(LX0 + LW / 2, 0.03, LZ0 + LD / 2); scene.add(lot);
+        for (const [z0, z1] of bands) for (let j = 0; j < 60; j++) {
+            if (rnd() > 0.2 || (j > 4 && j < 7)) continue;
+            const x = LX0 + (j + 0.5) * 2.8;
+            parkedCar(x, z0 + (z1 - z0) * 0.25, Math.PI / 2);
+            if (rnd() < 0.4) parkedCar(x, z0 + (z1 - z0) * 0.75, -Math.PI / 2);
+        }
+        for (const lz of [361, 382]) for (let i = 0; i < 5; i++) {   // lot light poles
+            const lx = 810 + i * 34;
+            box(0.3, 10, 0.3, lampM, lx, 5, lz);
+            box(3, 0.2, 0.5, lampM, lx, 10, lz);
+            for (const sx of [-1, 1]) box(0.9, 0.2, 0.5, mat(0xfff3c4, { emissive: 0x887744 }), lx + sx * 1.3, 9.85, lz);
+        }
+        for (let i = 0; i < 6; i++) box(1.6, 1.1, 5, mat(0xb9bec4, { transparent: true, opacity: 0.7 }), 815 + i * 22, 0.6, 337.5);   // cart corrals
+        slab(796, 806, 408, 412.2, 0.22, asph); slab(930, 940, 408, 412.2, 0.22, asph);   // driveways over the sidewalk
+        for (let i = 0; i < 8; i++) box(0.5, 0.06, 16, whiteM, 797 + i * 1.0, 0.03, 420);  // crosswalk
+        slab(792.6, 793, 412, 428, 0.06, whiteM); slab(807, 807.4, 412, 428, 0.06, whiteM); // stop lines
+        // the stop light (every Walmart has one, it's the law): mast arm over the road, a head for each direction
+        box(0.35, 7, 0.35, lampM, 791.5, 3.7, 410);
+        box(0.25, 0.25, 15.5, lampM, 791.5, 6.9, 417.75);
+        const lightMats = { r: new THREE.MeshBasicMaterial(), y: new THREE.MeshBasicMaterial(), g: new THREE.MeshBasicMaterial() };
+        const discG = new THREE.CircleGeometry(0.17, 16);
+        for (const [hz, ry] of [[424, -Math.PI / 2], [416, Math.PI / 2]]) {
+            const head = new THREE.Group();
+            box(0.5, 1.5, 0.5, mat(0x1a1a1a), 0, 0, 0, head);
+            box(0.8, 1.9, 0.08, mat(0x1a1a1a), 0, 0, 0.3, head);
+            [['r', 0.5], ['y', 0], ['g', -0.5]].forEach(([k, dy]) => {
+                const d = new THREE.Mesh(discG, lightMats[k]); d.position.set(0, dy, 0.26); head.add(d);
+                box(0.4, 0.05, 0.25, mat(0x1a1a1a), 0, dy + 0.2, 0.33, head);
+            });
+            head.position.set(791.5, 5.9, hz); head.rotation.y = ry; scene.add(head);
+        }
+        stopLight = t => {
+            const ph = t % 18, on = ph < 10 ? 'g' : ph < 12 ? 'y' : 'r';
+            lightMats.r.color.setHex(on === 'r' ? 0xff2a2a : 0x3a0d0d);
+            lightMats.y.color.setHex(on === 'y' ? 0xffc820 : 0x3a300a);
+            lightMats.g.color.setHex(on === 'g' ? 0x39e86a : 0x0c3a18);
+        };
+        for (const [qx, qz, ry] of [[784, 424, 0], [776, 424, 0], [818, 416, Math.PI]]) { const cc = car(qx % 2 ? 0x2f5d86 : 0xd8d8d0); cc.position.set(qx, 0.05, qz); cc.rotation.y = ry; scene.add(cc); }
+        tree(790, 340, 1.1); tree(950, 340, 1.1);
+        // cost tags: this store, and the one on the roof of the $100 trillion block
+        tag('$80 million', 'Walmart Supercenter (rough)', 26, 270, top100 + 24, 175);
+        // $80 million = 4 million $20 bills: about a 1.7 m cube
+        const wmMoney = block('$80 million', 'one Walmart Supercenter (rough)', 10, 25, 16000, 845, 0.04, 402, 4.5);
+        wmMoney.noPreset = true;
+        place(person(0xd0a020, 0x333333), 847.2, 0.04, 402.5, -1.2);
+    }
+
+    // ---- stadium (an NFL-sized bowl) with the money that built it standing on the 50 -----------------------
+    const SX = 1190, SZ = 565;
+    {
+        paving(330, 36, SX, 0.01, 450);
+        for (let i = 0; i < 14; i++) tree(SX - 160 + i * 24.6, 436, 1);
+        crowd(SX - 8, 462, 1.0, 0.3, 16, 0, 0.04);
+        const G = new THREE.Group(); G.position.set(SX, 0, SZ); scene.add(G);
+        const bowl = new THREE.Group(); bowl.scale.set(1.6, 1, 1); G.add(bowl);
+        const dbl = THREE.DoubleSide;
+        const concrete = mat(0xb9b6ae, { side: dbl });
+        const seatMs = [mat(0x2149a8, { side: dbl }), mat(0x1b3d8a, { side: dbl }), mat(0xc2392f, { side: dbl }), mat(0xa32d26, { side: dbl })];
+        const walkM = mat(0xcfcdc6, { side: dbl });
+        const floor = new THREE.Mesh(new THREE.CircleGeometry(41, 64), mat(0x6f7378)); floor.rotation.x = -Math.PI / 2; floor.position.y = 0.04; bowl.add(floor);
+        // two decks of seating, a wide concourse between them
+        const R0 = 40, ROWS = 29, RUN = 1.5, RISE = 1.05, CONC = 14;
+        let r = R0, y = 0.6; const segs = [];
+        let segStart = { r, y };
+        for (let i = 0; i < ROWS; i++) {
+            const riser = new THREE.Mesh(new THREE.CylinderGeometry(r, r, RISE, 64, 1, true), concrete);
+            riser.position.y = y + RISE / 2; bowl.add(riser);
+            y += RISE;
+            const run = i === CONC ? 6 : RUN;
+            const tread = new THREE.Mesh(new THREE.RingGeometry(r, r + run, 64), i === CONC ? walkM : seatMs[(i < CONC ? 0 : 2) + (i % 2)]);
+            tread.rotation.x = -Math.PI / 2; tread.position.y = y; bowl.add(tread);
+            if (i === CONC) segs.push([segStart, { r, y: y - RISE }]);
+            r += run;
+            if (i === CONC) segStart = { r, y };
+        }
+        segs.push([segStart, { r, y }]);
+        const rTop = r, yTop = y, hOut = yTop + 5, rOut = rTop + 0.5;
+        for (const [a, b] of segs) {                                  // radial aisles
+            const len = Math.hypot(b.r - a.r, b.y - a.y), tilt = Math.atan2(b.y - a.y, b.r - a.r);
+            for (let k = 0; k < 40; k++) {
+                const pv = new THREE.Group(); pv.rotation.y = -k / 40 * Math.PI * 2; bowl.add(pv);
+                const s = box(len, 0.06, 0.7, walkM, (a.r + b.r) / 2, (a.y + b.y) / 2 + 0.55, 0, pv); s.rotation.z = tilt;
+            }
+        }
+        // facade: concrete piers and a dark glazing band
+        const fc = document.createElement('canvas'); fc.width = 128; fc.height = 128;
+        const fg = fc.getContext('2d');
+        fg.fillStyle = '#d3d1ca'; fg.fillRect(0, 0, 128, 128);
+        fg.fillStyle = '#2b3a4a'; fg.fillRect(0, 36, 128, 58);
+        fg.fillStyle = '#a9a69d'; for (let k = 0; k < 4; k++) fg.fillRect(k * 32, 36, 3, 58);
+        fg.fillStyle = 'rgba(255,255,255,.12)'; fg.fillRect(0, 36, 128, 14);
+        const ft = new THREE.CanvasTexture(fc); ft.wrapS = ft.wrapT = THREE.RepeatWrapping; ft.colorSpace = THREE.SRGBColorSpace; ft.anisotropy = 8; ft.repeat.set(24, hOut / 9);
+        const wall = new THREE.Mesh(new THREE.CylinderGeometry(rOut, rOut, hOut, 96, 1, true), new THREE.MeshLambertMaterial({ map: ft, side: dbl }));
+        wall.position.y = hOut / 2; bowl.add(wall);
+        const roof = new THREE.Mesh(new THREE.RingGeometry(rTop - 8, rOut + 2.5, 96), mat(0xe6e8ea, { side: dbl }));
+        roof.rotation.x = -Math.PI / 2; roof.position.y = hOut; bowl.add(roof);
+        const lip = new THREE.Mesh(new THREE.CylinderGeometry(rTop - 8, rTop - 8, 1.2, 96, 1, true), mat(0x4a4f55, { side: dbl }));
+        lip.position.y = hOut - 0.6; bowl.add(lip);
+        // the pitch: mown stripes, end zones, yard lines
+        const FW = 110, FD = 49, FP = 10, EZ = 9.14;
+        const pc = document.createElement('canvas'); pc.width = FW * FP; pc.height = FD * FP;
+        const pg = pc.getContext('2d');
+        for (let k = 0; k < 12; k++) { pg.fillStyle = k % 2 ? '#3a8435' : '#41913b'; pg.fillRect(k * EZ * FP, 0, EZ * FP + 1, pc.height); }
+        pg.fillStyle = '#1d3f8f'; pg.fillRect(0, 0, EZ * FP, pc.height);
+        pg.fillStyle = '#b02a2a'; pg.fillRect((FW - EZ) * FP, 0, EZ * FP, pc.height);
+        pg.fillStyle = '#f2f2f2';
+        for (let k = 0; k <= 20; k++) pg.fillRect((EZ + k * 4.57) * FP - 2, 0, k % 2 ? 3 : 5, pc.height);
+        pg.fillRect(0, 0, pc.width, 6); pg.fillRect(0, pc.height - 6, pc.width, 6);
+        pg.beginPath(); pg.arc(pc.width / 2, pc.height / 2, 55, 0, Math.PI * 2); pg.fillStyle = '#ffc220'; pg.fill();
+        const ptex = new THREE.CanvasTexture(pc); ptex.colorSpace = THREE.SRGBColorSpace; ptex.anisotropy = 8;
+        const pitch = new THREE.Mesh(new THREE.PlaneGeometry(FW, FD), new THREE.MeshLambertMaterial({ map: ptex }));
+        pitch.rotation.x = -Math.PI / 2; pitch.position.y = 0.07; G.add(pitch);
+        const goalM = mat(0xf2c81c), boardM = mat(0x101a2e), screenB = new THREE.MeshBasicMaterial({ color: 0x2a6bd6 });
+        for (const sx of [-1, 1]) {
+            const gx = sx * (FW / 2 - 0.5);
+            box(0.25, 3, 0.25, goalM, gx, 1.5, 0, G); box(0.2, 0.2, 5.6, goalM, gx, 3, 0, G);
+            for (const sz of [-1, 1]) box(0.15, 6, 0.15, goalM, gx, 6, sz * 2.8, G);
+            box(1.2, 8, 22, boardM, sx * (rTop * 1.6 - 9), 32, 0, G);                         // scoreboards
+            box(0.2, 7, 20.5, screenB, sx * (rTop * 1.6 - 9) - sx * 0.7, 32, 0, G);
+        }
+        for (const px of [-1, 1]) for (const pz of [-1, 1]) {                                // light towers outside the bowl
+            const tx0 = px * 108, tz0 = pz * 70;
+            const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.8, 55, 8), lampM); pole.position.set(tx0, 27.5, tz0); G.add(pole);
+            const pan = box(10, 6, 1, new THREE.MeshBasicMaterial({ color: 0xfff6d8 }), tx0, 55, tz0, G);
+            pan.rotation.y = Math.atan2(-tx0, -tz0);
+        }
+        const ssign = blockSign('STADIUM', 1.3, mat(0xc2392f), mat(0xc2392f), 2.5);
+        ssign.position.set(SX, 20, SZ - rOut + 0.8); ssign.rotation.y = Math.PI; scene.add(ssign);
+        // $2 billion = 100 million $20 bills: about 7.8 x 3.3 x 4.4 m. It would fit on the 50, but it lives up on the north rim
+        const stMoney = block('$2 billion', 'one NFL stadium (rough)', 50, 50, 40000, SX, hOut + 0.02, SZ - 85.5, 7);
+        stMoney.noPreset = true;
+        place(person(0xb23a3a, 0x33425a), SX + 6, hOut + 0.02, SZ - 85, 0.3);
+    }
+
     // ---------------------------------------------------------------- camera / controls
     let yaw = 0, pitch = 0;
     // The camera rides on a rig so VR can move the "room" while the headset moves the camera.
@@ -977,10 +1292,9 @@
 
     const V = (x, y, z) => new THREE.Vector3(x, y, z);
     const presets = [
-        { name: 'Street level', from: V(-6, 1.7, 25), to: V(-3, 2.2, 0) },
-        { name: 'Whole scene', from: V(70, 120, 230), to: V(30, 30, 20) }
+        { name: 'Street level', from: V(-6, 1.7, 25), to: V(-3, 2.2, 0) }
     ];
-    exhibits.forEach(ex => {
+    exhibits.filter(ex => !ex.noPreset).forEach(ex => {
         const s = Math.max(ex.size.x, ex.size.y, ex.size.z);
         const dist = Math.max(s * 2.4, 0.035);
         presets.push({
@@ -990,7 +1304,15 @@
             to: ex.center.clone()
         });
     });
-    $('nav').innerHTML = presets.map((p, i) => `<button data-i="${i}"><small>${(i + 1) % 10}</small>${p.name}</button>`).join('');
+    presets.push(
+        { name: 'AI data center', from: V(616, 3, 0), to: V(570, 9, 70) },
+        { name: 'Walmart', from: V(847, 1.8, 417), to: V(850, 4, 340) },
+        { name: 'Stadium', from: V(SX + 4, 47, 458), to: V(SX, 12, 575) }
+    );
+    // number keys 1-0 for the first ten, then - = [ ] for the rest
+    const PRESET_KEYS = ['Digit1', 'Digit2', 'Digit3', 'Digit4', 'Digit5', 'Digit6', 'Digit7', 'Digit8', 'Digit9', 'Digit0', 'Minus', 'Equal', 'BracketLeft', 'BracketRight'];
+    const PRESET_LABELS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-', '=', '[', ']'];
+    $('nav').innerHTML = presets.map((p, i) => `<button data-i="${i}"><small>${PRESET_LABELS[i] || ''}</small>${p.name}</button>`).join('');
     $('nav').addEventListener('click', e => {
         const b = e.target.closest('button');
         if (b) flyTo(presets[+b.dataset.i]);
@@ -1019,7 +1341,8 @@
     addEventListener('keydown', e => {
         if (e.target.tagName === 'INPUT' && e.key !== 'Escape') return;
         keys.add(e.code);
-        if (/^Digit[0-9]$/.test(e.code)) { const k = (+e.code.slice(5) + 9) % 10; if (presets[k]) flyTo(presets[k]); }
+        const pk = PRESET_KEYS.indexOf(e.code);
+        if (pk >= 0 && presets[pk]) flyTo(presets[pk]);
         if (e.code === 'Space') e.preventDefault();
     });
     addEventListener('keyup', e => keys.delete(e.code));
@@ -1218,6 +1541,7 @@
         updateBlocks();
         animateBirds(now / 1000);
         animateWheel(now / 1000);
+        stopLight(now / 1000);
         screenM.color.setHSL(0.58 + Math.sin(now / 700) * 0.08, 0.7, 0.55 + Math.sin(now / 90) * 0.08);   // TV flicker
         $('mult').textContent = '×' + Math.pow(10, +$('speed').value).toFixed(2);
         $('readout').textContent = 'Speed ' + fmtLen(vel.length()) + '/s · altitude ' + fmtLen(pos.y);
