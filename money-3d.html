@@ -592,6 +592,11 @@
         #include <common>
         #include <logdepthbuf_pars_fragment>
         uniform vec3 uBase;
+        // tuned look (no distance fade: detail is only antialiased by pixel size)
+        const float TOP_DETAIL = 1.3;   // strength of border, disc and corner marks on bill faces
+        const float TOP_BLUR = 0.55;    // edge softness multiplier on bill faces
+        const float GAP_STR = 1.0;      // darkness of the gaps between stacked bills
+        const float GAP_W = 0.10;       // width of those gaps
         varying vec3 vC; varying vec3 vObjN; varying vec3 vWN; varying vec3 vP;
         float hash(vec3 p) { p = fract(mod(p, 251.0) * 0.3183099 + 0.1); p *= 17.0; return fract(p.x * p.y * p.z * (p.x + p.y + p.z)); }
 
@@ -602,19 +607,18 @@
             float bd = min(min(p.x, AR - p.x), min(p.y, 1.0 - p.y));
             vec3 green = vec3(0.55, 0.72, 0.47) * (0.94 + 0.12 * h);
             vec3 dark = vec3(0.27, 0.42, 0.26);
-            float aa = max(pw, 0.004);
+            float aa = max(pw * TOP_BLUR, 0.004);
             float ring = 1.0 - smoothstep(0.012, 0.012 + aa, abs(bd - 0.07));
-            vec3 c = mix(green, dark, ring * 0.8);
+            vec3 c = mix(green, dark, ring * 0.8 * TOP_DETAIL);
             float r = length(p - vec2(AR * 0.5, 0.5));
             float disc = 1.0 - smoothstep(0.27, 0.27 + aa, r);
             float discRing = 1.0 - smoothstep(0.012, 0.012 + aa, abs(r - 0.29));
-            c = mix(c, green * 1.15 + 0.03, disc * 0.9);
-            c = mix(c, dark, discRing * 0.7);
+            c = mix(c, green * 1.15 + 0.03, disc * 0.9 * TOP_DETAIL);
+            c = mix(c, dark, discRing * 0.7 * TOP_DETAIL);
             vec2 cm = abs(vec2(min(p.x, AR - p.x), min(p.y, 1.0 - p.y)) - vec2(0.2, 0.2));
             float mark = 1.0 - smoothstep(0.05, 0.05 + aa, max(cm.x, cm.y));
-            c = mix(c, dark, mark * 0.8);
-            vec3 meanTop = vec3(0.50, 0.66, 0.44);
-            return mix(c, meanTop, smoothstep(-4.5, -0.5, log2(max(pw, 1e-4))));
+            c = mix(c, dark, mark * 0.8 * TOP_DETAIL);
+            return c;
         }
 
         void main() {
@@ -630,15 +634,13 @@
                 float fy = fract(vC.y), fh = fract(hz);
                 float pxy = fwidth(vC.y), pxh = fwidth(hz);
                 float ey = min(fy, 1.0 - fy), eh = min(fh, 1.0 - fh);
-                float wy = 0.04 + pxy * 0.6;
+                float wy = GAP_W + pxy * 0.6;
                 float lineY = 1.0 - smoothstep(wy, wy + pxy + 0.03, ey);   // gaps between bills
                 float lineH = 1.0 - smoothstep(0.0, 0.02 + pxh * 0.8, eh); // seams between neighbours
-                float lpy = log2(max(pxy, 1e-4)), lph = log2(max(pxh, 1e-4));
+                float lpy = log2(max(pxy, 1e-4));
                 float tint = mix(hb, 0.5, smoothstep(-5.0, -2.0, lpy));
-                lineY = mix(lineY, 0.1, smoothstep(-4.0, 0.0, lpy));
-                lineH = mix(lineH, 0.04, smoothstep(-4.0, 0.0, lph));
                 vec3 paper = vec3(0.70, 0.80, 0.64) * (0.93 + 0.14 * tint);
-                col = mix(paper, vec3(0.36, 0.50, 0.34), lineY * 0.8);
+                col = mix(paper, vec3(0.36, 0.50, 0.34), lineY * GAP_STR);
                 col *= 1.0 - 0.25 * lineH;
             }
             vec3 L = normalize(vec3(0.5, 1.0, 0.8));
