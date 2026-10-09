@@ -1,0 +1,331 @@
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Weather Consensus</title>
+<style>
+@font-face{font-family:Seg;src:url(https://cdn.jsdelivr.net/npm/dseg@0.46.0/fonts/DSEG14-Classic/DSEG14Classic-Regular.woff2) format('woff2')}
+:root{--bg:#141414;--panel:#1c1c1c;--fg:#e8e8e8;--dim:#969696;--line:#333333}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:13px/1.35 system-ui,"Segoe UI",sans-serif}
+header{padding:10px 16px;display:flex;flex-wrap:wrap;gap:8px 22px;align-items:center;border-bottom:1px solid var(--line)}
+h1{font-size:16px;margin:0;font-weight:600}
+.dim{color:var(--dim)} label{color:var(--dim);white-space:nowrap} label.m{color:var(--fg);margin-right:6px}
+select,input{vertical-align:middle}
+#warn{padding:4px 16px;color:#f0b35a;font-size:12px}
+#wrap{position:relative;padding:8px 16px 0;overflow-x:hidden}
+canvas{display:block}
+#over{position:absolute;left:16px;top:8px;pointer-events:none}
+#panel{position:sticky;bottom:0;background:var(--panel);border-top:1px solid var(--line);padding:6px 16px 8px;margin-top:10px}
+#when{font:26px/1.3 Seg,system-ui,sans-serif;margin-bottom:6px;display:flex;align-items:baseline;gap:16px} /* 2x the page's 13px; symbols DSEG lacks (·) fall back to system-ui */
+#sun{margin-left:auto;font:13px/1.35 system-ui,"Segoe UI",sans-serif;color:var(--dim);white-space:nowrap} /* sunrise/sunset, normal font, right end of the row */
+#tbl{position:relative}
+#tbl::after{content:"";position:absolute;inset:0;background:rgba(36,36,36,.38);opacity:var(--dark,0);pointer-events:none} /* same wash as the chart's night shading (NIGHT @ .38), faded by --dark */
+table{border-collapse:separate;border-spacing:2px;width:100%}
+th,td{padding:2px 4px;text-align:center;font-variant-numeric:tabular-nums;font-size:12px}
+#tbl td{padding-top:var(--padv,2px);padding-bottom:var(--padv,2px)} /* grown by fitBarH when there's room to spare */
+th{width:1%;padding:2px 8px} th.med{width:auto} /* every column shrinks to fit; Median soaks up the leftover width */
+th{color:var(--dim);font-weight:500} td.m{text-align:left;color:var(--dim);white-space:nowrap}
+td.v{border-radius:3px;color:#000}
+button{background:var(--panel);color:var(--fg);border:1px solid var(--line);border-radius:4px;padding:2px 10px;cursor:pointer;font:inherit}
+button:hover{border-color:#595959}
+input[type=text],input[type=password]{background:var(--panel);color:var(--fg);border:1px solid var(--line);border-radius:4px;padding:2px 6px;font:inherit}
+a,.lnk{color:var(--dim);cursor:pointer;text-decoration:underline;background:none;border:0;padding:0}
+#foot{padding:6px 16px 10px;font-size:11px;color:var(--dim)} #foot input{width:230px}
+#msg{padding:30px 16px;color:var(--dim);font-size:14px}
+</style></head><body>
+<header>
+  <h1 id="title">Weather Consensus</h1><span class="dim" id="gen"></span>
+  <form id="locf" style="display:inline"><label>Location <input type="text" id="loc" placeholder="city, zip, or lat,lon" size="22"></label> <button>Go</button> <button type="button" id="gps" class="lnk" hidden>use my location</button></form>
+  <label>Horizon <select id="days"></select></label>
+  <label>Time squeeze <input id="k" type="range" min="0" max="100" value="72" style="width:130px"> <span id="kv"></span></label>
+  <button id="tog"></button>
+  <span id="chk"></span>
+</header>
+<div id="warn"></div>
+<div id="msg">Finding your location…</div>
+<div id="wrap"><canvas id="c"></canvas><canvas id="over"></canvas></div>
+<div id="panel" hidden><div id="when"></div><div id="tbl"></div></div>
+<div id="foot">Data: NWS, MET Norway, Open-Meteo. <button class="lnk" id="keyb"></button> <span id="keyrow" hidden><input type="password" id="key" placeholder="OpenWeatherMap API key" autocomplete="off"> <button id="keysave">Save</button> <button id="keyclr" class="lnk">remove</button> <span>(stored only in this browser)</span></span></div>
+<script>
+function start(D){
+const $ = id => document.getElementById(id);
+$('msg').hidden = true; $('panel').hidden = false;
+const cv = $('c'), ov = $('over'), ctx = cv.getContext('2d'), octx = ov.getContext('2d');
+const GUT = 132, PADR = 6, ROW = 13, GAP = 2, CONS = 24, TITLE = 34, NIGHT = '#242424', DAY = '#e9d38a';
+const NOW = D.generated;
+const st = { days: D.horizonDays, k: 72, on: new Set(D.metrics.map(m => m.key)), showSrc: false };
+const srcIdx = Object.fromEntries(D.sources.map((s, i) => [s.id, i]));
+const parseHex = h => [1, 3, 5].map(i => parseInt(h.substr(i, 2), 16));
+D.metrics.forEach(m => m.st = m.stops.map(s => ({ v: s[0], c: parseHex(s[1]) })));
+const byMetric = {};
+D.series.forEach(s => (byMetric[s.metric] = byMetric[s.metric] || []).push(s));
+Object.values(byMetric).forEach(a => a.sort((x, y) => srcIdx[x.src] - srcIdx[y.src]));
+
+// ---- gradient ----
+function colorAt(m, v) {
+  const a = m.st; if (v <= a[0].v) return a[0].c; if (v >= a[a.length - 1].v) return a[a.length - 1].c;
+  let i = 1; while (a[i].v < v) i++;
+  const p = a[i - 1], q = a[i], f = (v - p.v) / (q.v - p.v);
+  return [0, 1, 2].map(j => Math.round(p.c[j] + (q.c[j] - p.c[j]) * f));
+}
+const rgb = c => `rgb(${c[0]},${c[1]},${c[2]})`;
+const ink = c => (0.299 * c[0] + 0.587 * c[1] + 0.114 * c[2]) > 140 ? '#000' : '#fff';
+
+// ---- time axis: seconds-from-now <-> 0..1. k=0 is linear; higher k crowds the near future ----
+const H = () => st.days * 86400;
+const tauS = () => st.k === 0 ? Infinity : 240 * Math.pow(10, -3 * st.k / 100) * 3600;
+function xOf(t) { const h = H(), ta = tauS(); return isFinite(ta) ? Math.log(1 + t / ta) / Math.log(1 + h / ta) : t / h; }
+function tOf(u) { const h = H(), ta = tauS(); return isFinite(ta) ? ta * (Math.exp(u * Math.log(1 + h / ta)) - 1) : u * h; }
+
+// ---- sampling: worst value among the samples that overlap [t0,t1) ----
+function pick(arr, t0, t1, m) {
+  let lo = 0, hi = arr.length;
+  while (lo < hi) { const mid = (lo + hi) >> 1; if (arr[mid][1] <= t0) lo = mid + 1; else hi = mid; }
+  let best = null, bd = -1;
+  for (let i = lo; i < arr.length && arr[i][0] < t1; i++) {
+    const v = arr[i][2], d = v < m.good[0] ? m.good[0] - v : v > m.good[1] ? v - m.good[1] : 0;
+    if (d > bd) { bd = d; best = arr[i]; }
+  }
+  return best;
+}
+const median = a => { const s = [...a].sort((x, y) => x - y), n = s.length; return n % 2 ? s[n >> 1] : (s[n / 2 - 1] + s[n / 2]) / 2; };
+
+// ---- daylight: computed sun elevation -> 0 (night) .. 1 (day), fading through civil twilight ----
+// Full day from official sunrise/sunset (sun centre at -0.833°) out to full dark at -6° (end of civil twilight),
+// so each fade lasts ~25-40 min depending on latitude and season. Low-precision almanac formulas, good to ~0.1°.
+const RAD = Math.PI / 180, SUN_UP = -0.833, SUN_DARK = -6;
+function sunElev(t) {
+  const d = t / 86400 - 10957.5;   // days since J2000.0 (2000-01-01 12:00 UTC)
+  const g = (357.529 + 0.98560028 * d) * RAD;
+  const L = (280.459 + 0.98564736 * d + 1.915 * Math.sin(g) + 0.020 * Math.sin(2 * g)) * RAD;   // ecliptic longitude
+  const e = (23.439 - 0.00000036 * d) * RAD;   // obliquity
+  const ra = Math.atan2(Math.cos(e) * Math.sin(L), Math.cos(L)), dec = Math.asin(Math.sin(e) * Math.sin(L));
+  const ha = (280.46061837 + 360.98564736629 * d + D.lon) * RAD - ra, lat = D.lat * RAD;   // local hour angle
+  return Math.asin(Math.sin(lat) * Math.sin(dec) + Math.cos(lat) * Math.cos(dec) * Math.cos(ha)) / RAD;
+}
+const lightAt = t => Math.min(1, Math.max(0, (sunElev(t) - SUN_DARK) / (SUN_UP - SUN_DARK)));
+function lightOver(a, b) { let s = 0; for (let j = 0; j < 5; j++) s += lightAt(a + (j + .5) * (b - a) / 5); return s / 5; }   // average across a pixel's time span
+
+// ---- local-time helpers (in the forecast location's timezone) ----
+const fHM = new Intl.DateTimeFormat('en-GB', { timeZone: D.tz, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
+const fDay = new Intl.DateTimeFormat('en-US', { timeZone: D.tz, weekday: 'short' });
+const fFull = new Intl.DateTimeFormat('en-US', { timeZone: D.tz, weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+const fClock = new Intl.DateTimeFormat('en-US', { timeZone: D.tz, hour: 'numeric', minute: '2-digit' });
+function midnights() {
+  const out = [], end = NOW + H();
+  for (let t = Math.floor((NOW - 86400) / 900) * 900; t <= end; t += 900) if (fHM.format(t * 1000) === '00:00') out.push(t);
+  return out;
+}
+const rel = s => { const m = Math.round(s / 60); if (m < 60) return `${m}m`; const h = Math.floor(m / 60); return h < 48 ? `${h}h ${m % 60}m` : `${Math.floor(h / 24)}d ${h % 24}h`; };
+
+// ---- layout + draw ----
+// Sources shown: each metric block = title+legend, consensus bar, one row per source.
+// Sources hidden: each metric is just its consensus bar; all the legends flow left-to-right ABOVE the chart, wrapping like text.
+// Block y values are relative to the chart's top; the chart is drawn shifted down by KEYS (the key area's height, 0 when sources are shown).
+let W = 0, TOTAL = 0, CHART = 0, KEYS = 0, blocks = [], legends = [], dpr = 1;
+const KW = 240, KH = 42, KG = 28, KX = 8;   // collapsed-mode key: bar width, row height, horizontal gap, left inset
+function layout(cssW, barH) {
+  blocks = []; legends = []; KEYS = 0;
+  const shown = D.metrics.filter(m => st.on.has(m.key) && byMetric[m.key]);
+  if (!st.showSrc && shown.length) {
+    let x = KX, ky = 18;   // below the 'color keys' label
+    for (const m of shown) {
+      if (x > KX && x + KW > cssW - KX) { x = KX; ky += KH; }   // wrap
+      legends.push({ m, x, y0: ky }); x += KW + KG;
+    }
+    KEYS = ky + KH + 8;
+  }
+  let y = 18 + 16 + 18;  // relative ticks, day names, daylight strip (+ gap)
+  for (const m of shown) {
+    const rows = byMetric[m.key]; blocks.push({ m, y0: y, rows });
+    y += st.showSrc ? TITLE + CONS + GAP + rows.length * (ROW + GAP) + 10 : barH + 10;
+  }
+  CHART = y;
+  TOTAL = KEYS + CHART;
+}
+// Collapsed mode: stripes are low:median:high ≈ 1:8:1 (each edge stripe = median/8, rounded to whole pixels, min 1px).
+// The median grows in steps of 4 from MED_MIN up to MED_MAX, but only as far as the window has room,
+// so no scrollbar appears unless even the minimum doesn't fit.
+const MED_MIN = 12, MED_MAX = 32;
+const edgeH = med => Math.max(1, Math.round(med / 8));
+const barOf = med => med + 2 * edgeH(med);
+let barH = CONS, medH = MED_MIN;
+function fitBarH(cssW) {
+  const tbl = $('tbl'); tbl.style.setProperty('--padv', '2px');   // measure the hover panel at its normal row height
+  if (st.showSrc) return CONS;
+  const other = document.body.offsetHeight - cv.offsetHeight;   // header, warnings, padding, hover panel
+  medH = MED_MIN;
+  layout(cssW, barOf(MED_MIN));
+  if (!blocks.length) return barOf(MED_MIN);
+  const spare = document.documentElement.clientHeight - other - TOTAL - 2;
+  let med = MED_MAX;   // biggest median whose extra height (over the minimum) still fits in the spare room
+  while (med > MED_MIN && (barOf(med) - barOf(MED_MIN)) * blocks.length > spare) med -= 4;
+  medH = med;
+  // Bars maxed out and still room left: let the hover-table rows grow, up to 2x their normal height.
+  const cells = tbl.querySelectorAll('td.m'), left = spare - (barOf(med) - barOf(MED_MIN)) * blocks.length;
+  if (med === MED_MAX && cells.length && left > 0) {
+    const rowH = cells[0].parentElement.offsetHeight, extra = Math.min(rowH, Math.floor(left / cells.length));
+    tbl.style.setProperty('--padv', `${2 + extra / 2}px`);
+  }
+  return barOf(med);
+}
+function drawKey(m, y0) {   // metric title in the gutter + gradient legend bar with stop values
+  ctx.font = '600 12px system-ui'; ctx.fillStyle = '#e8e8e8'; ctx.textAlign = 'left'; ctx.fillText(`${m.label} (${m.unit})`, 0, y0 + 14);
+  const lo = m.st[0].v, hi = m.st[m.st.length - 1].v, LW = 300;
+  for (let i = 0; i < LW; i++) { ctx.fillStyle = rgb(colorAt(m, lo + (hi - lo) * i / (LW - 1))); ctx.fillRect(GUT + i, y0 + 3, 1.5, 9); }
+  ctx.font = '9px system-ui'; ctx.fillStyle = '#969696'; let lx = -99;
+  for (const s of m.st) { const x = GUT + (s.v - lo) / (hi - lo) * (LW - 1); if (x - lx < 22) continue; lx = x; ctx.textAlign = 'center'; ctx.fillText(s.v, x, y0 + 23); }
+  ctx.textAlign = 'left';
+}
+function drawKeyInline(m, x0, y0) {   // collapsed mode: title above the bar, stop values below
+  ctx.font = '600 11px system-ui'; ctx.fillStyle = '#e8e8e8'; ctx.textAlign = 'left'; ctx.fillText(`${m.label} (${m.unit})`, x0, y0 + 11);
+  const lo = m.st[0].v, hi = m.st[m.st.length - 1].v;
+  for (let i = 0; i < KW; i++) { ctx.fillStyle = rgb(colorAt(m, lo + (hi - lo) * i / (KW - 1))); ctx.fillRect(x0 + i, y0 + 16, 1.5, 9); }
+  ctx.font = '9px system-ui'; ctx.fillStyle = '#969696'; let lx = -99;
+  for (const s of m.st) { const x = x0 + (s.v - lo) / (hi - lo) * (KW - 1); if (x - lx < 22) continue; lx = x; ctx.textAlign = 'center'; ctx.fillText(s.v, x, y0 + 35); }
+  ctx.textAlign = 'left';
+}
+function runs(y, h, n, colorOf, pad = 0.4) {   // paints n device-pixel columns, merging equal neighbours (pad hides seams; use 0 for translucent fills)
+  let start = 0, cur = colorOf(0);
+  for (let i = 1; i <= n; i++) {
+    const c = i < n ? colorOf(i) : null;
+    if (c !== cur) { if (cur) { ctx.fillStyle = cur; ctx.fillRect(GUT + start / dpr, y, (i - start) / dpr + pad, h); } start = i; cur = c; }
+  }
+}
+function draw() {
+  panel(hoverT);   // fill the hover panel first so its height is known when fitting the bars
+  dpr = window.devicePixelRatio || 1;
+  const cssW = $('wrap').clientWidth - 32; W = Math.max(300, cssW - GUT - PADR);
+  barH = fitBarH(cssW); layout(cssW, barH);
+  for (const c of [cv, ov]) { c.width = cssW * dpr; c.height = TOTAL * dpr; c.style.width = cssW + 'px'; c.style.height = TOTAL + 'px'; }
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0); octx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, cssW, TOTAL);
+  const N = Math.round(W * dpr), span = i => [NOW + tOf(i / N), NOW + tOf((i + 1) / N)];
+  ctx.textBaseline = 'alphabetic';
+
+  // collapsed mode: all the color keys live above the chart
+  if (legends.length) {
+    ctx.font = '10px system-ui'; ctx.fillStyle = '#969696'; ctx.textAlign = 'left'; ctx.fillText('color keys', 0, 10);
+    for (const { m, x, y0 } of legends) drawKeyInline(m, x, y0);
+    ctx.strokeStyle = '#333333'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(0, KEYS - 3.5); ctx.lineTo(cssW, KEYS - 3.5); ctx.stroke();
+  }
+  ctx.setTransform(dpr, 0, 0, dpr, 0, KEYS * dpr);   // everything below is drawn in chart-relative coordinates
+
+  // relative ticks
+  ctx.font = '10px system-ui'; ctx.fillStyle = '#969696'; ctx.strokeStyle = '#4a4a4a';
+  let lastX = -99;
+  [[0, 'now'], [1, '+1h'], [3, '+3h'], [6, '+6h'], [12, '+12h'], [24, '+1d'], [48, '+2d'], [72, '+3d'], [120, '+5d'], [168, '+7d'], [240, '+10d'], [336, '+14d']].forEach(([h, l]) => {
+    if (h * 3600 > H()) return; const x = GUT + xOf(h * 3600) * W; if (x - lastX < 30) return; lastX = x;
+    ctx.beginPath(); ctx.moveTo(x + .5, 12); ctx.lineTo(x + .5, 17); ctx.stroke();
+    ctx.textAlign = h === 0 ? 'left' : 'center'; ctx.fillText(l, x, 10);
+  });
+  ctx.textAlign = 'left'; ctx.fillText('time from now', 0, 10);
+
+  // day names
+  const mids = midnights(); const bounds = [NOW, ...mids.filter(t => t > NOW && t < NOW + H()), NOW + H()];
+  ctx.font = '11px system-ui'; ctx.fillStyle = '#c8c8c8'; ctx.textAlign = 'center';
+  for (let i = 0; i < bounds.length - 1; i++) {
+    const xa = GUT + xOf(bounds[i] - NOW) * W, xb = GUT + xOf(bounds[i + 1] - NOW) * W, w = xb - xa;
+    const name = fDay.format(((bounds[i] + bounds[i + 1]) / 2) * 1000);
+    if (w >= 30) ctx.fillText(name, (xa + xb) / 2, 32); else if (w >= 13) ctx.fillText(name[0], (xa + xb) / 2, 32);
+  }
+  ctx.textAlign = 'left'; ctx.fillStyle = '#969696'; ctx.font = '10px system-ui'; ctx.fillText('local day', 0, 32);
+
+  // daylight strip
+  ctx.fillText('daylight', 0, 47);
+  const light = Array.from({ length: N }, (_, i) => { const [a, b] = span(i); return Math.round(lightOver(a, b) * 100) / 100; });
+  const dayC = parseHex(DAY), nightC = parseHex(NIGHT);
+  runs(37, 10, N, i => rgb([0, 1, 2].map(j => Math.round(nightC[j] + (dayC[j] - nightC[j]) * light[i]))));
+
+  // metric blocks
+  for (const { m, y0, rows } of blocks) {
+    // consensus: top stripe = lowest value, middle = median, bottom = highest. Solid = sources agree; banded = they don't.
+    // Sources shown: 1:2:1 stripes. Collapsed: ≈1:8:1 (thin low/high edges).
+    let y = y0;
+    const mh = st.showSrc ? CONS / 2 : medH, lh = st.showSrc ? CONS / 4 : edgeH(medH);   // median height, low/high stripe height
+    if (st.showSrc) {
+      drawKey(m, y0); y += TITLE;
+      ctx.font = '600 11px system-ui'; ctx.fillStyle = '#e8e8e8'; ctx.fillText('Low / median / high', 0, y + 15);
+    } else {
+      ctx.font = '600 12px system-ui'; ctx.fillStyle = '#e8e8e8'; ctx.fillText(`${m.label} (${m.unit})`, 0, y + barH / 2 - 3);
+      ctx.font = '9px system-ui'; ctx.fillStyle = '#969696'; ctx.fillText('low / median / high', 0, y + barH / 2 + 10);
+    }
+    const cons = new Array(N);
+    for (let i = 0; i < N; i++) {
+      const [a, b] = span(i), vals = [];
+      for (const s of rows) { const p = pick(s.s, a, b, m); if (p) vals.push(p[2]); }
+      cons[i] = vals.length ? [Math.min(...vals), median(vals), Math.max(...vals)] : null;
+    }
+    runs(y, lh, N, i => cons[i] ? rgb(colorAt(m, cons[i][0])) : null);
+    runs(y + lh, mh, N, i => cons[i] ? rgb(colorAt(m, cons[i][1])) : null);
+    runs(y + lh + mh, lh, N, i => cons[i] ? rgb(colorAt(m, cons[i][2])) : null);
+    y += 2 * lh + mh + GAP;
+
+    ctx.font = '11px system-ui';
+    if (st.showSrc) for (const s of rows) {
+      ctx.fillStyle = '#969696'; ctx.fillText(D.sources[srcIdx[s.src]].name, 0, y + ROW - 3);
+      runs(y, ROW, N, i => { const [a, b] = span(i), p = pick(s.s, a, b, m); return p ? rgb(colorAt(m, p[2])) : null; });
+      y += ROW + GAP;
+    }
+  }
+  // night shading: same darkness as the daylight strip, washed translucent down over every band below it (fades with twilight)
+  runs(47, CHART - 6 - 47, N, i => light[i] < 1 ? `rgba(${nightC[0]},${nightC[1]},${nightC[2]},${(.38 * (1 - light[i])).toFixed(3)})` : null, 0);
+
+  // midnight lines
+  ctx.strokeStyle = 'rgba(255,255,255,.16)'; ctx.lineWidth = 1;
+  for (const t of mids) { if (t <= NOW || t >= NOW + H()) continue; const x = Math.round(GUT + xOf(t - NOW) * W) + .5; ctx.beginPath(); ctx.moveTo(x, 36); ctx.lineTo(x, CHART - 6); ctx.stroke(); }
+  showAt(hoverT);
+}
+
+// ---- hover ----
+let hoverT = NOW;
+function overlay(x) {
+  octx.clearRect(0, 0, ov.width, ov.height);
+  if (x == null) return;
+  octx.strokeStyle = '#fff'; octx.lineWidth = 1; octx.beginPath(); octx.moveTo(Math.round(x) + .5, KEYS); octx.lineTo(Math.round(x) + .5, KEYS + CHART); octx.stroke();
+}
+function showAt(t) {
+  hoverT = t; overlay(GUT + xOf(t - NOW) * W);
+  panel(t);
+}
+function panel(t) {
+  const day = D.sun.find(s => Math.abs((s[0] + s[1]) / 2 - t) < 43200);   // the day whose solar noon is nearest
+  $('when').innerHTML = `<span>${fFull.format(t * 1000)} <span class="dim">· ${t - NOW < 60 ? 'now' : 'in ' + rel(t - NOW)}</span></span>` +
+    (day ? `<span id="sun">☀ ${fClock.format(day[0] * 1000)} – ${fClock.format(day[1] * 1000)}</span>` : '');
+  const used = D.sources.filter(s => D.series.some(x => x.src === s.id));
+  let h = '<table><tr><th></th><th class="med">Median</th>' + used.map(s => `<th title="${s.name}">${s.short}</th>`).join('') + '</tr>';
+  for (const m of D.metrics) {
+    if (!st.on.has(m.key) || !byMetric[m.key]) continue;
+    const vals = {}; for (const s of byMetric[m.key]) { const p = pick(s.s, t, t + 1, m); if (p) vals[s.src] = p; }
+    const all = Object.values(vals).map(p => p[2]);
+    const cell = (v, title) => { if (v == null) return '<td class="dim">–</td>'; const c = colorAt(m, v); return `<td class="v" title="${title || ''}" style="background:${rgb(c)};color:${ink(c)}">${v.toFixed(m.dec)}</td>`; };
+    h += `<tr><td class="m">${m.label} <span class="dim">${m.unit}</span></td>` +
+      cell(all.length ? median(all) : null, all.length ? `range ${Math.min(...all).toFixed(m.dec)} – ${Math.max(...all).toFixed(m.dec)}` : '') +
+      used.map(s => { const p = vals[s.id]; return cell(p ? p[2] : null, p ? `${fClock.format(p[0] * 1000)} – ${fClock.format(p[1] * 1000)} (${rel(p[1] - p[0])} span)` : ''); }).join('') + '</tr>';
+  }
+  $('tbl').innerHTML = h + '</table>';
+  $('tbl').style.setProperty('--dark', (1 - lightAt(t)).toFixed(3));
+}
+cv.addEventListener('mousemove', e => {
+  const r = cv.getBoundingClientRect(), x = e.clientX - r.left;
+  if (x < GUT || x > GUT + W) return;
+  showAt(NOW + tOf((x - GUT) / W));
+});
+
+// ---- controls ----
+$('title').textContent = D.place + ' · weather consensus';
+$('gen').textContent = 'fetched ' + fFull.format(NOW * 1000) + ' local';
+$('warn').textContent = D.warnings.length ? '⚠ ' + D.warnings.join('  |  ') : '';
+[1, 2, 3, 5, 7, 10, 14, 16].forEach(d => { const o = document.createElement('option'); o.value = d; o.textContent = d + ' day' + (d > 1 ? 's' : ''); if (d === st.days) o.selected = true; $('days').appendChild(o); });
+$('days').onchange = e => { st.days = +e.target.value; draw(); };
+const kLabel = () => $('kv').textContent = st.k === 0 ? 'linear' : `half the width ≈ first ${(tauS() * (Math.sqrt(1 + H() / tauS()) - 1) / 3600).toFixed(0)}h`;
+$('k').oninput = e => { st.k = +e.target.value; kLabel(); draw(); };
+const togLabel = () => $('tog').textContent = st.showSrc ? '▾ Hide sources' : '▸ Show sources';
+$('tog').onclick = () => { st.showSrc = !st.showSrc; togLabel(); draw(); };
+togLabel();
+D.metrics.forEach(m => { const l = document.createElement('label'); l.className = 'm'; l.innerHTML = `<input type="checkbox" checked> ${m.label}`; l.firstChild.onchange = e => { e.target.checked ? st.on.add(m.key) : st.on.delete(m.key); draw(); }; $('chk').appendChild(l); });
+// Watch the container, not the window: the scrollbar appearing after the first draw changes its width without firing 'resize'.
+let lastW = 0; new ResizeObserver(() => { const w = $('wrap').clientWidth; if (w !== lastW) { lastW = w; draw(); } }).observe($('wrap'));
+let lastH = 0; window.addEventListener('resize', () => { const h = document.documentElement.clientHeight; if (h !== lastH) { lastH = h; draw(); } });
+kLabel(); draw();
+document.fonts.ready.then(() => draw());   // re-fit once the segment font has loaded (it changes the panel's height)
+}
+</script>
+<script src="weather-data.js"></script></body></html>
