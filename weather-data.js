@@ -179,6 +179,13 @@ async function geocode(text) {
   text = text.trim();
   const ll = /^(-?\d+(?:\.\d+)?)\s*[, ]\s*(-?\d+(?:\.\d+)?)$/.exec(text);
   if (ll) return { lat: +ll[1], lon: +ll[2], name: `${(+ll[1]).toFixed(3)}, ${(+ll[2]).toFixed(3)}` };
+  const zip = /^(\d{5})(?:-\d{4})?$/.exec(text);   // Open-Meteo's geocoder doesn't do postal codes
+  if (zip) {
+    const z = await getJson(`https://api.zippopotam.us/us/${zip[1]}`).catch(() => null);
+    const p = z && z.places && z.places[0];
+    if (p) return { lat: +p.latitude, lon: +p.longitude, name: `${p['place name']}, ${p['state abbreviation']}` };
+    throw new Error(`No place found for "${text}"`);
+  }
   const [first, ...rest] = text.split(',').map(s => s.trim());
   const hint = rest.join(' ').toLowerCase();
   const j = await getJson(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(first)}&count=10&language=en&format=json`);
