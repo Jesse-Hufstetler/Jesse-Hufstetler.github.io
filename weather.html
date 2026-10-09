@@ -27,7 +27,6 @@ button{background:var(--panel);color:var(--fg);border:1px solid var(--line);bord
 button:hover{border-color:#595959}
 input[type=text],input[type=password]{background:var(--panel);color:var(--fg);border:1px solid var(--line);border-radius:4px;padding:2px 6px;font:inherit}
 a,.lnk{color:var(--dim);cursor:pointer;text-decoration:underline;background:none;border:0;padding:0}
-#foot{padding:6px 16px 10px;font-size:11px;color:var(--dim)} #foot input{width:230px}
 #msg{padding:30px 16px;color:var(--dim);font-size:14px}
 </style></head><body>
 <header>
@@ -44,7 +43,6 @@ a,.lnk{color:var(--dim);cursor:pointer;text-decoration:underline;background:none
 <div id="msg">Finding your location…</div>
 <div id="wrap"><canvas id="c"></canvas><canvas id="over"></canvas></div>
 <div id="panel" hidden><div id="when"></div><div id="tbl"></div></div>
-<div id="foot">Data: NWS, MET Norway, Open-Meteo. </div>
 <script>
 function start(D){
 const $ = id => document.getElementById(id);
