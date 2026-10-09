@@ -31,18 +31,20 @@ a,.lnk{color:var(--dim);cursor:pointer;text-decoration:underline;background:none
 #msg{padding:30px 16px;color:var(--dim);font-size:14px}
 </style></head><body>
 <header>
+  <a href="index.html" style="text-decoration:none">&larr; Index</a>
   <h1 id="title">Weather Consensus</h1><span class="dim" id="gen"></span>
   <form id="locf" style="display:inline"><label>Location <input type="text" id="loc" placeholder="city, zip, or lat,lon" size="22"></label> <button>Go</button> <button type="button" id="gps" class="lnk" hidden>use my location</button></form>
   <label>Horizon <select id="days"></select></label>
+  <span><button class="lnk" id="keyb"></button> <span id="keyrow" hidden><input type="password" id="key" placeholder="OpenWeatherMap API key" autocomplete="off"> <button id="keysave">Save</button> <button id="keyclr" class="lnk">remove</button> <span class="dim">(stored only in this browser)</span></span></span>
   <label>Time squeeze <input id="k" type="range" min="0" max="100" value="72" style="width:130px"> <span id="kv"></span></label>
-  <button id="tog"></button>
+  <button id="tog"></button> <button id="keys"></button>
   <span id="chk"></span>
 </header>
 <div id="warn"></div>
 <div id="msg">Finding your location…</div>
 <div id="wrap"><canvas id="c"></canvas><canvas id="over"></canvas></div>
 <div id="panel" hidden><div id="when"></div><div id="tbl"></div></div>
-<div id="foot">Data: NWS, MET Norway, Open-Meteo. <button class="lnk" id="keyb"></button> <span id="keyrow" hidden><input type="password" id="key" placeholder="OpenWeatherMap API key" autocomplete="off"> <button id="keysave">Save</button> <button id="keyclr" class="lnk">remove</button> <span>(stored only in this browser)</span></span></div>
+<div id="foot">Data: NWS, MET Norway, Open-Meteo. </div>
 <script>
 function start(D){
 const $ = id => document.getElementById(id);
@@ -50,7 +52,7 @@ $('msg').hidden = true; $('panel').hidden = false;
 const cv = $('c'), ov = $('over'), ctx = cv.getContext('2d'), octx = ov.getContext('2d');
 const GUT = 132, PADR = 6, ROW = 13, GAP = 2, CONS = 24, TITLE = 34, NIGHT = '#242424', DAY = '#e9d38a';
 const NOW = D.generated;
-const st = { days: D.horizonDays, k: 72, on: new Set(D.metrics.map(m => m.key)), showSrc: false };
+const st = { days: D.horizonDays, k: 72, on: new Set(D.metrics.map(m => m.key)), showSrc: false, keys: false };
 const srcIdx = Object.fromEntries(D.sources.map((s, i) => [s.id, i]));
 const parseHex = h => [1, 3, 5].map(i => parseInt(h.substr(i, 2), 16));
 D.metrics.forEach(m => m.st = m.stops.map(s => ({ v: s[0], c: parseHex(s[1]) })));
@@ -124,7 +126,7 @@ const KW = 240, KH = 42, KG = 28, KX = 8;   // collapsed-mode key: bar width, ro
 function layout(cssW, barH) {
   blocks = []; legends = []; KEYS = 0;
   const shown = D.metrics.filter(m => st.on.has(m.key) && byMetric[m.key]);
-  if (!st.showSrc && shown.length) {
+  if (!st.showSrc && st.keys && shown.length) {
     let x = KX, ky = 18;   // below the 'color keys' label
     for (const m of shown) {
       if (x > KX && x + KW > cssW - KX) { x = KX; ky += KH; }   // wrap
@@ -318,8 +320,11 @@ $('days').onchange = e => { st.days = +e.target.value; draw(); };
 const kLabel = () => $('kv').textContent = st.k === 0 ? 'linear' : `half the width ≈ first ${(tauS() * (Math.sqrt(1 + H() / tauS()) - 1) / 3600).toFixed(0)}h`;
 $('k').oninput = e => { st.k = +e.target.value; kLabel(); draw(); };
 const togLabel = () => $('tog').textContent = st.showSrc ? '▾ Hide sources' : '▸ Show sources';
-$('tog').onclick = () => { st.showSrc = !st.showSrc; togLabel(); draw(); };
+$('tog').onclick = () => { st.showSrc = !st.showSrc; togLabel(); keysLabel(); draw(); };
 togLabel();
+const keysLabel = () => { $('keys').textContent = st.keys ? '▾ Hide color keys' : '▸ Show color keys'; $('keys').hidden = st.showSrc; };
+$('keys').onclick = () => { st.keys = !st.keys; keysLabel(); draw(); };
+keysLabel();
 D.metrics.forEach(m => { const l = document.createElement('label'); l.className = 'm'; l.innerHTML = `<input type="checkbox" checked> ${m.label}`; l.firstChild.onchange = e => { e.target.checked ? st.on.add(m.key) : st.on.delete(m.key); draw(); }; $('chk').appendChild(l); });
 // Watch the container, not the window: the scrollbar appearing after the first draw changes its width without firing 'resize'.
 let lastW = 0; new ResizeObserver(() => { const w = $('wrap').clientWidth; if (w !== lastW) { lastW = w; draw(); } }).observe($('wrap'));

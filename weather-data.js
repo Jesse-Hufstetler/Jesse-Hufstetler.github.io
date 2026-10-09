@@ -59,7 +59,7 @@ function keep(list, src, metric, spans) {
 }
 async function getJson(url) {
   for (let attempt = 1; ; attempt++) {
-    try { const r = await fetch(url); if (!r.ok) throw new Error(`HTTP ${r.status}`); return await r.json(); }
+    try { const r = await fetch(url, { signal: AbortSignal.timeout(25000) }); if (!r.ok) throw new Error(`HTTP ${r.status}`); return await r.json(); }
     catch (e) { if (attempt >= 2) throw e; await new Promise(r => setTimeout(r, 1500)); }
   }
 }
