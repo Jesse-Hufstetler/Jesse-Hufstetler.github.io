@@ -1,0 +1,787 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Josh's Game</title>
+<style>
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #000; font-family: -apple-system, Helvetica, sans-serif;
+    -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent; touch-action: none; }
+  canvas { display: block; position: fixed; inset: 0; width: 100%; height: 100%; }
+  #hud { position: fixed; top: 10px; left: 0; right: 0; text-align: center; color: #fff; font-size: 22px; font-weight: bold;
+    text-shadow: 0 2px 4px #000; pointer-events: none; }
+  #healthWrap { margin: 6px auto 0; width: 220px; height: 16px; border: 2px solid #fff; background: #400; border-radius: 8px; overflow: hidden; }
+  #health { height: 100%; width: 100%; background: #e33; }
+  #msg { position: fixed; top: 28%; left: 0; right: 0; text-align: center; color: #fff; font-size: 34px; font-weight: bold;
+    text-shadow: 0 2px 6px #000; pointer-events: none; opacity: 0; transition: opacity .6s; }
+  #hurt { position: fixed; inset: 0; background: #f00; opacity: 0; pointer-events: none; transition: opacity .15s; }
+  .btn { position: fixed; width: 96px; height: 96px; border-radius: 50%; background: rgba(255,255,255,.25); border: 3px solid rgba(255,255,255,.6);
+    color: #fff; font-size: 20px; font-weight: bold; display: flex; align-items: center; justify-content: center; }
+  .btn.down { background: rgba(255,255,255,.55); }
+  #pauseBtn { position: fixed; top: 10px; right: 14px; width: 52px; height: 52px; border-radius: 12px; background: rgba(255,255,255,.3); border: 2px solid rgba(255,255,255,.7); color: #fff; font-size: 26px; display: none; align-items: center; justify-content: center; }
+  #skip { position: fixed; top: 70px; left: 50%; transform: translateX(-50%); padding: 10px 22px; border-radius: 14px; background: rgba(255,255,255,.3); border: 2px solid rgba(255,255,255,.7); color: #fff; font-size: 20px; font-weight: bold; display: none; }
+  #hit { right: 24px; bottom: 40px; width: 120px; height: 120px; }
+  #jump { right: 160px; bottom: 30px; }
+  #stick { position: fixed; width: 130px; height: 130px; border-radius: 50%; background: rgba(255,255,255,.18); border: 3px solid rgba(255,255,255,.5);
+    display: none; pointer-events: none; }
+  #knob { position: absolute; width: 56px; height: 56px; border-radius: 50%; background: rgba(255,255,255,.6); left: 37px; top: 37px; }
+  #coins { position: fixed; top: 10px; left: 14px; color: #ffd700; font-size: 24px; font-weight: bold; text-shadow: 0 2px 4px #000; pointer-events: none; display: none; }
+  #coinBar { width: 120px; height: 10px; border: 2px solid #ffd700; border-radius: 6px; margin-top: 4px; overflow: hidden; background: rgba(0,0,0,.4); }
+  #coinFill { height: 100%; width: 0; background: #ffd700; }
+  #coinSub { font-size: 14px; color: #fff; }
+  #ups { font-size: 18px; color: #fff; margin-top: 2px; }
+  #coinToast { position: fixed; top: 130px; left: 14px; color: #ffd700; font-size: 22px; font-weight: bold; text-shadow: 0 2px 4px #000; opacity: 0; pointer-events: none; transition: opacity .3s; }
+  #upChoices { display: flex; gap: 16px; margin-top: 18px; flex-wrap: wrap; justify-content: center; }
+  .upbtn { width: 190px; padding: 16px 10px; border-radius: 18px; border: 4px solid #ffd700; background: #2a2a40; color: #fff; font-size: 18px; font-family: inherit; }
+  .upbtn .ic { font-size: 54px; display: block; }
+  .upbtn b { display: block; font-size: 22px; margin: 6px 0; }
+  #overlay, #pauseOv, #upOv { position: fixed; inset: 0; background: rgba(0,0,0,.75); color: #fff; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; text-align: center; padding: 20px; }
+  #overlay h1, #pauseOv h1, #upOv h1 { font-size: 48px; margin: 0 0 10px; }
+  #overlay p { font-size: 22px; max-width: 560px; margin: 6px 0; }
+  #go, #resume, #restart { margin-top: 24px; font-size: 32px; font-weight: bold; padding: 16px 48px; border-radius: 16px; border: 0; background: #ffcc00; color: #000; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="hurt"></div>
+<div id="hud"><div id="timer"></div><div id="healthWrap"><div id="health"></div></div></div>
+<div id="msg"></div>
+<div id="stick"><div id="knob"></div></div>
+<div class="btn" id="jump">JUMP</div>
+<div class="btn" id="hit">HIT</div>
+<div id="coins"><div id="coinCount">🪙 0</div><div id="coinBar"><div id="coinFill"></div></div><div id="coinSub"></div><div id="ups"></div></div>
+<div id="coinToast"></div>
+<div id="upOv" data-ui style="display:none"><h1>⭐ UPGRADE! ⭐</h1><p>You collected 20 coins! Pick one:</p><div id="upChoices"></div></div>
+<div id="pauseBtn" data-ui>⏸</div>
+<div id="pauseOv" data-ui style="display:none"><h1>Paused</h1><button id="resume">RESUME</button><button id="restart" style="margin-top:16px;background:#ddd">START OVER</button></div>
+<div id="skip" data-ui>SKIP ☀️ ▶▶</div>
+<div id="overlay" data-ui>
+  <h1 id="ovTitle">Josh's Game</h1>
+  <p id="ovText">The sun is going to disappear... and the bad guys will come out.<br>Survive for 10 minutes!</p>
+  <p style="font-size:18px;opacity:.8">Left thumb: move &nbsp;•&nbsp; Right thumb: look &nbsp;•&nbsp; HIT: punch &nbsp;•&nbsp; JUMP: jump</p>
+  <button id="go">PLAY</button>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function () {
+  'use strict';
+
+  // ---------- Tunables ----------
+  const DAY_SECONDS = 15;        // daylight before the sun goes out
+  const WIN_SECONDS = 600;       // 10 minutes of darkness to win
+  const ARENA = 70;              // half-size of the playable square
+  const PLAYER_SPEED = 6, JUMP_V = 8, GRAVITY = 22, EYE = 1.6;
+  const LOOK_SENS = 0.006;
+
+  // ---------- Scene ----------
+  const canvas = document.getElementById('c');
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: false });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(75, 1, 0.1, 400);
+  camera.rotation.order = 'YXZ';
+  scene.add(camera);
+
+  const skyDay = new THREE.Color(0x87ceeb), skyNight = new THREE.Color(0x03040a);
+  scene.background = new THREE.Color(skyDay);
+  scene.fog = new THREE.Fog(0x87ceeb, 15, 80);
+
+  const hemi = new THREE.HemisphereLight(0xffffff, 0x445544, 0.9);
+  scene.add(hemi);
+  const torch = new THREE.PointLight(0xffe2a8, 0, 30);
+  camera.add(torch);
+
+  // Sun & stars follow the camera so they sit "at infinity"
+  const skyGroup = new THREE.Group();
+  scene.add(skyGroup);
+  const sunMat = new THREE.MeshBasicMaterial({ color: 0xfff1a0, fog: false, transparent: true });
+  const sun = new THREE.Mesh(new THREE.SphereGeometry(14, 16, 12), sunMat);
+  sun.position.set(90, 160, -200);
+  skyGroup.add(sun);
+  const starPos = [];
+  for (let i = 0; i < 300; i++) {
+    const a = Math.random() * Math.PI * 2, e = Math.random() * 1.3 + 0.1, r = 300;
+    starPos.push(Math.cos(a) * Math.cos(e) * r, Math.sin(e) * r, Math.sin(a) * Math.cos(e) * r);
+  }
+  const starGeo = new THREE.BufferGeometry();
+  starGeo.setAttribute('position', new THREE.Float32BufferAttribute(starPos, 3));
+  const starMat = new THREE.PointsMaterial({ color: 0xffffff, size: 2, fog: false, transparent: true, opacity: 0, sizeAttenuation: false });
+  skyGroup.add(new THREE.Points(starGeo, starMat));
+
+  // Ground with a blocky grass texture
+  (function () {
+    const t = document.createElement('canvas'); t.width = t.height = 16;
+    const g = t.getContext('2d');
+    for (let y = 0; y < 16; y++) for (let x = 0; x < 16; x++) {
+      const v = 90 + Math.floor(Math.random() * 50);
+      g.fillStyle = `rgb(${v - 40},${v + 40},${v - 50})`; g.fillRect(x, y, 1, 1);
+    }
+    const tex = new THREE.CanvasTexture(t);
+    tex.magFilter = THREE.NearestFilter; tex.wrapS = tex.wrapT = THREE.RepeatWrapping; tex.repeat.set(ARENA * 2, ARENA * 2);
+    const ground = new THREE.Mesh(new THREE.PlaneGeometry(ARENA * 2 + 100, ARENA * 2 + 100),
+      new THREE.MeshLambertMaterial({ map: tex }));
+    ground.material.map.repeat.set((ARENA * 2 + 100) / 2, (ARENA * 2 + 100) / 2);
+    ground.rotation.x = -Math.PI / 2;
+    scene.add(ground);
+  })();
+
+  // Blocky trees (player bumps into the trunks). At night some of them wake up!
+  const trees = [];
+  const trunkMat = new THREE.MeshLambertMaterial({ color: 0x6b4423 });
+  const leafMat = new THREE.MeshLambertMaterial({ color: 0x2e8b3a });
+  const leafGeo = new THREE.BoxGeometry(3, 2.6, 3);
+  (function () {
+    for (let i = 0; i < 140; i++) {
+      let x, z, ok;
+      do {
+        x = (Math.random() * 2 - 1) * ARENA; z = (Math.random() * 2 - 1) * ARENA;
+        ok = Math.hypot(x, z) >= 8 && trees.every(t => Math.hypot(t.x - x, t.z - z) > 3.5);
+      } while (!ok);
+      const h = 3 + Math.random() * 2;
+      const group = new THREE.Group();
+      const trunk = new THREE.Mesh(new THREE.BoxGeometry(0.8, h, 0.8), trunkMat);
+      trunk.position.y = h / 2;
+      const leaves = new THREE.Mesh(leafGeo, leafMat);
+      leaves.position.y = h + 0.8;
+      group.add(trunk, leaves);
+      group.position.set(x, 0, z);
+      scene.add(group);
+      trees.push({ x, z, r: 0.9, h, group, leaves, extras: [], awake: false });
+    }
+  })();
+
+  // Grass patches that look just like the ground... until a dirt monster pops out of one
+  const patches = [];
+  (function () {
+    const t = document.createElement('canvas'); t.width = t.height = 16;
+    const g = t.getContext('2d');
+    for (let y = 0; y < 16; y++) for (let x = 0; x < 16; x++) {
+      const v = 90 + Math.floor(Math.random() * 50);
+      g.fillStyle = 'rgb(' + (v - 40) + ',' + (v + 40) + ',' + (v - 50) + ')'; g.fillRect(x, y, 1, 1);
+    }
+    const tex = new THREE.CanvasTexture(t);
+    tex.magFilter = THREE.NearestFilter; tex.wrapS = tex.wrapT = THREE.RepeatWrapping; tex.repeat.set(1, 1);
+    const grassMat = new THREE.MeshLambertMaterial({ map: tex });
+    const dirtMat = new THREE.MeshLambertMaterial({ color: 0x3b2614 });
+    const geo = new THREE.BoxGeometry(1.6, 0.04, 1.6);
+    for (let i = 0; i < 60; i++) {
+      const x = (Math.random() * 2 - 1) * ARENA, z = (Math.random() * 2 - 1) * ARENA;
+      if (Math.hypot(x, z) < 8) { i--; continue; }
+      const grass = new THREE.Mesh(geo, grassMat); grass.position.set(x, 0.03, z);
+      const dirt = new THREE.Mesh(geo, dirtMat); dirt.position.set(x, 0.035, z); dirt.visible = false;
+      scene.add(grass, dirt);
+      patches.push({ x, z, grass, dirt, used: false });
+    }
+  })();
+  function restorePatches() {
+    for (const p of patches) { p.used = false; p.grass.visible = true; p.dirt.visible = false; }
+  }
+
+  // A little dirt monster holding a grass block over its head
+  const dirtBody = new THREE.MeshLambertMaterial({ color: 0x6b4a2b });
+  const blockMats = [0x7a5230, 0x7a5230, 0x4caf50, 0x5a3a20, 0x7a5230, 0x7a5230].map(c => new THREE.MeshLambertMaterial({ color: c }));
+  const grassEye = new THREE.MeshBasicMaterial({ color: 0xffee55 });
+  function makeGrassGuy() {
+    const g = new THREE.Group();
+    const add = (geo, mat, x, y, z) => { const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); g.add(m); return m; };
+    add(new THREE.BoxGeometry(0.8, 0.7, 0.6), dirtBody, 0, 0.75, 0);          // body
+    add(new THREE.BoxGeometry(0.2, 0.4, 0.2), dirtBody, -0.2, 0.2, 0);          // legs
+    add(new THREE.BoxGeometry(0.2, 0.4, 0.2), dirtBody, 0.2, 0.2, 0);
+    add(new THREE.BoxGeometry(0.15, 0.15, 0.1), grassEye, -0.2, 0.9, 0.31);     // eyes
+    add(new THREE.BoxGeometry(0.15, 0.15, 0.1), grassEye, 0.2, 0.9, 0.31);
+    add(new THREE.BoxGeometry(0.15, 0.7, 0.15), dirtBody, -0.5, 1.4, 0);        // arms up
+    add(new THREE.BoxGeometry(0.15, 0.7, 0.15), dirtBody, 0.5, 1.4, 0);
+    add(new THREE.BoxGeometry(1.2, 1.2, 1.2), blockMats, 0, 2.3, 0);            // the grass block
+    return g;
+  }
+
+  // Give a tree a face and arms; it becomes a walking enemy
+  const eyeGlow = new THREE.MeshBasicMaterial({ color: 0xff3300 });
+  const mouthMat = new THREE.MeshBasicMaterial({ color: 0x000000 });
+  const toothMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+  const darkLeaf = new THREE.Color(0x1d3a14);
+  function wakeTree(t) {
+    t.awake = true;
+    t.leaves.material = leafMat.clone();
+    const g = t.group, ly = t.h + 0.8, extras = t.extras;
+    const add = (geo, mat, x, y, z, rz) => {
+      const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); if (rz) m.rotation.z = rz; g.add(m); extras.push(m); return m;
+    };
+    const eyeGeo = new THREE.BoxGeometry(0.5, 0.5, 0.1);
+    add(eyeGeo, eyeGlow, -0.7, ly + 0.45, 1.53);
+    add(eyeGeo, eyeGlow, 0.7, ly + 0.45, 1.53);
+    add(new THREE.BoxGeometry(1.7, 0.6, 0.1), mouthMat, 0, ly - 0.5, 1.53);
+    for (let i = 0; i < 3; i++) add(new THREE.BoxGeometry(0.25, 0.25, 0.1), toothMat, -0.55 + i * 0.55, ly - 0.3, 1.56);
+    const armGeo = new THREE.BoxGeometry(1.8, 0.28, 0.28);
+    const arms = [add(armGeo, trunkMat, -1.1, t.h * 0.6, 0.2, 0.5), add(armGeo, trunkMat, 1.1, t.h * 0.6, 0.2, -0.5)];
+    extras.forEach(m => m.scale.setScalar(0.001));
+    return arms;
+  }
+  function restoreTrees() {
+    for (const t of trees) {
+      if (!t.awake) continue;
+      t.awake = false;
+      t.leaves.material = leafMat;
+      for (const m of t.extras) t.group.remove(m);
+      t.extras.length = 0;
+      t.group.position.set(t.x, 0, t.z); t.group.rotation.set(0, 0, 0); t.group.scale.setScalar(1); t.group.visible = true;
+      if (t.group.parent !== scene) scene.add(t.group);
+    }
+  }
+
+  // ---------- Day / night ----------
+  let day = 1;
+  const tmpColor = new THREE.Color();
+  function setDay(d) {
+    day = d;
+    tmpColor.copy(skyNight).lerp(skyDay, d);
+    scene.background.copy(tmpColor);
+    scene.fog.color.copy(tmpColor);
+    scene.fog.near = 3 + 12 * d; scene.fog.far = 40 + 40 * d;
+    hemi.intensity = 0.5 + 0.4 * d;
+    torch.intensity = 2.5 * (1 - d);
+    sunMat.opacity = Math.max(0, Math.min(1, d * 3 - 1.2));
+    sun.visible = sunMat.opacity > 0.01;
+    starMat.opacity = Math.max(0, 1 - d * 2);
+  }
+
+  // ---------- Enemies: black blocky people with their parts all messed up ----------
+  const blackMat = new THREE.MeshLambertMaterial({ color: 0x000000 });
+  const eyeMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+  const R = (a, b) => a + Math.random() * (b - a);
+  function box(w, h, d, x, y, z, mat) {
+    const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat || blackMat);
+    m.position.set(x, y, z); return m;
+  }
+  function makeEnemy() {
+    const g = new THREE.Group();
+    const limbs = [];
+    // torso, a bit crooked
+    const torso = box(0.8 * R(0.8, 1.4), 1.1 * R(0.8, 1.3), 0.5, 0, 1.2, 0);
+    torso.rotation.z = R(-0.4, 0.4); torso.rotation.x = R(-0.3, 0.3);
+    g.add(torso);
+    // head somewhere it shouldn't be
+    const head = box(0.55, 0.55, 0.55, R(-0.6, 0.6), R(1.5, 2.3), R(-0.2, 0.3));
+    head.rotation.set(R(-1, 1), R(-1, 1), R(-1, 1));
+    g.add(head);
+    const eyes = 1 + Math.floor(Math.random() * 3);
+    for (let i = 0; i < eyes; i++) {
+      const e = box(0.12, 0.12, 0.06, R(-0.18, 0.18), R(-0.1, 0.15), 0.29, eyeMat);
+      head.add(e);
+    }
+    // 2 to 5 arms of different lengths, from random spots (some from the head!)
+    const arms = 2 + Math.floor(Math.random() * 4);
+    for (let i = 0; i < arms; i++) {
+      const len = R(0.6, 1.8);
+      const arm = box(0.2, len, 0.2, 0, -len / 2, 0);
+      const pivot = new THREE.Group();
+      pivot.position.set(R(-0.6, 0.6), R(0.8, 2.1), R(-0.1, 0.2));
+      pivot.rotation.set(R(-2.4, -0.4), R(-1, 1), R(-1.5, 1.5));
+      pivot.add(arm); g.add(pivot);
+      limbs.push({ node: pivot, base: pivot.rotation.x, amp: R(0.3, 0.9), ph: R(0, 6) });
+    }
+    // 1 to 3 legs, different lengths
+    const legs = 1 + Math.floor(Math.random() * 3);
+    for (let i = 0; i < legs; i++) {
+      const len = R(0.5, 1.4);
+      const leg = box(0.25, len, 0.25, 0, -len / 2, 0);
+      const pivot = new THREE.Group();
+      pivot.position.set(R(-0.4, 0.4), 0.9 * R(0.7, 1.2), R(-0.1, 0.1));
+      pivot.rotation.z = R(-0.5, 0.5);
+      pivot.add(leg); g.add(pivot);
+      limbs.push({ node: pivot, base: 0, amp: R(0.4, 0.8), ph: R(0, 6), leg: true });
+    }
+    // lift so the lowest leg roughly touches the floor
+    g.position.y = 0.1;
+    const s = R(0.9, 1.3); g.scale.setScalar(s);
+    return { mesh: g, limbs, hp: 4, phase: R(0, 6), scale: s, speedMul: R(0.8, 1.2), hitCool: 0 };
+  }
+
+  // ---------- Game state ----------
+  const P = { x: 0, z: 0, y: 0, vy: 0, yaw: 0, pitch: 0, hp: 100, maxHp: 100, dmg: 1, range: 2.6, cd: 1, spd: 1, wide: false, hurtT: 0 };
+  let enemies = [];
+  let state = 'menu';        // menu | day | night | dead | won
+  let clock = 0;             // seconds since the round started
+  let nightT = 0;            // seconds since the sun went out
+  let grassT = 5, treeT = 8, spawnT = 0, kills = 0, attackCool = 0, regenT = 0;
+  let best = 0;
+  try { best = +localStorage.getItem('joshBest') || 0; } catch (e) {}
+
+  // ---------- Sound (synthesized with Web Audio, no files needed) ----------
+  let AC = null, master = null, droneGain = null;
+  function initAudio() {
+    try {
+      if (!AC) {
+        const Ctx = window.AudioContext || window.webkitAudioContext;
+        if (!Ctx) return;
+        AC = new Ctx();
+        master = AC.createGain(); master.gain.value = 0.6; master.connect(AC.destination);
+        // low scary drone, only audible at night
+        droneGain = AC.createGain(); droneGain.gain.value = 0; droneGain.connect(master);
+        [55, 82.5].forEach((f, i) => {
+          const o = AC.createOscillator(); o.type = i ? 'triangle' : 'sawtooth'; o.frequency.value = f;
+          const lp = AC.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 160;
+          o.connect(lp); lp.connect(droneGain); o.start();
+        });
+      }
+      if (AC.state !== 'running') AC.resume();
+    } catch (e) {}
+  }
+  function tone(f0, f1, dur, type, vol, delay) {
+    if (!AC) return;
+    const t = AC.currentTime + (delay || 0);
+    const o = AC.createOscillator(), g = AC.createGain();
+    o.type = type || 'square'; o.frequency.setValueAtTime(f0, t);
+    o.frequency.exponentialRampToValueAtTime(Math.max(20, f1), t + dur);
+    g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+    o.connect(g); g.connect(master); o.start(t); o.stop(t + dur + 0.02);
+  }
+  function noise(dur, vol, cutoff) {
+    if (!AC) return;
+    const n = Math.floor(AC.sampleRate * dur), buf = AC.createBuffer(1, n, AC.sampleRate), d = buf.getChannelData(0);
+    for (let i = 0; i < n; i++) d[i] = Math.random() * 2 - 1;
+    const s = AC.createBufferSource(); s.buffer = buf;
+    const f = AC.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = cutoff || 2000;
+    const g = AC.createGain(); g.gain.setValueAtTime(vol, AC.currentTime); g.gain.exponentialRampToValueAtTime(0.001, AC.currentTime + dur);
+    s.connect(f); f.connect(g); g.connect(master); s.start();
+  }
+  const SFX = {
+    swing: () => noise(0.15, 0.25, 3000),
+    hit:   () => { tone(180, 60, 0.15, 'square', 0.35); noise(0.1, 0.3, 1200); },
+    die:   () => { tone(300, 40, 0.5, 'sawtooth', 0.3); tone(150, 30, 0.6, 'square', 0.2, 0.05); },
+    hurt:  () => { tone(120, 50, 0.25, 'sawtooth', 0.4); },
+    jump:  () => tone(250, 500, 0.15, 'sine', 0.25),
+    treeWake: () => { tone(50, 130, 2.4, 'sawtooth', 0.25); noise(2.4, 0.18, 500); },
+    treeRoar: () => { tone(140, 60, 0.6, 'sawtooth', 0.4); tone(90, 40, 0.8, 'square', 0.25); },
+    pop:   () => { tone(120, 400, 0.15, 'square', 0.3); noise(0.2, 0.25, 800); },
+    coin:  () => { tone(988, 988, 0.08, 'square', 0.2); tone(1319, 1319, 0.18, 'square', 0.2, 0.07); },
+    upgrade: () => [523, 659, 784, 1047, 1319].forEach((f, i) => tone(f, f, 0.2, 'triangle', 0.3, i * 0.09)),
+    greenCoin: () => [784, 988, 1175, 1568].forEach((f, i) => tone(f, f, 0.12, 'triangle', 0.25, i * 0.06)),
+    spawn: () => tone(70, 45, 0.7, 'sawtooth', 0.12),
+    sunOut:() => { tone(400, 30, 2.5, 'sawtooth', 0.35); tone(200, 25, 3, 'square', 0.2); },
+    win:   () => [523, 659, 784, 1047].forEach((f, i) => tone(f, f, 0.35, 'triangle', 0.3, i * 0.18)),
+    lose:  () => [392, 330, 262, 196].forEach((f, i) => tone(f, f * 0.9, 0.4, 'triangle', 0.3, i * 0.25)),
+    start: () => [330, 440, 550].forEach((f, i) => tone(f, f, 0.15, 'triangle', 0.25, i * 0.1))
+  };
+  function setDrone(on) { if (droneGain) droneGain.gain.setTargetAtTime(on ? 0.35 : 0, AC.currentTime, 0.5); }
+  // iOS needs audio to be unlocked by a touch
+  document.addEventListener('touchstart', initAudio);
+  document.addEventListener('mousedown', initAudio);
+
+  const $ = id => document.getElementById(id);
+  const fmt = s => Math.floor(s / 60) + ':' + String(Math.floor(s % 60)).padStart(2, '0');
+  function say(text, ms) {
+    const m = $('msg'); m.textContent = text; m.style.opacity = 1;
+    clearTimeout(say.t); say.t = setTimeout(() => m.style.opacity = 0, ms || 2500);
+  }
+
+  function startGame() { restoreTrees(); restorePatches(); resetCoins(); paused = false; $('pauseOv').style.display = 'none'; $('pauseBtn').style.display = 'flex'; $('hurt').style.opacity = 0; initAudio(); SFX.start(); setDrone(false);
+    enemies.forEach(e => { if (!e.tree) scene.remove(e.mesh); }); enemies = [];
+    Object.assign(P, { x: 0, z: 0, y: 0, vy: 0, yaw: 0, pitch: 0, hp: 100, maxHp: 100, dmg: 1, range: 2.6, cd: 1, spd: 1, wide: false, hurtT: 0 });
+    clock = 0; nightT = 0; spawnT = 2; treeT = 8; grassT = 5; kills = 0; attackCool = 0;
+    setDay(1);
+    state = 'day';
+    $('overlay').style.display = 'none';
+    say('Survive 10 minutes!', 3000);
+  }
+  function endGame(won) { $('coins').style.display = 'none'; $('pauseBtn').style.display = 'none'; $('skip').style.display = 'none'; $('hurt').style.opacity = 0; setDrone(false); if (won) SFX.win(); else SFX.lose();
+    state = won ? 'won' : 'dead';
+    if (!won && nightT > best) { best = nightT; try { localStorage.setItem('joshBest', best); } catch (e) {} }
+    $('ovTitle').textContent = won ? 'YOU WIN!!! 🎉' : 'Game Over';
+    $('ovText').innerHTML = won
+      ? 'The sun came back! You survived all 10 minutes!<br>Bad guys beaten: ' + kills
+      : 'You survived <b>' + fmt(nightT) + '</b> in the dark.<br>Bad guys beaten: ' + kills + '<br>Best: ' + fmt(best);
+    $('go').textContent = 'PLAY AGAIN';
+    $('overlay').style.display = 'flex';
+  }
+
+  // ---------- Coins & upgrades ----------
+  const COINS_PER_UPGRADE = 20;
+  const coins = [];
+  const coinGeo = new THREE.CylinderGeometry(0.4, 0.4, 0.1, 14); coinGeo.rotateX(Math.PI / 2);
+  const coinMat = new THREE.MeshBasicMaterial({ color: 0xffd700 });
+  const greenCoinMat = new THREE.MeshBasicMaterial({ color: 0x22ff55 });
+  const GREEN_VALUE = 20;                   // a green coin is worth 20 normal coins
+  let coinCount = 0, pendingUps = 0, coinT = 0, greenT = 0, choosing = false;
+  const owned = {};                         // upgrade id -> level
+  function spawnCoin(x, z, green) {
+    const m = new THREE.Mesh(coinGeo, green ? greenCoinMat : coinMat);
+    if (green) m.scale.setScalar(1.5);
+    x = Math.max(-ARENA, Math.min(ARENA, x)); z = Math.max(-ARENA, Math.min(ARENA, z));
+    m.position.set(x, 0.9, z); m.rotation.y = Math.random() * 6;
+    scene.add(m); coins.push({ mesh: m, ph: Math.random() * 6, green: !!green });
+  }
+  function clearCoins() { coins.forEach(c => scene.remove(c.mesh)); coins.length = 0; }
+  function toast(text) {
+    const t = $('coinToast'); t.textContent = text; t.style.opacity = 1;
+    clearTimeout(toast.t); toast.t = setTimeout(() => t.style.opacity = 0, 900);
+  }
+  function refreshCoinHud() {
+    const into = coinCount % COINS_PER_UPGRADE;
+    $('coinCount').textContent = '🪙 ' + coinCount;
+    $('coinFill').style.width = (into / COINS_PER_UPGRADE * 100) + '%';
+    $('coinSub').textContent = (COINS_PER_UPGRADE - into) + ' more for an upgrade';
+    const icons = { sword: '⚔️', quick: '⚡', heart: '❤️', boots: '👟', spin: '🌀' };
+    $('ups').textContent = Object.keys(owned).map(k => icons[k] + (owned[k] > 1 ? '×' + owned[k] : '')).join(' ');
+  }
+  const UPGRADES = [
+    { id: 'sword', icon: '⚔️', name: 'Bigger Sword', desc: 'Hits harder and reaches farther', apply() { P.dmg += 1; P.range += 0.6; } },
+    { id: 'quick', icon: '⚡', name: 'Quick Hands', desc: 'Swing much faster', apply() { P.cd *= 0.65; } },
+    { id: 'heart', icon: '❤️', name: 'Big Heart', desc: 'More health, and heals you all the way', apply() { P.maxHp += 25; P.hp = P.maxHp; } },
+    { id: 'boots', icon: '👟', name: 'Speed Boots', desc: 'Run faster', apply() { P.spd *= 1.15; } },
+    { id: 'spin', icon: '🌀', name: 'Spin Attack', desc: 'Hit bad guys all the way around you', apply() { P.wide = true; P.range += 0.4; } }
+  ];
+  function releaseInput() {
+    joy.id = null; joy.x = joy.y = 0; stick.style.display = 'none'; lookId = null; jumpHeld = false; hitQueued = false;
+    $('jump').classList.remove('down'); $('hit').classList.remove('down');
+  }
+  function offerUpgrade() {
+    choosing = true; releaseInput(); SFX.upgrade();
+    const pool = UPGRADES.filter(u => !(u.id === 'spin' && P.wide)).sort(() => Math.random() - 0.5).slice(0, 3);
+    const box = $('upChoices'); box.innerHTML = '';
+    pool.forEach(u => {
+      const b = document.createElement('button'); b.className = 'upbtn';
+      b.innerHTML = '<span class="ic">' + u.icon + '</span><b>' + u.name + '</b>' + u.desc;
+      b.addEventListener('click', () => {
+        u.apply(); owned[u.id] = (owned[u.id] || 0) + 1; refreshCoinHud();
+        pendingUps--; $('upOv').style.display = 'none'; choosing = false;
+        if (pendingUps > 0) offerUpgrade();
+      });
+      box.appendChild(b);
+    });
+    $('upOv').style.display = 'flex';
+  }
+  function resetCoins() {
+    clearCoins(); coinCount = 0; pendingUps = 0; coinT = 0; greenT = 25; choosing = false;
+    for (const k in owned) delete owned[k];
+    $('upOv').style.display = 'none'; $('coins').style.display = 'block';
+    for (let i = 0; i < 25; i++) {
+      let x, z; do { x = (Math.random() * 2 - 1) * ARENA; z = (Math.random() * 2 - 1) * ARENA; } while (Math.hypot(x, z) < 4);
+      spawnCoin(x, z);
+    }
+    refreshCoinHud();
+  }
+  function updateCoins(dt) {
+    coinT -= dt;
+    greenT -= dt;
+    if (greenT <= 0) {                       // green coins are rare: about one every 25-40 seconds, 2 at most
+      greenT = R(25, 40);
+      if (coins.filter(c => c.green).length < 2) {
+        const a = Math.random() * 6.283, r = R(10, 40);
+        spawnCoin(P.x + Math.cos(a) * r, P.z + Math.sin(a) * r, true);
+      }
+    }
+    if (coinT <= 0 && coins.filter(c => !c.green).length < 30) {
+      coinT = 1.5;
+      const a = Math.random() * 6.283, r = R(8, 35);
+      spawnCoin(P.x + Math.cos(a) * r, P.z + Math.sin(a) * r);
+    }
+    for (let i = coins.length - 1; i >= 0; i--) {
+      const c = coins[i], m = c.mesh;
+      m.rotation.y += dt * 3; m.position.y = 0.9 + Math.sin(clock * 3 + c.ph) * 0.15;
+      if (Math.hypot(m.position.x - P.x, m.position.z - P.z) < 1.5 && P.y < 2.2) {
+        const value = c.green ? GREEN_VALUE : 1, old = coinCount;
+        scene.remove(m); coins.splice(i, 1); coinCount += value;
+        SFX.coin(); if (c.green) SFX.greenCoin();
+        toast(c.green ? '+' + value + ' GREEN coin!  (' + coinCount + ')' : '+1 coin!  (' + coinCount + ')');
+        const earned = Math.floor(coinCount / COINS_PER_UPGRADE) - Math.floor(old / COINS_PER_UPGRADE);
+        if (earned > 0) { pendingUps += earned; toast('20 coins! Upgrade!'); }
+        refreshCoinHud();
+      }
+    }
+    if (pendingUps > 0 && !choosing) offerUpgrade();
+  }
+
+  // ---------- Input ----------
+  const keys = {};
+  const joy = { id: null, ox: 0, oy: 0, x: 0, y: 0 };
+  let lookId = null, lookX = 0, lookY = 0;
+  let jumpHeld = false, hitQueued = false;
+  const stick = $('stick'), knob = $('knob');
+  const STICK_R = 55;
+
+  function btnFor(el) { return el && el.closest && el.closest('.btn'); }
+
+  document.addEventListener('touchstart', e => {
+    for (const t of e.changedTouches) {
+      const b = btnFor(t.target);
+      if (b) { b.classList.add('down'); if (b.id === 'jump') jumpHeld = true; else hitQueued = true; b.dataset.tid = t.identifier; continue; }
+      if (t.target.closest('[data-ui]')) continue;
+      if (t.clientX < innerWidth / 2) {
+        if (joy.id === null) {
+          joy.id = t.identifier; joy.ox = t.clientX; joy.oy = t.clientY; joy.x = joy.y = 0;
+          stick.style.display = 'block'; stick.style.left = (t.clientX - 65) + 'px'; stick.style.top = (t.clientY - 65) + 'px';
+          knob.style.left = knob.style.top = '37px';
+        }
+      } else if (lookId === null) {
+        lookId = t.identifier; lookX = t.clientX; lookY = t.clientY;
+      }
+    }
+    if (!e.target.closest('[data-ui]')) e.preventDefault();
+  }, { passive: false });
+
+  document.addEventListener('touchmove', e => {
+    for (const t of e.changedTouches) {
+      if (t.identifier === joy.id) {
+        let dx = t.clientX - joy.ox, dy = t.clientY - joy.oy;
+        const d = Math.hypot(dx, dy);
+        if (d > STICK_R) { dx *= STICK_R / d; dy *= STICK_R / d; }
+        joy.x = dx / STICK_R; joy.y = dy / STICK_R;
+        knob.style.left = (37 + dx) + 'px'; knob.style.top = (37 + dy) + 'px';
+      } else if (t.identifier === lookId) {
+        P.yaw -= (t.clientX - lookX) * LOOK_SENS;
+        P.pitch -= (t.clientY - lookY) * LOOK_SENS;
+        P.pitch = Math.max(-1.4, Math.min(1.4, P.pitch));
+        lookX = t.clientX; lookY = t.clientY;
+      }
+    }
+    e.preventDefault();
+  }, { passive: false });
+
+  function touchEnd(e) {
+    for (const t of e.changedTouches) {
+      if (t.identifier === joy.id) { joy.id = null; joy.x = joy.y = 0; stick.style.display = 'none'; }
+      if (t.identifier === lookId) lookId = null;
+      for (const id of ['jump', 'hit']) {
+        const b = $(id);
+        if (b.dataset.tid === String(t.identifier)) {
+          b.classList.remove('down'); b.dataset.tid = '';
+          if (id === 'jump') jumpHeld = false; ;
+        }
+      }
+    }
+  }
+  document.addEventListener('touchend', touchEnd);
+  document.addEventListener('touchcancel', touchEnd);
+  ['gesturestart', 'gesturechange'].forEach(n => document.addEventListener(n, e => e.preventDefault()));
+
+  // Desktop fallback: WASD + space + F/click, drag with mouse to look
+  addEventListener('keydown', e => { keys[e.code] = true; if (e.code === "KeyF" && !e.repeat) hitQueued = true; if (e.code === 'Space') e.preventDefault(); });
+  addEventListener('keyup', e => keys[e.code] = false);
+  let mouseDown = false;
+  canvas.addEventListener('mousedown', e => { mouseDown = true; hitQueued = true; });
+  addEventListener('mouseup', () => { mouseDown = false;  });
+  addEventListener('mousemove', e => {
+    if (!mouseDown) return;
+    P.yaw -= e.movementX * LOOK_SENS; P.pitch = Math.max(-1.4, Math.min(1.4, P.pitch - e.movementY * LOOK_SENS));
+  });
+  $('go').addEventListener('click', startGame);
+  let paused = false;
+  function setPaused(p) {
+    if (p === paused || (p && (choosing || (state !== 'day' && state !== 'night')))) return;
+    paused = p; $('pauseOv').style.display = p ? 'flex' : 'none';
+    joy.id = null; joy.x = joy.y = 0; stick.style.display = 'none'; lookId = null; jumpHeld = false; hitQueued = false;
+    $('jump').classList.remove('down'); $('hit').classList.remove('down');
+    try { if (AC) p ? AC.suspend() : AC.resume(); } catch (e) {}
+  }
+  $('pauseBtn').addEventListener('click', () => setPaused(true));
+  $('resume').addEventListener('click', () => setPaused(false));
+  $('restart').addEventListener('click', () => { setPaused(false); startGame(); });
+  document.addEventListener('visibilitychange', () => { if (document.hidden) setPaused(true); });
+  addEventListener('keydown', e => { if (e.code === 'Escape' || e.code === 'KeyP') setPaused(!paused); });
+  $('skip').addEventListener('click', () => { if (state === 'day' && clock < DAY_SECONDS - 1) clock = DAY_SECONDS - 1; });
+
+  function resize() {
+    renderer.setSize(innerWidth, innerHeight, false);
+    camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix();
+  }
+  addEventListener('resize', resize); resize();
+
+  // ---------- Update ----------
+  function hurt(amount) { if (P.hurtT <= 0) SFX.hurt();
+    P.hp -= amount; P.hurtT = 0.2; regenT = 0;
+    $('hurt').style.opacity = 0.35;
+  }
+
+  function update(dt) {
+    // --- player movement ---
+    let mx = joy.x, mz = joy.y;                        // mz: +down on screen = backwards
+    if (keys.KeyA || keys.ArrowLeft) mx -= 1;
+    if (keys.KeyD || keys.ArrowRight) mx += 1;
+    if (keys.KeyW || keys.ArrowUp) mz -= 1;
+    if (keys.KeyS || keys.ArrowDown) mz += 1;
+    const ml = Math.hypot(mx, mz);
+    if (ml > 1) { mx /= ml; mz /= ml; }
+    const sy = Math.sin(P.yaw), cy = Math.cos(P.yaw);
+    P.x += (mx * cy + mz * sy) * PLAYER_SPEED * P.spd * dt;
+    P.z += (-mx * sy + mz * cy) * PLAYER_SPEED * P.spd * dt;
+    P.x = Math.max(-ARENA, Math.min(ARENA, P.x)); P.z = Math.max(-ARENA, Math.min(ARENA, P.z));
+    for (const t of trees) {
+      if (t.awake) continue;
+      const dx = P.x - t.x, dz = P.z - t.z, d = Math.hypot(dx, dz), min = t.r + 0.35;
+      if (d < min && d > 0.0001) { P.x = t.x + dx / d * min; P.z = t.z + dz / d * min; }
+    }
+    if ((jumpHeld || keys.Space) && P.y <= 0.001) { P.vy = JUMP_V; SFX.jump(); }
+    P.vy -= GRAVITY * dt; P.y += P.vy * dt;
+    if (P.y < 0) { P.y = 0; P.vy = 0; }
+
+    camera.position.set(P.x, P.y + EYE, P.z);
+    camera.rotation.set(P.pitch, P.yaw, 0);
+    skyGroup.position.copy(camera.position);
+
+    updateCoins(dt);
+
+    // --- day/night ---
+    clock += dt;
+    if (state === 'day') {
+      const left = DAY_SECONDS - clock;
+      $('timer').textContent = '☀️ Sun goes out in ' + Math.ceil(left); $('skip').style.display = 'block';
+      if (left < 4) setDay(Math.max(0, left / 4));      // sun fades out during the last 4 seconds
+      if (left <= 0) { state = 'night'; $('skip').style.display = 'none'; setDay(0); say('THE SUN IS GONE!', 3500); SFX.sunOut(); setDrone(true); }
+    } else if (state === 'night') {
+      nightT += dt;
+      $('timer').textContent = '🌑 ' + fmt(nightT) + ' / 10:00';
+      if (nightT >= WIN_SECONDS) { endGame(true); return; }
+    }
+
+    // --- spawning ---
+    if (state === 'night') {
+      const prog = nightT / WIN_SECONDS;
+      const maxAlive = 10 + Math.floor(prog * 30);
+      spawnT -= dt;
+      if (spawnT <= 0 && enemies.filter(e => !e.tree).length < maxAlive) {
+        spawnT = 2 - 1.5 * prog;
+        const e = makeEnemy();
+        const a = Math.random() * Math.PI * 2, r = R(18, 30);
+        let ex = P.x + Math.cos(a) * r, ez = P.z + Math.sin(a) * r;
+        ex = Math.max(-ARENA, Math.min(ARENA, ex)); ez = Math.max(-ARENA, Math.min(ARENA, ez));
+        e.mesh.position.x = ex; e.mesh.position.z = ez;
+        e.speed = (3.5 + 2.2 * prog) * e.speedMul;
+        scene.add(e.mesh); enemies.push(e); SFX.spawn();
+      }
+      // a patch of "grass" pops open and a dirt monster climbs out
+      grassT -= dt;
+      const grassAlive = enemies.filter(e => e.grass).length;
+      if (grassT <= 0 && grassAlive < 2 + Math.floor(prog * 6)) {
+        grassT = 10 - 5 * prog;
+        const cands = patches.filter(p => { const d = Math.hypot(p.x - P.x, p.z - P.z); return !p.used && d > 7 && d < 30; });
+        if (cands.length) {
+          const p = cands[Math.floor(Math.random() * cands.length)];
+          p.used = true; p.grass.visible = false; p.dirt.visible = true;
+          const m = makeGrassGuy(); m.position.set(p.x, -1.6, p.z); scene.add(m);
+          enemies.push({ mesh: m, grass: true, limbs: [], hp: 3, phase: R(0, 6), scale: 1.0,
+            speed: 4 + 1.8 * prog, rise: 0.8, stun: 0 });
+          SFX.pop();
+        }
+      }
+      // a tree suddenly gets a face and starts walking
+      treeT -= dt;
+      const treesAlive = enemies.filter(e => e.tree).length;
+      if (treeT <= 0 && treesAlive < 3 + Math.floor(prog * 8)) {
+        treeT = 14 - 8 * prog;
+        const cands = trees.filter(t => { const d = Math.hypot(t.x - P.x, t.z - P.z); return !t.awake && d > 9 && d < 35; });
+        if (cands.length) {
+          const t = cands[Math.floor(Math.random() * cands.length)];
+          const arms = wakeTree(t);
+          enemies.push({ mesh: t.group, tree: t, limbs: [], arms, hp: 6, phase: R(0, 6), scale: 1.5, speed: 2.6 + 1.8 * prog,
+            wake: 2.6, wakeTotal: 2.6, stun: 0 });
+          SFX.treeWake();
+        }
+      }
+    }
+
+    // --- attack ---
+    attackCool -= dt;
+    const swing = hitQueued; hitQueued = false;   // one tap = one swing; holding does nothing
+    if (swing && attackCool <= 0 && state !== "menu") {
+      attackCool = 0.7 * P.cd; SFX.swing();
+      const fx = -Math.sin(P.yaw), fz = -Math.cos(P.yaw);
+      for (const e of enemies) {
+        const dx = e.mesh.position.x - P.x, dz = e.mesh.position.z - P.z, d = Math.hypot(dx, dz);
+        if (d < P.range && (P.wide || (dx * fx + dz * fz) / (d || 1) > 0.4)) {
+          e.hp -= P.dmg; SFX.hit();
+          e.mesh.position.x += dx / (d || 1) * 1.2; e.mesh.position.z += dz / (d || 1) * 1.2;
+          e.stun = 0.25;
+        }
+      }
+    }
+    for (let i = enemies.length - 1; i >= 0; i--) {
+      if (enemies[i].hp <= 0) { const dead = enemies[i]; scene.remove(dead.mesh); enemies.splice(i, 1); kills++; SFX.die();
+        const drops = dead.tree ? 3 : dead.grass ? 2 : 1;
+        for (let k = 0; k < drops; k++) spawnCoin(dead.mesh.position.x + R(-1, 1), dead.mesh.position.z + R(-1, 1)); }
+    }
+
+    // --- enemies ---
+    let touching = 0;
+    for (const e of enemies) {
+      const m = e.mesh, dx = P.x - m.position.x, dz = P.z - m.position.z, d = Math.hypot(dx, dz) || 1;
+      e.phase += dt * 6;
+      if (e.grass) {
+        if (e.rise > 0) {                          // climbing out of the ground
+          e.rise -= dt; m.position.y = -1.6 * Math.max(0, e.rise / 0.8); m.rotation.y = Math.atan2(dx, dz);
+          continue;
+        }
+        const fx = -Math.sin(P.yaw), fz = -Math.cos(P.yaw);
+        if ((-dx * fx - dz * fz) / d > 0.55) {     // you are looking at it: it freezes
+          m.rotation.y = Math.atan2(dx, dz);
+          if (e.stun > 0) e.stun -= dt;
+          if (d < 1.5 * e.scale) touching++;
+          continue;
+        }
+      }
+      if (e.tree) {
+        if (e.wake > 0) {                          // shaking, face just appeared
+          e.wake -= dt;
+          const p = Math.min(1, 1 - e.wake / e.wakeTotal);               // 0 = normal tree, 1 = monster
+          const shake = 0.04 + 0.18 * p;
+          m.rotation.z = Math.sin(e.phase * 4) * shake;
+          m.rotation.x = Math.cos(e.phase * 5) * shake * 0.5;
+          m.rotation.y = Math.atan2(dx, dz);
+          m.scale.setScalar(1 + 0.25 * p);                                 // swells up
+          m.position.y = Math.abs(Math.sin(e.phase * 2)) * 0.25 * p;     // roots wriggle free
+          const grow = Math.max(0.001, (p - 0.3) / 0.7);                   // face and arms appear after 30%
+          e.tree.extras.forEach(x => x.scale.setScalar(grow));
+          for (const a of e.arms) a.rotation.z = (a.position.x < 0 ? 1 : -1) * (0.5 + Math.sin(e.phase * 2) * 0.4 * p);
+          const lm = e.tree.leaves.material;                               // leaves turn dark and angry
+          lm.color.setHex(0x2e8b3a).lerp(darkLeaf, p);
+          lm.emissive.setRGB(0.35 * p, 0, 0);
+          if (e.wake <= 0) { m.rotation.x = 0; SFX.treeRoar(); }
+          continue;
+        }
+        m.rotation.z = Math.sin(e.phase * 0.6) * 0.1;
+        for (const a of e.arms) a.rotation.z = (a.position.x < 0 ? 1 : -1) * (0.5 + Math.sin(e.phase) * 0.5);
+      }
+      if (e.stun > 0) e.stun -= dt;
+      else if (d > 1.0 && state === 'night') { m.position.x += dx / d * e.speed * dt; m.position.z += dz / d * e.speed * dt; }
+      m.rotation.y = Math.atan2(dx, dz);
+      m.position.y = Math.abs(Math.sin(e.phase)) * (e.tree ? 0.3 : 0.12);
+      for (const l of e.limbs) {
+        const s = Math.sin(e.phase + l.ph) * l.amp;
+        if (l.leg) l.node.rotation.x = s; else l.node.rotation.x = l.base + s * 0.5;
+      }
+      if (d < 1.5 * e.scale) touching++;
+    }
+    if (touching && state === 'night') hurt(15 * touching * dt);
+
+    // --- health / effects ---
+    regenT += dt;
+    if (regenT > 8 && P.hp < P.maxHp) P.hp = Math.min(P.maxHp, P.hp + 1.5 * dt);
+    if (P.hurtT > 0) { P.hurtT -= dt; if (P.hurtT <= 0) $('hurt').style.opacity = 0; }
+    $('health').style.width = Math.max(0, P.hp / P.maxHp * 100) + '%';
+    if (P.hp <= 0) endGame(false);
+  }
+
+  // ---------- Main loop ----------
+  let last = performance.now();
+  function frame(now) {
+    const dt = Math.min(0.05, (now - last) / 1000); last = now;
+    if (!paused && !choosing && (state === 'day' || state === 'night')) update(dt);
+    else {                                    // menu / game over: slow camera spin
+      P.yaw += dt * 0.15;
+      camera.position.set(0, EYE + 3, 0); camera.rotation.set(-0.15, P.yaw, 0);
+      skyGroup.position.copy(camera.position);
+      if (state === 'won') setDay(Math.min(1, day + dt * 0.5));
+      for (const e of enemies) e.mesh.visible = state !== 'won';
+    }
+    renderer.render(scene, camera);
+    requestAnimationFrame(frame);
+  }
+  setDay(1);
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
