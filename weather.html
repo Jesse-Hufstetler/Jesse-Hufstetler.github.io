@@ -21,7 +21,7 @@ canvas{display:block}
 table{border-collapse:separate;border-spacing:2px;width:100%}
 th,td{padding:2px 4px;text-align:center;font-variant-numeric:tabular-nums;font-size:12px}
 #tbl td{padding-top:var(--padv,2px);padding-bottom:var(--padv,2px)} /* grown by fitBarH when there's room to spare */
-th{width:1%;padding:2px 8px} th.med{width:auto} /* every column shrinks to fit; Median soaks up the leftover width */
+th{width:1%;padding:2px 8px} th.med{width:auto} /* every column shrinks to fit; Average soaks up the leftover width */
 th{color:var(--dim);font-weight:500} td.m{text-align:left;color:var(--dim);white-space:nowrap}
 td.v{border-radius:3px;color:#000}
 button{background:var(--panel);color:var(--fg);border:1px solid var(--line);border-radius:4px;padding:2px 10px;cursor:pointer;font:inherit}
@@ -145,7 +145,7 @@ function pick(arr, t0, t1, m) {
   }
   return best;
 }
-const median = a => { const s = [...a].sort((x, y) => x - y), n = s.length; return n % 2 ? s[n >> 1] : (s[n / 2 - 1] + s[n / 2]) / 2; };
+const mean = a => a.reduce((s, x) => s + x, 0) / a.length;
 
 // ---- daylight: computed sun elevation -> 0 (night) .. 1 (day), fading through civil twilight ----
 // Full day from official sunrise/sunset (sun centre at -0.833°) out to full dark at -6° (end of civil twilight),
@@ -200,8 +200,8 @@ function layout(cssW, barH) {
   CHART = y;
   TOTAL = KEYS + CHART;
 }
-// Collapsed mode: stripes are low:median:high ≈ 1:8:1 (each edge stripe = median/8, rounded to whole pixels, min 1px).
-// The median grows in steps of 4 from MED_MIN up to MED_MAX, but only as far as the window has room,
+// Collapsed mode: stripes are low:average:high ≈ 1:8:1 (each edge stripe = average/8, rounded to whole pixels, min 1px).
+// The average stripe grows in steps of 4 from MED_MIN up to MED_MAX, but only as far as the window has room,
 // so no scrollbar appears unless even the minimum doesn't fit.
 const MED_MIN = 12, MED_MAX = 32;
 const edgeH = med => Math.max(1, Math.round(med / 8));
@@ -215,7 +215,7 @@ function fitBarH(cssW) {
   layout(cssW, barOf(MED_MIN));
   if (!blocks.length) return barOf(MED_MIN);
   const spare = document.documentElement.clientHeight - other - TOTAL - 2;
-  let med = MED_MAX;   // biggest median whose extra height (over the minimum) still fits in the spare room
+  let med = MED_MAX;   // biggest average stripe whose extra height (over the minimum) still fits in the spare room
   while (med > MED_MIN && (barOf(med) - barOf(MED_MIN)) * blocks.length > spare) med -= 4;
   medH = med;
   // Bars maxed out and still room left: let the hover-table rows grow, up to 2x their normal height.
@@ -296,24 +296,24 @@ function draw() {
 
   // metric blocks
   for (const { m, y0, rows } of blocks) {
-    // consensus: top stripe = lowest value, middle = median, bottom = highest. Solid = sources agree; banded = they don't.
+    // consensus: top stripe = lowest value, middle = average, bottom = highest. Solid = sources agree; banded = they don't.
     // Sources shown: 1:2:1 stripes. Collapsed: ≈1:8:1 (thin low/high edges).
     let y = y0;
-    const mh = st.showSrc ? CONS / 2 : medH, lh = st.showSrc ? CONS / 4 : edgeH(medH);   // median height, low/high stripe height
+    const mh = st.showSrc ? CONS / 2 : medH, lh = st.showSrc ? CONS / 4 : edgeH(medH);   // average height, low/high stripe height
     if (st.showSrc) {
       drawKey(m, y0); y += TITLE;
       if (m.key === 'pop' && popApplied) { ctx.font = '600 12px system-ui'; drawWarn(ctx.measureText(`${m.label} (${m.unit})`).width + 6, y0 + 14); }
-      ctx.font = '600 11px system-ui'; ctx.fillStyle = '#e8e8e8'; ctx.fillText('Low / median / high', 0, y + 15);
+      ctx.font = '600 11px system-ui'; ctx.fillStyle = '#e8e8e8'; ctx.fillText('Low / average / high', 0, y + 15);
     } else {
       ctx.font = '600 12px system-ui'; ctx.fillStyle = '#e8e8e8'; ctx.fillText(`${m.label} (${m.unit})`, 0, y + barH / 2 - 3);
       if (m.key === 'pop' && popApplied) drawWarn(ctx.measureText(`${m.label} (${m.unit})`).width + 6, y + barH / 2 - 3);
-      ctx.font = '9px system-ui'; ctx.fillStyle = '#969696'; ctx.fillText('low / median / high', 0, y + barH / 2 + 10);
+      ctx.font = '9px system-ui'; ctx.fillStyle = '#969696'; ctx.fillText('low / average / high', 0, y + barH / 2 + 10);
     }
     const cons = new Array(N);
     for (let i = 0; i < N; i++) {
       const [a, b] = span(i), vals = [];
       for (const s of rows) { const p = pick(s.s, a, b, m); if (p) vals.push(p[2]); }
-      cons[i] = vals.length ? [Math.min(...vals), median(vals), Math.max(...vals)] : null;
+      cons[i] = vals.length ? [Math.min(...vals), mean(vals), Math.max(...vals)] : null;
     }
     runs(y, lh, N, i => cons[i] ? rgb(colorAt(m, cons[i][0])) : null);
     runs(y + lh, mh, N, i => cons[i] ? rgb(colorAt(m, cons[i][1])) : null);
@@ -352,14 +352,14 @@ function panel(t) {
   $('when').innerHTML = `<span>${fFull.format(t * 1000)} <span class="dim">· ${t - NOW < 60 ? 'now' : 'in ' + rel(t - NOW)}</span></span>` +
     (day ? `<span id="sun">☀ ${fClock.format(day[0] * 1000)} – ${fClock.format(day[1] * 1000)}</span>` : '');
   const used = D.sources.filter(s => D.series.some(x => x.src === s.id));
-  let h = '<table><tr><th></th><th class="med">Median</th>' + used.map(s => `<th title="${s.name}">${s.short}</th>`).join('') + '</tr>';
+  let h = '<table><tr><th></th><th class="med">Average</th>' + used.map(s => `<th title="${s.name}">${s.short}</th>`).join('') + '</tr>';
   for (const m of D.metrics) {
     if (!st.on.has(m.key) || !byMetric[m.key]) continue;
     const vals = {}; for (const s of byMetric[m.key]) { const p = pick(s.s, t, t + 1, m); if (p) vals[s.src] = p; }
     const all = Object.values(vals).map(p => p[2]);
     const cell = (v, title) => { if (v == null) return '<td class="dim">–</td>'; const c = colorAt(m, v); return `<td class="v" title="${title || ''}" style="background:${rgb(c)};color:${ink(c)}">${v.toFixed(m.dec)}</td>`; };
     h += `<tr><td class="m">${m.label} <span class="dim">${m.unit}</span>${m.key === 'pop' ? pessWarn(Object.values(vals).some(p => p[3] != null && p[2] !== p[3])) : ''}</td>` +
-      cell(all.length ? median(all) : null, all.length ? `range ${Math.min(...all).toFixed(m.dec)} – ${Math.max(...all).toFixed(m.dec)}` : '') +
+      cell(all.length ? mean(all) : null, all.length ? `range ${Math.min(...all).toFixed(m.dec)} – ${Math.max(...all).toFixed(m.dec)}` : '') +
       used.map(s => { const p = vals[s.id]; return cell(p ? p[2] : null, p ? `${fClock.format(p[0] * 1000)} – ${fClock.format(p[1] * 1000)} (${rel(p[1] - p[0])} span)` : ''); }).join('') + '</tr>';
   }
   $('tbl').innerHTML = h + '</table>';
