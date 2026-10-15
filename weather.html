@@ -90,7 +90,9 @@ function applyPess() {
   const n = pessN(); popApplied = false;
   popSeries.forEach(s => s.s.forEach((x, i) => { x[2] = Math.round(remap(s.raw[i] / 100, n) * 1000) / 10; if (x[2] !== x[3]) popApplied = true; }));
 }
-const PESS_TIP = 'Pessimism applied - open Advanced for details';
+// Consensus average of picked points. Rain chance: average the forecasts' own values, then apply pessimism once (not per source).
+const avgOf = (m, ps) => m.key === 'pop' ? Math.round(remap(mean(ps.map(p => p[3])) / 100, pessN()) * 1000) / 10 : mean(ps.map(p => p[2]));
+const PESS_TIP ='Pessimism applied - open Advanced for details';
 function showTip(text, x, y) {   // instant, styled tooltip above the point (below if there's no room)
   const t = $('tip'); t.textContent = text; t.style.display = 'block';
   t.style.left = Math.max(4, Math.min(x + 8, window.innerWidth - t.offsetWidth - 8)) + 'px';
@@ -311,9 +313,10 @@ function draw() {
     }
     const cons = new Array(N);
     for (let i = 0; i < N; i++) {
-      const [a, b] = span(i), vals = [];
-      for (const s of rows) { const p = pick(s.s, a, b, m); if (p) vals.push(p[2]); }
-      cons[i] = vals.length ? [Math.min(...vals), mean(vals), Math.max(...vals)] : null;
+      const [a, b] = span(i), ps = [];
+      for (const s of rows) { const p = pick(s.s, a, b, m); if (p) ps.push(p); }
+      const vals = ps.map(p => p[2]);
+      cons[i] = vals.length ? [Math.min(...vals), avgOf(m, ps), Math.max(...vals)] : null;
     }
     runs(y, lh, N, i => cons[i] ? rgb(colorAt(m, cons[i][0])) : null);
     runs(y + lh, mh, N, i => cons[i] ? rgb(colorAt(m, cons[i][1])) : null);
@@ -359,7 +362,7 @@ function panel(t) {
     const all = Object.values(vals).map(p => p[2]);
     const cell = (v, title) => { if (v == null) return '<td class="dim">–</td>'; const c = colorAt(m, v); return `<td class="v" title="${title || ''}" style="background:${rgb(c)};color:${ink(c)}">${v.toFixed(m.dec)}</td>`; };
     h += `<tr><td class="m">${m.label} <span class="dim">${m.unit}</span>${m.key === 'pop' ? pessWarn(Object.values(vals).some(p => p[3] != null && p[2] !== p[3])) : ''}</td>` +
-      cell(all.length ? mean(all) : null, all.length ? `range ${Math.min(...all).toFixed(m.dec)} – ${Math.max(...all).toFixed(m.dec)}` : '') +
+      cell(all.length ? avgOf(m, Object.values(vals)) : null, all.length ? `range ${Math.min(...all).toFixed(m.dec)} – ${Math.max(...all).toFixed(m.dec)}` : '') +
       used.map(s => { const p = vals[s.id]; return cell(p ? p[2] : null, p ? `${fClock.format(p[0] * 1000)} – ${fClock.format(p[1] * 1000)} (${rel(p[1] - p[0])} span)` : ''); }).join('') + '</tr>';
   }
   $('tbl').innerHTML = h + '</table>';
