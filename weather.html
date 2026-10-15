@@ -406,4 +406,20 @@ kLabel(); draw();
 document.fonts.ready.then(() => draw());   // re-fit once the segment font has loaded (it changes the panel's height)
 }
 </script>
-<script src="weather-data.js"></script></body></html>
+<script src="weather-data.js"></script>
+<script>
+// Auto-refresh after a deploy: poll this page and its data script, reload when either changes.
+(() => {
+  if (!/^https?:$/.test(location.protocol)) return;
+  const files = [location.pathname, 'weather-data.js'];
+  const fetchAll = () => Promise.all(files.map(f => fetch(f, { cache: 'no-store' }).then(r => r.ok ? r.text() : Promise.reject())));
+  let base = null;
+  const check = () => fetchAll().then(t => {
+    const sig = t.map(s => s.length + ':' + s.slice(0, 64) + s.slice(-64)).join('|') + '#' + t.reduce((h, s) => { for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0; return h; }, 0);
+    if (base === null) base = sig; else if (sig !== base) location.reload();
+  }).catch(() => {});
+  check();
+  setInterval(() => { if (!document.hidden) check(); }, 30000);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) check(); });
+})();
+</script></body></html>
