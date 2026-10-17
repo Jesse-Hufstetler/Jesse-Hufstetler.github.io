@@ -448,7 +448,17 @@ function confirmAction(message, yesLabel) {
 
 $('showSnoozed').onchange = render;
 $('signout').onclick = async () => {
-  if (await confirmAction('Sign out of this device?', 'Sign out')) db.auth.signOut();
+  if (!(await confirmAction('Sign out of this device?', 'Sign out'))) return;
+  // 'local' ends only this device's session; the default would sign out everywhere.
+  const { error } = await db.auth.signOut({ scope: 'local' });
+  if (error) {
+    // The server may have already ended this session (signed out elsewhere). Drop the
+    // stale saved session so the page can't get stuck looking signed in.
+    for (const k of Object.keys(localStorage)) {
+      if (k.startsWith('sb-') && k.endsWith('-auth-token')) localStorage.removeItem(k);
+    }
+    location.reload();
+  }
 };
 
 $('login').onsubmit = async e => {
