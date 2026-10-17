@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>To-Do</title>
+<style>
+  :root {
+    --bg:#fafafa; --fg:#1b1b1f; --muted:#6b6b76; --line:#d8d8de; --accent:#2f6fed;
+    --row-l:.9; --row-c:.07; --row-fg:#1b1b1f;
+    --pill-bg:rgba(255,255,255,.8); --pill-fg:#1b1b1f;
+    --pill-link-bg:#fff; --pill-link-fg:#0b57d0;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg:#16161a; --fg:#ececf1; --muted:#9a9aa6; --line:#34343c; --accent:#5b8cff;
+      --row-l:.32; --row-c:.08; --row-fg:#f2f2f5;
+      --pill-bg:rgba(0,0,0,.4); --pill-fg:#f2f2f5;
+      --pill-link-bg:#fff; --pill-link-fg:#0b57d0;
+    }
+  }
+  * { box-sizing: border-box; }
+  [hidden] { display:none !important; }
+  body { margin:0; background:var(--bg); color:var(--fg); font:16px/1.35 system-ui, sans-serif; }
+  main { max-width:760px; margin:0 auto; padding:16px; }
+  header { display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; }
+  h1 { font-size:1.2rem; margin:0; }
+  form { display:flex; gap:8px; }
+  input[type=text], input[type=url], input[type=email], input[type=password] {
+    flex:1; min-width:0; padding:10px; border:1px solid var(--line); border-radius:8px;
+    background:transparent; color:inherit; font:inherit; }
+  button { padding:8px 12px; border:0; border-radius:8px; background:var(--accent); color:#fff; font:inherit; cursor:pointer; }
+  button.quiet { background:rgba(127,127,127,.18); color:inherit; padding:6px 10px; font-size:.85rem; }
+  button.link { background:none; color:var(--muted); padding:4px 8px; font-size:.85rem; }
+  #login { flex-direction:column; max-width:360px; }
+  #add { margin-bottom:12px; }
+  #msg { color:#d33; min-height:1.4em; font-size:.9rem; }
+  ul { list-style:none; margin:0; padding:0; }
+  .task { border-radius:10px; margin-bottom:6px; padding:8px 12px;
+    background:oklch(var(--row-l) var(--row-c) var(--h)); color:var(--row-fg); }
+  .task.snoozed { opacity:.55; }
+  .top { display:flow-root; }
+  .meta { float:right; display:flex; align-items:center; gap:6px; margin:2px 0 4px 10px; }
+  .text { font-size:var(--fs); line-height:1.2; cursor:pointer; word-break:break-word; }
+  .age { font-size:.8rem; background:var(--pill-bg); color:var(--pill-fg); border-radius:6px; padding:3px 8px; white-space:nowrap; text-decoration:none; }
+  a.age { background:var(--pill-link-bg); color:var(--pill-link-fg); font-weight:600; }
+  .more { background:none; color:inherit; padding:2px 8px; font-size:1.1rem; }
+  .actions { margin-top:10px; padding-top:10px; border-top:1px solid rgba(127,127,127,.35); display:flex; flex-direction:column; gap:8px; }
+  .actions .row { display:flex; align-items:center; gap:6px; }
+  .actions .cap { font-size:.75rem; opacity:.75; margin-bottom:-4px; }
+  .actions button, .actions select { background:var(--pill-bg); color:var(--pill-fg); border:0; border-radius:8px; padding:7px 10px; font:inherit; font-size:.85rem; }
+  .actions button.danger { background:#f3b4b4; color:#5a1010; }
+  .note { font-size:.8rem; color:inherit; opacity:.8; margin-top:6px; }
+  .opts { display:flex; justify-content:center; align-items:center; gap:6px; margin:12px 0; font-size:.8rem; font-style:italic; color:var(--muted); opacity:.8; }
+  section { margin-top:24px; }
+  h2 { font-size:1rem; margin:0 0 8px; color:var(--muted); font-weight:600; }
+  .links li { display:flex; flex-wrap:wrap; align-items:center; gap:6px; padding:4px 0; }
+  #confirmDialog { width:min(86vw, 320px); }
+  #confirmMsg { margin:0; word-break:break-word; }
+  .confirmBtns { display:flex; gap:10px; margin-top:18px; }
+  .confirmBtns button { flex:1; padding:10px 12px; }
+  #confirmYes { background:none; border:1px solid #e5484d; color:#e5484d; }
+  #confirmYes:disabled { opacity:.4; }
+  .links a { color:var(--accent); }
+  .foot { text-align:center; margin-top:28px; }
+  dialog h3 { font-size:.8rem; margin:0 0 8px; color:var(--muted); font-weight:600; text-transform:uppercase; letter-spacing:.04em; }
+  .group { border:1px solid var(--line); border-radius:10px; padding:12px; margin-top:12px; background:rgba(127,127,127,.07); }
+  .group.inline { display:flex; justify-content:space-between; align-items:center; padding:8px 12px; }
+  .group.inline h3 { margin:0; }
+  .group ul { margin-bottom:4px; }
+  .group form { margin:8px 0 0; }
+  #addLink button { align-self:flex-end; background:var(--accent); color:#fff; }
+  #signout { background:none; border:1px solid #e5484d; color:#e5484d; }
+  .dlgfoot { margin-top:20px; padding-top:16px; border-top:1px solid var(--line); }
+  #closeSettings { width:100%; background:var(--accent); color:#fff; padding:10px 12px; }
+  dialog { border:1px solid var(--line); border-radius:12px; background:var(--bg); color:var(--fg);
+    width:min(92vw, 420px); padding:16px; }
+  dialog::backdrop { background:rgba(0,0,0,.55); }
+  dialog h2 { margin:0 0 8px; }
+  dialog form { flex-direction:column; margin:12px 0; }
+</style>
+</head>
+<body>
+<main>
+  <form id="login" hidden>
+    <input type="email" id="email" placeholder="Email" autocomplete="username" required>
+    <input type="password" id="password" placeholder="Password" autocomplete="current-password" required>
+    <button>Sign in</button>
+  </form>
+
+  <div id="app" hidden>
+    <form id="add">
+      <input type="text" id="title" placeholder="New task" autocomplete="off" required>
+      <button>Add</button>
+    </form>
+
+    <ul id="list"></ul>
+    <label class="opts"><input type="checkbox" id="showSnoozed"><span id="snoozeLabel">Show snoozed</span></label>
+
+    <section>
+      <h2>Links</h2>
+      <ul class="links" id="links"></ul>
+    </section>
+
+    <div class="foot"><button class="link" id="openSettings">Settings</button></div>
+
+    <dialog id="confirmDialog">
+      <p id="confirmMsg"></p>
+      <div class="confirmBtns">
+        <button class="quiet" id="confirmNo">Cancel</button>
+        <button class="quiet" id="confirmYes">Delete</button>
+      </div>
+    </dialog>
+
+    <dialog id="settingsDialog">
+      <h2>Settings</h2>
+      <div class="group">
+        <h3>Links</h3>
+        <ul class="links" id="linksEdit"></ul>
+        <form id="addLink">
+          <input type="text" id="linkText" placeholder="Name" required>
+          <input type="url" id="linkUrl" placeholder="https://" required>
+          <button class="quiet">Add link</button>
+        </form>
+      </div>
+      <div class="group inline">
+        <h3>Account</h3>
+        <button class="quiet" id="signout">Sign out</button>
+      </div>
+      <div class="dlgfoot"><button class="quiet" id="closeSettings">Done</button></div>
+    </dialog>
+  </div>
+
+  <p id="msg"></p>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script>
+const db = supabase.createClient(
+  'https://isqjpvjnqnuzocopnymx.supabase.co',
+  'sb_publishable_QOYIutelhmjBJ9YcDNyYAg_weFmmP_j'
+);
+
+const $ = id => document.getElementById(id);
+const say = t => $('msg').textContent = t || '';
+const HOUR = 3600e3, DAY = 24 * HOUR;
+
+// What we call the running "how neglected is this" score. Change it here.
+const TERM = 'dust';
+const TERM_CAP = TERM[0].toUpperCase() + TERM.slice(1);
+
+let todos = [];
+let open = new Set();
+let lastLoad = 0;
+
+const rtf = new Intl.RelativeTimeFormat(undefined, { numeric: 'auto' });
+function ago(ms) {
+  const diff = ms - Date.now();
+  for (const [unit, size] of [['day', DAY], ['hour', HOUR], ['minute', 60e3]]) {
+    if (Math.abs(diff) >= size) return rtf.format(Math.round(diff / size), unit);
+  }
+  return 'just now';
+}
+
+function dur(ms) {
+  for (const [unit, size] of [['day', DAY], ['hour', HOUR], ['minute', 60e3]]) {
+    if (ms >= size) {
+      const n = Math.round(ms / size);
+      return `${n} ${unit}${n === 1 ? '' : 's'}`;
+    }
+  }
+  return 'under a minute';
+}
+
+function short(ms) {
+  for (const [unit, size] of [['d', DAY], ['h', HOUR], ['m', 60e3]]) {
+    if (ms >= size) return Math.round(ms / size) + unit;
+  }
+  return '0';
+}
+
+// Each task gets a hue from its creation time. Stepping by the golden angle per
+// second keeps tasks created close together far apart on the color wheel.
+const hueOf = t => (Math.floor(new Date(t.created_at).getTime() / 1000) * 137.508) % 360;
+
+// Newer tasks are bigger; they shrink as they age.
+function fontPx(t) {
+  const days = Math.max(0, (Date.now() - new Date(t.dated).getTime()) / DAY);
+  return Math.round(13 + 19 / (days + 1));
+}
+
+const isSnoozed = t => t.snoozed_until && new Date(t.snoozed_until).getTime() > Date.now();
+
+function at5pm(date) {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate(), 17).getTime();
+}
+
+function snoozeChoices() {
+  const now = new Date();
+  const choices = [['2 hours', now.getTime() + 2 * HOUR]];
+  choices.push(now.getHours() < 17 ? ['Today 5 pm', at5pm(now)] : ['10 hours', now.getTime() + 10 * HOUR]);
+  const fri = new Date(now);
+  do { fri.setDate(fri.getDate() + 1); } while (fri.getDay() !== 5);
+  choices.push(['Friday 5 pm', at5pm(fri)], ['1 week', now.getTime() + 7 * DAY], ['60 days', now.getTime() + 60 * DAY]);
+  return choices;
+}
+
+async function load() {
+  const { data, error } = await db.from('todos').select();
+  if (error) return say(error.message);
+  say();
+  todos = data;
+  lastLoad = Date.now();
+  render();
+  loadLinks();
+}
+
+function btn(label, action, id, extra = {}) {
+  const b = document.createElement('button');
+  b.textContent = label;
+  b.dataset.action = action;
+  b.dataset.id = id;
+  if (extra.value !== undefined) b.dataset.value = extra.value;
+  if (extra.danger) b.className = 'danger';
+  return b;
+}
+
+function render() {
+  const snoozedCount = todos.filter(isSnoozed).length;
+  if (!snoozedCount) $('showSnoozed').checked = false;
+  $('showSnoozed').hidden = !snoozedCount;
+  $('snoozeLabel').textContent = snoozedCount ? `Show snoozed (${snoozedCount})` : '(nothing snoozed)';
+  const showSnoozed = $('showSnoozed').checked;
+  const list = $('list');
+  list.replaceChildren();
+  const sorted = [...todos].sort((a, b) => new Date(b.dated) - new Date(a.dated));
+  for (const t of sorted) {
+    const snoozed = isSnoozed(t);
+    if (snoozed && !showSnoozed) continue;
+
+    const li = document.createElement('li');
+    li.className = 'task' + (snoozed ? ' snoozed' : '');
+    li.style.setProperty('--h', hueOf(t).toFixed(1));
+    li.style.setProperty('--fs', fontPx(t) + 'px');
+
+    const top = document.createElement('div');
+    top.className = 'top';
+    const text = document.createElement('span');
+    text.className = 'text';
+    text.textContent = t.title;
+    text.dataset.action = 'edit';
+    text.dataset.id = t.id;
+    text.setAttribute('role', 'button');
+    text.tabIndex = 0;
+    const hasUrl = t.url && /^https?:\/\//i.test(t.url);
+    const age = document.createElement(hasUrl ? 'a' : 'span');
+    age.className = 'age';
+    const counted = Date.now() - new Date(t.dated).getTime();
+    age.textContent = (hasUrl ? '↗ ' : '') + short(counted) + ' ' + TERM;
+    if (hasUrl) {
+      age.href = t.url;
+      age.target = '_blank';
+      age.rel = 'noopener';
+    }
+    const more = btn(open.has(t.id) ? '▴' : '▾', 'toggle', t.id);
+    more.className = 'more';
+    const meta = document.createElement('div');
+    meta.className = 'meta';
+    meta.append(age, more);
+    top.append(meta, text);
+    li.append(top);
+
+    if (open.has(t.id)) {
+      const panel = document.createElement('div');
+      panel.className = 'actions';
+
+      const unit = document.createElement('select');
+      unit.dataset.role = 'unit';
+      for (const [label, ms] of [['1 hour', HOUR], ['1 day', DAY], ['1 week', 7 * DAY]]) {
+        unit.append(new Option(label, ms, false, ms === DAY));
+      }
+      const bump = document.createElement('div');
+      bump.className = 'row';
+      bump.append(
+        btn('Dust off', 'top', t.id),
+        btn('▲ Less', 'shift', t.id, { value: 1 }),
+        unit,
+        btn('▼ More', 'shift', t.id, { value: -1 })
+      );
+      const cap = document.createElement('div');
+      cap.className = 'cap';
+      cap.textContent = `${TERM_CAP}: lower means more important`;
+
+      const more2 = document.createElement('div');
+      more2.className = 'row';
+      if (snoozed) {
+        more2.append(btn('Unsnooze', 'snooze', t.id, { value: '' }));
+      } else {
+        const snz = document.createElement('select');
+        snz.dataset.action = 'snooze';
+        snz.dataset.id = t.id;
+        snz.append(new Option('Snooze…', ''));
+        for (const [label, when] of snoozeChoices()) snz.append(new Option(label, when));
+        more2.append(snz);
+      }
+      more2.append(btn(t.url ? 'Edit link' : 'Add link', 'link', t.id));
+      const del = btn('Delete', 'delete', t.id, { danger: true });
+      del.style.marginLeft = 'auto';
+      more2.append(del);
+
+      panel.append(cap, bump, more2);
+      li.append(panel);
+
+      const note = document.createElement('div');
+      note.className = 'note';
+      note.textContent = `Created ${ago(new Date(t.created_at).getTime())} · ${TERM_CAP}: ${counted < 60e3 ? '0' : dur(counted)}`;
+      if (snoozed) note.textContent += ` · Unsnoozes ${ago(new Date(t.snoozed_until).getTime())} (${new Date(t.snoozed_until).toLocaleString()})`;
+      li.append(note);
+    }
+    list.append(li);
+  }
+}
+
+async function update(id, fields) {
+  const { error } = await db.from('todos').update(fields).eq('id', id);
+  if (error) return say(error.message);
+  load();
+}
+
+$('list').onclick = async e => {
+  const b = e.target.closest('[data-action]');
+  if (!b || b.tagName === 'SELECT') return;
+  const id = Number(b.dataset.id);
+  const t = todos.find(x => x.id === id);
+  const value = b.dataset.value;
+  switch (b.dataset.action) {
+    case 'toggle':
+      open.has(id) ? open.delete(id) : open.add(id);
+      return render();
+    case 'edit': {
+      const next = prompt('Edit text', t.title);
+      if (next && next.trim()) update(id, { title: next.trim() });
+      return;
+    }
+    case 'delete': {
+      if (!(await confirmAction(`Delete “${t.title}”?`, 'Delete'))) return;
+      const { error } = await db.from('todos').delete().eq('id', id);
+      return error ? say(error.message) : load();
+    }
+    case 'shift': {
+      const step = Number(b.closest('.actions').querySelector('[data-role=unit]').value);
+      return update(id, { dated: new Date(new Date(t.dated).getTime() + Number(value) * step).toISOString() });
+    }
+    case 'top':
+      return update(id, { dated: new Date().toISOString() });
+    case 'link': {
+      const next = prompt('Link for this task (leave empty to remove)', t.url || 'https://');
+      if (next === null) return;
+      const url = next.trim();
+      if (url && !/^https?:\/\//i.test(url)) return say('Links must start with http:// or https://');
+      return update(id, { url: url || null });
+    }
+    case 'snooze':
+      return update(id, { snoozed_until: value === '' ? null : new Date(Number(value)).toISOString() });
+  }
+};
+
+$('list').onchange = e => {
+  const s = e.target.closest('select[data-action="snooze"]');
+  if (!s || !s.value) return;
+  update(Number(s.dataset.id), { snoozed_until: new Date(Number(s.value)).toISOString() });
+};
+
+async function loadLinks() {
+  const { data, error } = await db.from('links').select().order('created_at');
+  if (error) return say(error.message);
+  $('links').replaceChildren();
+  $('linksEdit').replaceChildren();
+  for (const l of data) {
+    const makeLink = () => {
+      const a = document.createElement('a');
+      a.textContent = l.text;
+      a.href = /^https?:\/\//i.test(l.url) ? l.url : '#';
+      return a;
+    };
+
+    const view = document.createElement('li');
+    view.append(makeLink());
+    $('links').append(view);
+
+    const del = document.createElement('button');
+    del.className = 'link';
+    del.textContent = '✕';
+    del.title = 'Remove link';
+    del.onclick = async () => {
+      if (!(await confirmAction(`Remove “${l.text}”?`, 'Remove'))) return;
+      const { error } = await db.from('links').delete().eq('id', l.id);
+      error ? say(error.message) : loadLinks();
+    };
+    const edit = document.createElement('li');
+    edit.append(makeLink(), del);
+    $('linksEdit').append(edit);
+  }
+}
+
+$('addLink').onsubmit = async e => {
+  e.preventDefault();
+  const url = $('linkUrl').value.trim();
+  if (!/^https?:\/\//i.test(url)) return say('Links must start with http:// or https://');
+  const { error } = await db.from('links').insert({ text: $('linkText').value.trim(), url });
+  if (error) return say(error.message);
+  $('linkText').value = $('linkUrl').value = '';
+  loadLinks();
+};
+
+$('add').onsubmit = async e => {
+  e.preventDefault();
+  const { error } = await db.from('todos').insert({ title: $('title').value.trim() });
+  if (error) return say(error.message);
+  $('title').value = '';
+  load();
+};
+
+const settingsDialog = $('settingsDialog');
+$('openSettings').onclick = () => settingsDialog.showModal();
+$('closeSettings').onclick = () => settingsDialog.close();
+settingsDialog.onclick = e => { if (e.target === settingsDialog) settingsDialog.close(); };
+
+// One shared "are you sure?" dialog. Resolves true only on an explicit tap of the
+// confirm button, which stays disabled for a moment so a double-tap can't trigger it.
+function confirmAction(message, yesLabel) {
+  return new Promise(resolve => {
+    const d = $('confirmDialog');
+    const yes = $('confirmYes');
+    $('confirmMsg').textContent = message;
+    yes.textContent = yesLabel;
+    yes.disabled = true;
+    setTimeout(() => { yes.disabled = false; }, 500);
+    const finish = ok => { d.close(); resolve(ok); };
+    $('confirmNo').onclick = () => finish(false);
+    yes.onclick = () => finish(true);
+    d.onclick = e => { if (e.target === d) finish(false); };
+    d.oncancel = () => resolve(false);
+    d.showModal();
+  });
+}
+
+$('showSnoozed').onchange = render;
+$('signout').onclick = async () => {
+  if (await confirmAction('Sign out of this device?', 'Sign out')) db.auth.signOut();
+};
+
+$('login').onsubmit = async e => {
+  e.preventDefault();
+  const { error } = await db.auth.signInWithPassword({
+    email: $('email').value, password: $('password').value });
+  say(error ? error.message : '');
+};
+
+function show(session) {
+  $('login').hidden = !!session;
+  $('app').hidden = !session;
+  if (session) load();
+  else { todos = []; $('list').replaceChildren(); settingsDialog.close(); }
+}
+
+db.auth.onAuthStateChange((_event, session) => show(session));
+
+// Refresh when you come back to the tab, so ages and snoozes stay current.
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden && !$('app').hidden && Date.now() - lastLoad > 2 * 60e3) load();
+});
+</script>
+</body>
+</html>
