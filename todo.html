@@ -466,10 +466,32 @@ function show(session) {
 
 db.auth.onAuthStateChange((_event, session) => show(session));
 
-// Refresh when you come back to the tab, so ages and snoozes stay current.
+// Don't let a long-open page go stale. Any activity after a couple of idle minutes
+// re-fetches from the database (checked at most every 10 seconds), and a timer
+// re-renders so sizes keep shrinking and snoozes expire without a reload.
+const STALE_MS = 2 * 60e3;
+let lastCheck = 0;
+
+function refreshIfStale() {
+  const now = Date.now();
+  if (now - lastCheck < 10e3) return;
+  lastCheck = now;
+  if (!$('app').hidden && !document.hidden && now - lastLoad > STALE_MS) load();
+}
+
+for (const type of ['mousemove', 'touchstart', 'keydown', 'focus']) {
+  window.addEventListener(type, refreshIfStale, { passive: true });
+}
 document.addEventListener('visibilitychange', () => {
-  if (!document.hidden && !$('app').hidden && Date.now() - lastLoad > 2 * 60e3) load();
+  if (!document.hidden) { lastCheck = 0; refreshIfStale(); }
 });
+
+function tick() {
+  if ($('app').hidden || document.hidden) return;
+  const busy = document.querySelector('dialog[open]') || document.activeElement?.closest('#list select');
+  if (!busy) render();
+}
+setInterval(tick, 60e3);
 </script>
 </body>
 </html>
