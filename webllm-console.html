@@ -22,9 +22,28 @@
     --accent-h:210; /* hue shifts with temperature: cool -> hot */
     --accent: hsl(var(--accent-h) 24% 50%);
     --accent-dim: hsl(var(--accent-h) 20% 91%);
+    --scrollbar:#c7cbd3;
     --radius:10px;
     --mono:'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
     --sans:'Inter', ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      color-scheme:dark;
+      --bg:#14161a;
+      --panel:#1c1f25;
+      --panel-2:#252932;
+      --border:#343944;
+      --text:#e6e8ec;
+      --text-dim:#a2a9b6;
+      --text-faint:#6c7381;
+      --good:#3ecf7e;
+      --warn:#e0a63a;
+      --bad:#ef6b64;
+      --accent: hsl(var(--accent-h) 30% 58%);
+      --accent-dim: hsl(var(--accent-h) 18% 24%);
+      --scrollbar:#3d424d;
+    }
   }
   *{box-sizing:border-box;}
   html,body{height:100%;}
@@ -33,7 +52,7 @@
     display:flex; height:100vh; overflow:hidden;
   }
   ::-webkit-scrollbar{width:10px;height:10px;}
-  ::-webkit-scrollbar-thumb{background:#c7cbd3;border-radius:6px;}
+  ::-webkit-scrollbar-thumb{background:var(--scrollbar);border-radius:6px;}
   ::-webkit-scrollbar-track{background:transparent;}
 
   /* ---------- Sidebar: model catalog ---------- */
@@ -522,7 +541,128 @@ const MODEL_META = {
   'OLMo-2-0425-1B-Instruct-q4f32_1-MLC': [1000000000, '2025-04-01', 'Allen Institute for AI', 'USA', 'Fully open model — weights, data, and training code all public'],
   'OLMo-2-1124-7B-Instruct-q4f16_1-MLC': [7300000000, '2024-11-01', 'Allen Institute for AI', 'USA', 'Fully open model — weights, data, and training code all public'],
   'OLMo-2-1124-7B-Instruct-q4f32_1-MLC': [7300000000, '2024-11-01', 'Allen Institute for AI', 'USA', 'Fully open model — weights, data, and training code all public'],
+  'gemma-4-E2B-it-q4f16_1-MLC': [2000000000, '2026-03-02', 'Google DeepMind', 'USA', '~2B effective params (5.1B counting per-layer embeddings); date = Hugging Face repo creation'],
+  'gemma-4-E2B-it-q4f32_1-MLC': [2000000000, '2026-03-02', 'Google DeepMind', 'USA', '~2B effective params (5.1B counting per-layer embeddings); date = Hugging Face repo creation'],
+  'LFM2.5-350M-q4-ONNX': [350000000, '2026-03-31', 'Liquid AI', 'USA', 'Runs via transformers.js (ONNX), not WebLLM; license: LFM Open License'],
+  'LFM2.5-2.6B-q4-ONNX': [2600000000, '2026-07-28', 'Liquid AI', 'USA', 'Runs via transformers.js (ONNX), not WebLLM; license: LFM Open License; loads on a GT 1030 but only ~0.5 tokens/sec, wants a stronger GPU'],
+  'LFM2.5-1.2B-Instruct-q4-ONNX': [1200000000, '2026-01-06', 'Liquid AI', 'USA', 'Runs via transformers.js (ONNX), not WebLLM; license: LFM Open License; ~6 tokens/sec on a GT 1030'],
+  'MiniCPM5-1B-q4f32_1-MLC': [1100000000, '2026-05-21', 'OpenBMB', 'China', 'Self-compiled (github.com/Jesse-Hufstetler/mlc-compile); 4k context; reasoning model (thinks before answering)'],
+  'MiniCPM5-2B-q4f32_1-MLC': [2500000000, '2026-09-06', 'OpenBMB', 'China', 'Self-compiled (github.com/Jesse-Hufstetler/mlc-compile); 4k context; reasoning model; hung a GT 1030 (2 GB) mid-reply, needs a stronger GPU'],
 };
+
+// ---------------------------------------------------------------------
+// Models that are not in web-llm's built-in list. Each one was compiled
+// from the original Hugging Face weights with the workflow in
+// github.com/Jesse-Hufstetler/mlc-compile and hosted on Hugging Face.
+// They are merged into the catalog below and passed to the engine as
+// part of its appConfig. Add a row here after a successful compile.
+// ---------------------------------------------------------------------
+const CUSTOM_HF_USER = 'JesseHufstetler';
+function customModel(modelId, vramMB) {
+  const base = `https://huggingface.co/${CUSTOM_HF_USER}/${modelId}`;
+  return {
+    model: base,
+    model_id: modelId,
+    model_lib: `${base}/resolve/main/${modelId}-webgpu.wasm`,
+    vram_required_MB: vramMB,
+    low_resource_required: false,
+    // The model's own chat template starts every prompt with <s> (token 0),
+    // which MLC's stock chatml template does not emit.
+    overrides: { context_window_size: 4096, conv_config: { system_prefix_token_ids: [0] } },
+  };
+}
+const CUSTOM_MODELS = [
+  customModel('MiniCPM5-1B-q4f32_1-MLC', 1600),
+  customModel('MiniCPM5-2B-q4f32_1-MLC', 2500),
+];
+let appConfig = null; // web-llm's prebuilt config plus CUSTOM_MODELS; set in buildCatalog()
+
+// ---------------------------------------------------------------------
+// Second engine: transformers.js (ONNX + WebGPU). WebLLM can only run
+// models that MLC has compiled, and MLC only knows a fixed list of model
+// designs. transformers.js covers other designs (e.g. LiquidAI's LFM2.5),
+// using ready-made ONNX builds from Hugging Face. TjsEngine exposes the
+// same three calls the rest of this page uses on the WebLLM engine:
+// reload(id), chat.completions.create({stream:true,...}), interruptGenerate().
+// ---------------------------------------------------------------------
+const TJS_URL = 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@4.3.1';
+const TJS_MODELS = [
+  // vram_required_MB is an estimate from file sizes; `family` is the display name.
+  { model_id: 'LFM2.5-350M-q4-ONNX', family: 'LFM2.5-350M', hf_id: 'LiquidAI/LFM2.5-350M-ONNX', dtype: 'q4', vram_required_MB: 700, low_resource_required: true },
+  { model_id: 'LFM2.5-1.2B-Instruct-q4-ONNX', family: 'LFM2.5-1.2B-Instruct', hf_id: 'LiquidAI/LFM2.5-1.2B-Instruct-ONNX', dtype: 'q4', vram_required_MB: 1500, low_resource_required: false },
+  { model_id: 'LFM2.5-2.6B-q4-ONNX', family: 'LFM2.5-2.6B', hf_id: 'LiquidAI/LFM2.5-2.6B-ONNX', dtype: 'q4', vram_required_MB: 2400, low_resource_required: false },
+].map(r => ({ ...r, engine: 'tjs' }));
+
+class TjsEngine {
+  constructor({ initProgressCallback }) {
+    this.onProgress = initProgressCallback;
+    this.lib = null;
+    this.gen = null;
+    this.stopper = null;
+    this.chat = { completions: { create: (req) => this._create(req) } };
+  }
+
+  async reload(modelId) {
+    const rec = TJS_MODELS.find(r => r.model_id === modelId);
+    if (!rec) throw new Error(`Unknown transformers.js model: ${modelId}`);
+    await this.unload();
+    this.onProgress({ text: 'Fetching transformers.js…', progress: 0 });
+    this.lib ||= await import(TJS_URL);
+    const files = new Map(); // file -> { loaded, total }
+    this.gen = await this.lib.pipeline('text-generation', rec.hf_id, {
+      device: 'webgpu',
+      dtype: rec.dtype,
+      progress_callback: (p) => {
+        if (p.status !== 'progress' || !p.total) return;
+        files.set(p.file, { loaded: p.loaded, total: p.total });
+        let loaded = 0, total = 0;
+        for (const f of files.values()) { loaded += f.loaded; total += f.total; }
+        this.onProgress({
+          text: `Fetching ${files.size} file(s): ${(loaded / 1048576).toFixed(0)} of ${(total / 1048576).toFixed(0)} MB`,
+          progress: total ? loaded / total : 0,
+        });
+      },
+    });
+  }
+
+  async unload() {
+    try { await this.gen?.dispose?.(); } catch { /* already gone */ }
+    this.gen = null;
+  }
+
+  interruptGenerate() { this.stopper?.interrupt(); }
+
+  // Returns an async iterable of OpenAI-style chunks, like WebLLM's stream.
+  async _create(req) {
+    const { TextStreamer, InterruptableStoppingCriteria } = this.lib;
+    const queue = [];
+    let done = false, error = null, wake = null;
+    const poke = () => { if (wake) { wake(); wake = null; } };
+    const streamer = new TextStreamer(this.gen.tokenizer, {
+      skip_prompt: true,
+      skip_special_tokens: true,
+      callback_function: (t) => { queue.push(t); poke(); },
+    });
+    this.stopper = new InterruptableStoppingCriteria();
+    const sampling = req.temperature > 0;
+    this.gen(req.messages, {
+      max_new_tokens: req.max_tokens || 512,
+      do_sample: sampling,
+      ...(sampling ? { temperature: req.temperature, top_p: req.top_p } : {}),
+      repetition_penalty: req.repetition_penalty,
+      streamer,
+      stopping_criteria: this.stopper,
+    }).catch((e) => { error = e; }).finally(() => { done = true; poke(); });
+    return (async function* () {
+      while (true) {
+        while (queue.length) yield { choices: [{ delta: { content: queue.shift() } }] };
+        if (done) break;
+        await new Promise((resolve) => { wake = resolve; if (queue.length || done) poke(); });
+      }
+      if (error) throw error;
+    })();
+  }
+}
 
 const BRANDS = [
   { re: /Meta/i, label: 'Meta', hue: 240 },
@@ -539,6 +679,8 @@ const BRANDS = [
   { re: /Snowflake/i, label: 'Snowflake', hue: 205 },
   { re: /Teknium|mlabonne/i, label: 'Independent', hue: null },
   { re: /Allen Institute|\bAI2\b/i, label: 'Allen Institute for AI', hue: 65 },
+  { re: /OpenBMB/i, label: 'OpenBMB', hue: 15 },
+  { re: /Liquid/i, label: 'Liquid AI', hue: 190 },
 ];
 
 // Fallback for models added to webllm's catalog after the spreadsheet was
@@ -560,6 +702,8 @@ const FAMILY_BRAND_PATTERNS = [
   { re: /^(OpenHermes|NeuralHermes|Hermes)/i, label: 'Nous Research', hue: 270 },
   { re: /^WizardMath|^WizardLM/i, label: 'Microsoft', hue: 330 },
   { re: /^OLMo/i, label: 'Allen Institute for AI', hue: 65 },
+  { re: /^MiniCPM/i, label: 'OpenBMB', hue: 15 },
+  { re: /^LFM/i, label: 'Liquid AI', hue: 190 },
 ];
 
 function brandOf(company, modelId) {
@@ -577,6 +721,14 @@ function brandColors(hue) {
   if (hue == null) {
     return { row: 'var(--panel-2)', bar: 'var(--text-faint)', badgeBg: 'var(--border)', badgeText: 'var(--text-dim)' };
   }
+  if (darkMQ.matches) {
+    return {
+      row: `hsl(${hue} 30% 16%)`,
+      bar: `hsl(${hue} 55% 50%)`,
+      badgeBg: `hsl(${hue} 35% 24%)`,
+      badgeText: `hsl(${hue} 70% 78%)`,
+    };
+  }
   return {
     row: `hsl(${hue} 65% 96%)`,
     bar: `hsl(${hue} 60% 55%)`,
@@ -584,6 +736,8 @@ function brandColors(hue) {
     badgeText: `hsl(${hue} 55% 32%)`,
   };
 }
+const darkMQ = window.matchMedia('(prefers-color-scheme: dark)');
+darkMQ.addEventListener('change', () => { if (allModels.length) renderList(els.search.value); });
 
 function formatParams(n) {
   n = Number(n);
@@ -672,7 +826,9 @@ function randomInjection() {
   return picks.join(' and ');
 }
 
-let engine = null;
+let engine = null;          // whichever of the two below is serving the loaded model
+let mlcEngine = null;       // WebLLM
+let tjsEngine = null;       // transformers.js
 let loadedModelId = null;
 let pendingModelId = null;
 let isGenerating = false;
@@ -787,7 +943,15 @@ function fitBadge(record) {
 
 let allModels = [];
 function buildCatalog() {
-  allModels = webllm.prebuiltAppConfig.model_list
+  const builtIn = webllm.prebuiltAppConfig.model_list;
+  const builtInIds = new Set(builtIn.map(r => r.model_id));
+  appConfig = {
+    ...webllm.prebuiltAppConfig,
+    model_list: [...builtIn, ...CUSTOM_MODELS.filter(r => !builtInIds.has(r.model_id))],
+  };
+  // transformers.js models are kept out of appConfig (which is WebLLM's) and
+  // merged only into the table.
+  allModels = [...appConfig.model_list, ...TJS_MODELS]
     .filter(r => !/embed/i.test(r.model_id)) // this is a chat console, not an embeddings tool
     .map(r => {
       const metaRow = MODEL_META[r.model_id];
@@ -796,7 +960,7 @@ function buildCatalog() {
         : null;
       return {
         ...r,
-        parsed: parseModelId(r.model_id),
+        parsed: r.engine === 'tjs' ? { family: r.family, quant: r.dtype, ctx: '' } : parseModelId(r.model_id),
         fit: fitBadge(r),
         meta,
         brand: brandOf(meta?.company, r.model_id),
@@ -916,9 +1080,17 @@ els.loadBtn.addEventListener('click', async () => {
 
   const previousModelId = loadedModelId;
   try {
-    if (!engine) {
-      engine = new webllm.MLCEngine({ initProgressCallback: onProgress });
-    }
+    // Pick the engine for this model, and free the other one's GPU memory
+    // first so two models are never resident at once.
+    const useTjs = allModels.find(m => m.model_id === pendingModelId)?.engine === 'tjs';
+    const wanted = useTjs
+      ? (tjsEngine ||= new TjsEngine({ initProgressCallback: onProgress }))
+      : (mlcEngine ||= new webllm.MLCEngine({ appConfig, initProgressCallback: onProgress }));
+    const other = useTjs ? mlcEngine : tjsEngine;
+    if (other && other !== wanted) await (other.unload?.() ?? Promise.resolve());
+    wanted.onProgress = onProgress;
+    if (!useTjs) wanted.setInitProgressCallback(onProgress);
+    engine = wanted;
     await engine.reload(pendingModelId);
     loadedModelId = pendingModelId;
     els.activeName.textContent = allModels.find(m => m.model_id === loadedModelId)?.parsed.family || loadedModelId;
