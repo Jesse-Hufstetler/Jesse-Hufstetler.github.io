@@ -1,81 +1,313 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light dark">
     <link rel="icon" type="image/x-icon" href="favicon.ico">
     <title>Nifty Stuff</title>
     <style>
+    :root {
+        --bg: #f6f7f9;
+        --surface: #ffffff;
+        --surface-hover: #f0f4ff;
+        --text: #1b1f27;
+        --muted: #5d6675;
+        --border: #dfe3ea;
+        --accent: #3b6df0;
+        --accent-soft: #e4ebfe;
+        --radius: 10px;
+    }
+
+    @media (prefers-color-scheme: dark) {
+        :root {
+            --bg: #121212;
+            --surface: #1c1c1e;
+            --surface-hover: #262628;
+            --text: #e8e8ea;
+            --muted: #9a9a9f;
+            --border: #2e2e32;
+            --accent: #7aa2ff;
+            --accent-soft: #333336;
+        }
+    }
+
+
+    * { box-sizing: border-box; }
+
     html {
-        font-family: sans-serif;
+        font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+        -webkit-text-size-adjust: 100%;
     }
 
-    .personal {
-        opacity: .4;
-        filter: blur(10px);
-        transition: 1s .5s;
-        transition-timing-function: cubic-bezier(0, 0, 0, 1);
+    body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        line-height: 1.5;
     }
 
-    .personal:hover {
-        opacity: 1;
-        filter: blur(0);
-        transition: .5s;
+    main {
+        max-width: 1120px;
+        margin: 0 auto;
+        padding: 16px 12px 40px;
+    }
+
+    header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 10px;
+    }
+
+    h1 {
+        margin: 0;
+        font-size: clamp(1.4rem, 5vw, 1.8rem);
+        letter-spacing: -0.02em;
+        line-height: 1.15;
+    }
+
+    .tagline {
+        margin: 2px 0 0;
+        font-size: .9rem;
+        color: var(--muted);
+    }
+
+    button {
+        font: inherit;
+        color: inherit;
+    }
+
+
+
+    h2 {
+        margin: 18px 0 8px;
+        font-size: .8rem;
+        text-transform: uppercase;
+        letter-spacing: .08em;
+        color: var(--muted);
+        font-weight: 600;
+    }
+
+    .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 6px;
+    }
+
+    .card {
+        display: flex;
+        align-items: center;
+        gap: .65rem;
+        text-align: left;
+        padding: 7px 10px;
+        min-height: 44px;
+        background: color-mix(in srgb, var(--c, transparent) 6%, var(--surface));
+        border: 1px solid color-mix(in srgb, var(--c, transparent) 22%, var(--border));
+        border-left: 3px solid color-mix(in srgb, var(--c, var(--border)) 70%, var(--border));
+        border-radius: var(--radius);
+        color: inherit;
+        text-decoration: none;
+        transition: border-color .15s, background .15s, transform .15s;
+    }
+
+    .card:hover,
+    .card:focus-visible {
+        border-color: var(--c, var(--accent));
+        background: color-mix(in srgb, var(--c, transparent) 12%, var(--surface-hover));
+        transform: translateY(-1px);
+    }
+
+    .card:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+    .card strong {
+        display: block;
+        font-weight: 600;
+        font-size: .93rem;
+        line-height: 1.3;
+        color: color-mix(in srgb, var(--c, var(--text)) 35%, var(--text));
+    }
+
+    .card .tx { min-width: 0; }
+
+    .card .tx span {
+        margin: 1px 0 0;
+        display: block;
+        font-size: .78rem;
+        line-height: 1.3;
+        color: var(--muted);
+    }
+
+    .ic {
+        box-sizing: content-box;
+        width: 1.15em;
+        height: 1.15em;
+        flex: none;
+        padding: .3em;
+        margin-right: 0;
+        vertical-align: middle;
+        border-radius: 7px;
+        color: var(--c, var(--muted));
+        background: color-mix(in srgb, var(--c, var(--muted)) 16%, transparent);
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 2;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+    }
+
+    h2 .ic {
+        width: 1em;
+        height: 1em;
+        padding: .3em;
+        margin-right: .6em;
+        border-radius: 8px;
+    }
+
+
+    details.more {
+        margin-top: 20px;
+        border-top: 1px solid var(--border);
+        padding-top: 16px;
+    }
+
+    details.more summary {
+        cursor: pointer;
+        color: var(--muted);
+        padding: 8px 0;
+        list-style: none;
+        user-select: none;
+    }
+
+    details.more summary::-webkit-details-marker { display: none; }
+    details.more summary::before { content: "\25B8  "; }
+    details.more[open] summary::before { content: "\25BE  "; }
+    details.more summary:hover { color: var(--text); }
+
+    footer { margin-top: 40px; font-size: .85rem; color: var(--muted); }
+    footer a { color: var(--accent); }
+
+    @media (prefers-reduced-motion: reduce) {
+        .card { transition: none; }
+        .card:hover { transform: none; }
     }
     </style>
 </head>
 
 <body>
-    <h1>Hooray For Links</h1>
-    <p>Here is some stuff I made and I put it on the internet</p>
-    <ul>
-        <li>Randomizers:</li>
-        <ul>
-            <li><a href="passwords.html">Random Passwords</a></li>
-            <li><a href="RandomNDE.html">Random NDE</a></li>
-            <li><a href="RandomVerse.html">Random Bible Verse</a></li>
-            <li><a href="hrrando.html">Random Toon/Page from homestarrunner.com</a></li>
-            <li><a href="chrando.html">Random Page from blog.codinghorror.com</a></li>
-            <li><a href="josrando.html">Random Page from www.joelonsoftware.com</a></li>
-            <li><a href="restaurant.html">Random Restaurant</a></li>
-        </ul>
-        <li>Vibecoded:</li>
-        <ul>
-            <li><a href="webllm-console.html">Local LLM Toy</a></li>
-            <li><a href="h3-globe.html">H3 Hexagons on a 3D Globe</a></li>
-            <li><a href="money-3d.html">Big Money in 3D (fly around piles of $20 bills up to $100 trillion)</a></li>
-            <li><a href="weather.html">Weather Consensus (compare forecasts from many sources on one timeline)</a></li>
-            <li><a href="josh-game/">Night Without Sun (survive 10 minutes after the sun disappears; a 3D game for Josh)</a></li>
-            <li><a href="https://github.com/Jesse-Hufstetler/farlens/releases">Farlens (Windows download; a tray magnifier for when you sit far from the screen - puts your desktop on a floating 3D plane with a camera that follows the mouse)</a></li>
-            <li><a href="https://vibeclones.github.io/">Vibeclones (AI-powered browser software clones)</a></li>
-        </ul>
-        <li><a href="Resolutions.html">Screen Resolutions</a></li>
-        <li><a href="BassNotes.html">Bass Notes</a></li>
-        <li><a href="Screens.html">Screen Sizes</a></li>
-        <li><a href="formulas.html">Formulas</a></li>
-        <li><a href="DecimalToRuler.html">Decimal to Ruler Tool</a></li>
-        <li><a href="EmojiTest.html">Emoji Test Page</a> and <a href="unicode.html">Unicode Test Page</a></li>
-        <li><a href="FindYourRouter.html">Find Your Router</a></li>
-        <li><a href="https://github.com/Jesse-Hufstetler/Jesse-Hufstetler.github.io/tree/main/DefaultReaperThemes">Old Default Reaper Themes</a></li>
-        <li><a href="timestamp.html">Timestamp Generator</a></li>
-        <li><a href="divider.html">Divider webpage - for vertical bookmarks dropdown lists, vertical tabs, etc (transparent favicon + dashes as meta title)</a></li>
-        <li><a href="http://glowshrimpsoftware.com/">My Other Site, from before I knew GitHub would host a site for free</a>
-            <ul>
-                <li><a href="http://glowshrimpsoftware.com/vault.html">The page from my other site where there is SUPER old stuff</a></li>
-            </ul>
-        </li>
-        <li><a href="https://github.com/Jesse-Hufstetler/Jesse-Hufstetler.github.io/tree/main">The code for this site</a></li>
-    </ul>
-    <div class="personal">
-        <hr>
-        <p>Personal Projects:</p>
-        <ul>
-            <li><a href="JoshSadieDash.html">Josh & Sadie Dash</a></li>
-            <li><a href="dash.html">Chromebook Dash</a></li>
-            <li><a href="dash2.html">Custom Screensaver for my PCs</a> (for use with <a href="https://github.com/ZenProjects/Chromium-Web-Page-Screensaver">this</a>)</li>
-        </ul>
-    </div>
+    <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+        <symbol id="i-bot" viewBox="0 0 24 24"><rect x="4" y="8" width="16" height="12" rx="2"/><path d="M12 8V4 M2 14h2 M20 14h2 M9 13v2 M15 13v2"/></symbol>
+        <symbol id="i-hexmesh" viewBox="0 0 24 24"><path d="M12.0 3.6 L12.0 7.8 L8.4 9.9 L4.7 7.8 L4.7 3.6 L8.4 1.5z M19.3 3.6 L19.3 7.8 L15.6 9.9 L12.0 7.8 L12.0 3.6 L15.6 1.5z M8.4 9.9 L8.4 14.1 L4.7 16.2 L1.1 14.1 L1.1 9.9 L4.7 7.8z M15.6 9.9 L15.6 14.1 L12.0 16.2 L8.4 14.1 L8.4 9.9 L12.0 7.8z M22.9 9.9 L22.9 14.1 L19.3 16.2 L15.6 14.1 L15.6 9.9 L19.3 7.8z M12.0 16.2 L12.0 20.4 L8.4 22.5 L4.7 20.4 L4.7 16.2 L8.4 14.1z M19.3 16.2 L19.3 20.4 L15.6 22.5 L12.0 20.4 L12.0 16.2 L15.6 14.1z"/></symbol>
+        <symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18 M12 3a14 14 0 0 1 0 18 M12 3a14 14 0 0 0 0 18"/></symbol>
+        <symbol id="i-cash" viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="3"/><path d="M6 12h.01 M18 12h.01"/></symbol>
+        <symbol id="i-cloud" viewBox="0 0 24 24"><path d="M7 18a4 4 0 1 1 .8-7.9A5.5 5.5 0 0 1 18.5 11 3.5 3.5 0 0 1 18 18z"/></symbol>
+        <symbol id="i-moon" viewBox="0 0 24 24"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></symbol>
+        <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.5-4.5"/></symbol>
+        <symbol id="i-copy" viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M4 16V6a2 2 0 0 1 2-2h10"/></symbol>
+        <symbol id="i-key" viewBox="0 0 24 24"><circle cx="8" cy="15" r="4"/><path d="M10.8 12.2L20 3 M18.5 4.5l2.5 2.5 M16 7l2.5 2.5 M13.5 9.5l2.2 2.2"/></symbol>
+        <symbol id="i-nde" viewBox="0 0 24 24"><circle cx="5" cy="5" r="1.5"/><circle cx="5" cy="19" r="1.5"/><path d="M6.5 5h10 M16.5 5l3.5-1.5 M16.5 5l3.5 2 M6.5 19h10 M16.5 19l3.5-1.5 M16.5 19l3.5 2 M12 16V10 M9.5 12.5L12 10l2.5 2.5"/></symbol>
+        <symbol id="i-star" viewBox="0 0 24 24"><path d="M12 2l3 7 7 .5-5 5 1.5 7.5-6.5-4-6.5 4L7 14.5l-5-5L9 9z"/></symbol>
+        <symbol id="i-book" viewBox="0 0 24 24"><path d="M2 4h7a3 3 0 0 1 3 3v14a2 2 0 0 0-2-2H2z M22 4h-7a3 3 0 0 0-3 3v14a2 2 0 0 1 2-2h8z"/></symbol>
+        <symbol id="i-tv" viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M8 2l4 4 4-4"/></symbol>
+        <symbol id="i-code" viewBox="0 0 24 24"><path d="M16 18l6-6-6-6 M8 6l-6 6 6 6"/></symbol>
+        <symbol id="i-doc" viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z M14 3v5h5 M9 13h6 M9 17h6"/></symbol>
+        <symbol id="i-utensils" viewBox="0 0 24 24"><path d="M7 3v8 M4 3v5a3 3 0 0 0 6 0V3 M7 11v10 M17 21V3c-2.5 1.5-3.5 4-3.5 7.5V14H17"/></symbol>
+        <symbol id="i-monitor" viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="13" rx="2"/><path d="M8 21h8 M12 17v4"/></symbol>
+        <symbol id="i-ruler" viewBox="0 0 24 24"><path d="M3 17L17 3l4 4L7 21z M7 13l2 2 M10 10l2 2 M13 7l2 2"/></symbol>
+        <symbol id="i-music" viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></symbol>
+        <symbol id="i-calc" viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2"/><path d="M8 6h8 M8 11h.01 M12 11h.01 M16 11h.01 M8 15h.01 M12 15h.01 M16 15h.01 M8 19h.01 M12 19h.01"/></symbol>
+        <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+        <symbol id="i-wifi" viewBox="0 0 24 24"><path d="M2 9a15 15 0 0 1 20 0 M5 13a10 10 0 0 1 14 0 M8.5 16.5a5 5 0 0 1 7 0 M12 20h.01"/></symbol>
+        <symbol id="i-smile" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8 14s1.5 2 4 2 4-2 4-2 M9 9h.01 M15 9h.01"/></symbol>
+        <symbol id="i-type" viewBox="0 0 24 24"><path d="M4 7V4h16v3 M9 20h6 M12 4v16"/></symbol>
+        <symbol id="i-minus" viewBox="0 0 24 24"><path d="M5 12h14"/></symbol>
+        <symbol id="i-palette" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18c1.1 0 2-.9 2-2 0-.5-.2-1-.5-1.3-.3-.4-.5-.8-.5-1.3 0-1.1.9-2 2-2h2.4A3.6 3.6 0 0 0 21 11C21 6.6 17 3 12 3z M7.5 11h.01 M10 7.5h.01 M14.5 7.5h.01"/></symbol>
+        <symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2 21a7 7 0 0 1 14 0 M17 4.5a3.5 3.5 0 0 1 0 7 M22 21a6 6 0 0 0-4-5.6"/></symbol>
+        <symbol id="i-laptop" viewBox="0 0 24 24"><path d="M5 5h14v11H5z M2 20h20"/></symbol>
+        <symbol id="i-image" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="1.5"/><path d="M21 15l-5-5L5 21"/></symbol>
+        <symbol id="i-archive" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="5" rx="1"/><path d="M5 9v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V9 M10 13h4"/></symbol>
+        <symbol id="i-zap" viewBox="0 0 24 24"><path d="M12 12L12.0 2.5 M12 12L15.9 6.2 M12 12L19.8 7.5 M12 12L18.5 12.5 M12 12L20.2 16.8 M12 12L15.3 18.7 M12 12L12.0 21.0 M12 12L8.4 17.4 M12 12L3.8 16.8 M12 12L5.0 11.5 M12 12L4.2 7.5 M12 12L8.9 5.7"/></symbol>
+        <symbol id="i-shuffle" viewBox="0 0 24 24"><path d="M2 18h1.4c1.3 0 2.5-.6 3.3-1.7l6.1-8.6c.7-1.1 2-1.7 3.3-1.7H22 M18 2l4 4-4 4 M2 6h1.9c1.5 0 2.9.9 3.6 2.2 M22 18h-5.9c-1.3 0-2.6-.7-3.3-1.8l-.5-.8 M18 14l4 4-4 4"/></symbol>
+        <symbol id="i-grid" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></symbol>
+        <symbol id="i-home" viewBox="0 0 24 24"><path d="M3 11l9-8 9 8 M5 10v10h14V10 M10 20v-6h4v6"/></symbol>
+    </svg>
+
+    <main>
+        <header>
+            <div>
+                <h1>Hooray For Links</h1>
+                <p class="tagline">Here is some stuff I made and I put it on the internet</p>
+            </div>
+        </header>
+
+        <section>
+            <h2><svg class="ic" aria-hidden="true"><use href="#i-zap"/></svg>Vibecoded</h2>
+            <div class="grid">
+                <a class="card" href="webllm-console.html" style="--c:#6b8cae"><svg class="ic" aria-hidden="true"><use href="#i-bot"/></svg><div class="tx"><strong>Local LLM Toy</strong></div></a>
+                <a class="card" href="h3-globe.html" style="--c:#e8590c"><svg class="ic" aria-hidden="true"><use href="#i-hexmesh"/></svg><div class="tx"><strong>H3 Hexagons on a 3D Globe</strong></div></a>
+                <a class="card" href="money-3d.html" style="--c:#f08c00"><svg class="ic" aria-hidden="true"><use href="#i-cash"/></svg><div class="tx"><strong>Big Money in 3D</strong><span>Fly around piles of $20 bills up to $100 trillion</span></div></a>
+                <a class="card" href="weather.html" style="--c:#f0b35a"><svg class="ic" aria-hidden="true"><use href="#i-cloud"/></svg><div class="tx"><strong>Weather Consensus</strong><span>Compare forecasts from many sources on one timeline</span></div></a>
+                <a class="card ext" href="https://github.com/Jesse-Hufstetler/farlens/releases" style="--c:#12a8a8"><svg class="ic" aria-hidden="true"><use href="#i-search"/></svg><div class="tx"><strong>Farlens</strong><span>Windows download; a tray magnifier for when you sit far from the screen. Puts your desktop on a floating 3D plane with a camera that follows the mouse</span></div></a>
+                <a class="card ext" href="https://vibeclones.github.io/" style="--c:#7c5cff"><svg class="ic" aria-hidden="true"><use href="#i-copy"/></svg><div class="tx"><strong>Vibeclones</strong><span>AI-powered browser software clones</span></div></a>
+            </div>
+        </section>
+
+        <section>
+            <h2><svg class="ic" aria-hidden="true"><use href="#i-shuffle"/></svg>Randomizers</h2>
+            <div class="grid">
+                <a class="card" href="passwords.html" style="--c:#868e96"><svg class="ic" aria-hidden="true"><use href="#i-key"/></svg><div class="tx"><strong>Random Passwords</strong></div></a>
+                <a class="card" href="RandomNDE.html" style="--c:#55c0db"><svg class="ic" aria-hidden="true"><use href="#i-nde"/></svg><div class="tx"><strong>Random NDE</strong></div></a>
+                <a class="card" href="RandomVerse.html" style="--c:#f4a261"><svg class="ic" aria-hidden="true"><use href="#i-book"/></svg><div class="tx"><strong>Random Bible Verse</strong></div></a>
+                <a class="card" href="hrrando.html" style="--c:#e03131"><svg class="ic" aria-hidden="true"><use href="#i-tv"/></svg><div class="tx"><strong>Random Homestar Runner</strong><span>homestarrunner.com toon/page</span></div></a>
+                <a class="card" href="chrando.html" style="--c:#1c7ed6"><svg class="ic" aria-hidden="true"><use href="#i-code"/></svg><div class="tx"><strong>Random Coding Horror</strong><span>blog.codinghorror.com page</span></div></a>
+                <a class="card" href="josrando.html" style="--c:#ae3ec9"><svg class="ic" aria-hidden="true"><use href="#i-code"/></svg><div class="tx"><strong>Random Joel on Software</strong><span>joelonsoftware.com page</span></div></a>
+                <a class="card" href="restaurant.html" style="--c:#fa5252"><svg class="ic" aria-hidden="true"><use href="#i-utensils"/></svg><div class="tx"><strong>Random Restaurant</strong></div></a>
+            </div>
+        </section>
+
+        <section>
+            <h2><svg class="ic" aria-hidden="true"><use href="#i-grid"/></svg>Tools &amp; Reference</h2>
+            <div class="grid">
+                <a class="card" href="Resolutions.html" style="--c:#3b6df0"><svg class="ic" aria-hidden="true"><use href="#i-monitor"/></svg><div class="tx"><strong>Screen Resolutions</strong></div></a>
+                <a class="card" href="Screens.html" style="--c:#4c6ef5"><svg class="ic" aria-hidden="true"><use href="#i-ruler"/></svg><div class="tx"><strong>Screen Sizes</strong></div></a>
+                <a class="card" href="BassNotes.html" style="--c:#845ef7"><svg class="ic" aria-hidden="true"><use href="#i-music"/></svg><div class="tx"><strong>Bass Notes</strong></div></a>
+                <a class="card" href="formulas.html" style="--c:#d6409f"><svg class="ic" aria-hidden="true"><use href="#i-calc"/></svg><div class="tx"><strong>Formulas</strong></div></a>
+                <a class="card" href="DecimalToRuler.html" style="--c:#f59f00"><svg class="ic" aria-hidden="true"><use href="#i-ruler"/></svg><div class="tx"><strong>Decimal to Ruler Tool</strong></div></a>
+                <a class="card" href="timestamp.html" style="--c:#15aabf"><svg class="ic" aria-hidden="true"><use href="#i-clock"/></svg><div class="tx"><strong>Timestamp Generator</strong></div></a>
+                <a class="card" href="FindYourRouter.html" style="--c:#20c997"><svg class="ic" aria-hidden="true"><use href="#i-wifi"/></svg><div class="tx"><strong>Find Your Router</strong></div></a>
+                <a class="card" href="EmojiTest.html" style="--c:#e0b97d"><svg class="ic" aria-hidden="true"><use href="#i-smile"/></svg><div class="tx"><strong>Emoji Test Page</strong></div></a>
+                <a class="card" href="unicode.html" style="--c:#adb5bd"><svg class="ic" aria-hidden="true"><use href="#i-type"/></svg><div class="tx"><strong>Unicode Test Page</strong></div></a>
+                <a class="card" href="divider.html" style="--c:#8a8a8a"><svg class="ic" aria-hidden="true"><use href="#i-minus"/></svg><div class="tx"><strong>Divider webpage</strong><span>For vertical bookmarks dropdown lists, vertical tabs, etc (transparent favicon + dashes as meta title)</span></div></a>
+                <a class="card ext" href="https://github.com/Jesse-Hufstetler/Jesse-Hufstetler.github.io/tree/main/DefaultReaperThemes" style="--c:#e64980"><svg class="ic" aria-hidden="true"><use href="#i-palette"/></svg><div class="tx"><strong>Old Default Reaper Themes</strong></div></a>
+            </div>
+        </section>
+
+        <details class="more" id="more">
+            <summary>More</summary>
+
+            <section>
+                <h2><svg class="ic" aria-hidden="true"><use href="#i-home"/></svg>Personal Projects</h2>
+                <div class="grid">
+                    <a class="card" href="josh-game/" style="--c:#e6b800"><svg class="ic" aria-hidden="true"><use href="#i-moon"/></svg><div class="tx"><strong>Night Without Sun</strong><span>Survive 10 minutes after the sun disappears. A silly 3D game I vibecoded with an 8-year-old</span></div></a>
+                    <a class="card" href="JoshSadieDash.html" style="--c:#ff8787"><svg class="ic" aria-hidden="true"><use href="#i-users"/></svg><div class="tx"><strong>Josh &amp; Sadie Dash</strong></div></a>
+                    <a class="card" href="dash.html" style="--c:#868e96"><svg class="ic" aria-hidden="true"><use href="#i-laptop"/></svg><div class="tx"><strong>Chromebook Dash</strong></div></a>
+                    <a class="card" href="dash2.html" style="--c:#adb5bd"><svg class="ic" aria-hidden="true"><use href="#i-image"/></svg><div class="tx"><strong>Custom Screensaver for my PCs</strong><span>For use with ZenProjects' Chromium-Web-Page-Screensaver (github.com/ZenProjects)</span></div></a>
+                </div>
+            </section>
+
+            <section>
+                <h2><svg class="ic" aria-hidden="true"><use href="#i-globe"/></svg>Elsewhere</h2>
+                <div class="grid">
+                    <a class="card ext" href="http://glowshrimpsoftware.com/" style="--c:#ff6b6b"><svg class="ic" aria-hidden="true"><use href="#i-globe"/></svg><div class="tx"><strong>My Other Site</strong><span>From before I knew GitHub would host a site for free</span></div></a>
+                    <a class="card ext" href="http://glowshrimpsoftware.com/vault.html" style="--c:#a1887f"><svg class="ic" aria-hidden="true"><use href="#i-archive"/></svg><div class="tx"><strong>The Vault</strong><span>The page from my other site where there is SUPER old stuff</span></div></a>
+                    <a class="card ext" href="https://github.com/Jesse-Hufstetler/Jesse-Hufstetler.github.io/tree/main" style="--c:#adb5bd"><svg class="ic" aria-hidden="true"><use href="#i-code"/></svg><div class="tx"><strong>Code for this site</strong></div></a>
+                </div>
+            </section>
+        </details>
+    </main>
+
 </body>
 
 </html>
