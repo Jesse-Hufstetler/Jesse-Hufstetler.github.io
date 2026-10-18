@@ -4,7 +4,29 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light dark">
     <title>Homestar Rando</title>
+    <style>
+        html {
+            background: #fff;
+            color: #000;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            html {
+                background: #121212;
+                color: #e8e8ea;
+            }
+
+            a:link {
+                color: #8ab4f8;
+            }
+
+            a:visited {
+                color: #c58af9;
+            }
+        }
+    </style>
 </head>
 
 <body style="text-align: center;font-family: sans-serif;">

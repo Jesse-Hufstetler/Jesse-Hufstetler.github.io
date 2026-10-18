@@ -8,7 +8,49 @@
     <link rel="stylesheet"
         href="https://cdnjs.cloudflare.com/ajax/libs/github-fork-ribbon-css/0.2.3/gh-fork-ribbon.min.css" />
     <title>Random Bible Verse</title>
+    <meta name="color-scheme" content="light dark">
     <style>
+        :root {
+            --bg: #fff;
+            --text: #000;
+            --border: #000;
+            --th-bg: hsl(12, 95%, 90%);
+            --th-ls: hsl(209, 74%, 90%);
+            --th-bt: hsl(48, 96%, 83%);
+            --th-yv: hsl(1, 47%, 87%);
+            --th-text: #222;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg: #121212;
+                --text: #e8e8ea;
+                --border: #5a5a5e;
+                --th-bg: hsl(12, 45%, 24%);
+                --th-ls: hsl(209, 45%, 24%);
+                --th-bt: hsl(48, 50%, 22%);
+                --th-yv: hsl(1, 35%, 26%);
+                --th-text: #e8e8ea;
+            }
+
+            a:link {
+                color: #8ab4f8;
+            }
+
+            a:visited {
+                color: #c58af9;
+            }
+
+            .button-85 {
+                outline: 1px solid #3a3a3e;
+            }
+        }
+
+        /* header cells use per-site tint variables (pastel in light, muted in dark) */
+        th[style*="background"] {
+            color: var(--th-text);
+        }
+
         .github-fork-ribbon:before {
             background-color: hsl(0, 0%, 30%);
         }
@@ -26,6 +68,8 @@
             font-family: sans-serif;
             text-align: center;
             font-size: 15px;
+            background: var(--bg);
+            color: var(--text);
             transition: all .5s ease;
         }
 
@@ -48,7 +92,7 @@
         th,
         td {
             transition: all .5s ease;
-            border: 1px solid black;
+            border: 1px solid var(--border);
             padding: 5px;
         }
 
@@ -109,43 +153,6 @@
             user-select: none;
             -webkit-user-select: none;
             touch-action: manipulation;
-        }
-
-        .button-85:before {
-            content: "";
-            background: linear-gradient(45deg,
-                    hsl(0, 0%, 50%),
-                    hsl(22.438, 87.5%, 70%),
-                    hsl(0, 0%, 50%),
-                    hsl(22.438, 59%, 70%),
-                    hsl(0, 0%, 100%),
-                    hsl(0, 0%, 70%));
-            position: absolute;
-            top: -2px;
-            left: -2px;
-            background-size: 400%;
-            z-index: -1;
-            filter: blur(5px);
-            -webkit-filter: blur(50px);
-            width: calc(100% + 4px);
-            height: calc(100% + 4px);
-            animation: glowing-button-85 20s linear infinite;
-            transition: opacity 0.3s ease-in-out;
-            border-radius: 10px;
-        }
-
-        @keyframes glowing-button-85 {
-            0% {
-                background-position: 0 0;
-            }
-
-            50% {
-                background-position: 400% 0;
-            }
-
-            100% {
-                background-position: 0 0;
-            }
         }
 
         .button-85:after {
@@ -280,10 +287,10 @@
             let innerHTML = ``;
             innerHTML += `<table>`;
             innerHTML += `<th style="">Site:</th>`;
-            innerHTML += `<th style="background: hsla(12, 95%, 90%, 1);">BG</th>`;
-            innerHTML += `<th style="background: hsla(209, 74%, 90%, 1);">LS</th>`;
-            innerHTML += `<th style="background: hsla(48, 96%, 83%, 1);">BT</th>`;
-            innerHTML += `<th style="background: hsla(1, 47%, 87%, 1);">YV</th>`;
+            innerHTML += `<th style="background: var(--th-bg);">BG</th>`;
+            innerHTML += `<th style="background: var(--th-ls);">LS</th>`;
+            innerHTML += `<th style="background: var(--th-bt);">BT</th>`;
+            innerHTML += `<th style="background: var(--th-yv);">YV</th>`;
             innerHTML += `</tr>`;
 
             for (const translation of [
