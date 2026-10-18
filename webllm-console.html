@@ -153,6 +153,18 @@
   .msg .content{ font-size:14px; line-height:1.6; white-space:pre-wrap; padding-top:3px; }
   .msg .content.pending::after{ content:"▍"; animation:blink 1s step-start infinite; color:var(--accent); }
   @keyframes blink{ 50%{ opacity:0; } }
+  /* Collapsible "thinking" bubble for reasoning models (<think>…</think>). */
+  .think-bubble{
+    margin:0 0 10px; padding:8px 12px; border:1px solid var(--border); border-radius:10px;
+    background:var(--panel-2); color:var(--text-dim); font-size:12.5px; line-height:1.5;
+  }
+  .think-bubble > summary{
+    cursor:pointer; list-style:none; font-family:var(--mono); font-size:11px; color:var(--text-faint);
+  }
+  .think-bubble > summary::-webkit-details-marker{ display:none; }
+  .think-bubble > summary::before{ content:"▸ "; }
+  .think-bubble[open] > summary::before{ content:"▾ "; }
+  .think-bubble .think-text{ margin-top:6px; font-style:italic; white-space:pre-wrap; }
   .model-switch-divider{
     text-align:center; font-size:11px; color:var(--text-faint); font-family:var(--mono);
     margin:18px 0; letter-spacing:.02em;
@@ -1221,6 +1233,53 @@ function addModelSwitchDivider(label) {
   els.transcript.scrollTop = els.transcript.scrollHeight;
 }
 
+// Reasoning models wrap their scratch work in <think>…</think> before the
+// real answer. Split that apart so the thinking can be shown in its own
+// bubble and, importantly, NOT be sent back to the model as history (their
+// chat templates drop earlier turns' reasoning, and feeding it back makes
+// small models confuse what they said with what they thought).
+function splitThinking(full) {
+  const t = full.trimStart();
+  if (t && '<think>'.startsWith(t)) return { thinking: '', answer: '', open: false }; // tag still arriving
+  const m = full.match(/^\s*<think>([\s\S]*?)(<\/think>|$)/);
+  if (!m) return { thinking: '', answer: full, open: false };
+  const closed = m[2] === '</think>';
+  return {
+    thinking: m[1].trim(),
+    answer: closed ? full.slice(m[0].length).replace(/^\s+/, '') : '',
+    open: !closed,
+  };
+}
+
+function renderAssistant(el, full) {
+  const { thinking, answer, open } = splitThinking(full);
+  let bubble = el.querySelector('.think-bubble');
+  let ans = el.querySelector('.answer');
+  if (!ans) {
+    ans = document.createElement('div');
+    ans.className = 'answer';
+    el.appendChild(ans);
+  }
+  if (thinking || open) {
+    if (!bubble) {
+      bubble = document.createElement('details');
+      bubble.className = 'think-bubble';
+      bubble.open = true;
+      const summary = document.createElement('summary');
+      const body = document.createElement('div');
+      body.className = 'think-text';
+      bubble.append(summary, body);
+      el.insertBefore(bubble, ans);
+    }
+    bubble.querySelector('summary').textContent = open ? 'Thinking…' : 'Thought process';
+    bubble.querySelector('.think-text').textContent = thinking;
+    // Fold the bubble away once, when the answer begins; the reader can reopen it.
+    if (!open && !bubble.dataset.folded) { bubble.open = false; bubble.dataset.folded = '1'; }
+  }
+  ans.textContent = answer;
+  return { thinking, answer };
+}
+
 async function sendMessage() {
   const original = els.prompt.value.trim();
   if (!original || !engine || isGenerating) return;
@@ -1250,9 +1309,11 @@ async function sendMessage() {
   els.stopBtn.style.display = 'inline-block';
   els.prompt.disabled = true;
 
+  // Only role + content go to the engine; `thinking` is kept for display/export.
+  const sent = chatHistory.map(({ role, content }) => ({ role, content }));
   const requestMessages = genParams.system
-    ? [{ role: 'system', content: genParams.system }, ...chatHistory]
-    : [...chatHistory];
+    ? [{ role: 'system', content: genParams.system }, ...sent]
+    : sent;
 
   try {
     const stream = await engine.chat.completions.create({
@@ -1267,10 +1328,12 @@ async function sendMessage() {
     for await (const chunk of stream) {
       const delta = chunk.choices?.[0]?.delta?.content || '';
       full += delta;
-      assistantEl.textContent = full;
+      renderAssistant(assistantEl, full);
       els.transcript.scrollTop = els.transcript.scrollHeight;
     }
-    chatHistory.push({ role: 'assistant', content: full });
+    const { thinking, answer } = splitThinking(full);
+    // A reply stopped mid-thought has no answer; keep it out of the history.
+    if (answer) chatHistory.push({ role: 'assistant', content: answer, thinking });
   } catch (err) {
     assistantEl.textContent = `[reply stopped: ${err.message}]`;
   } finally {
@@ -1325,7 +1388,11 @@ function chatToMarkdown() {
   if (chatHistory.length === 0) return '';
   const lines = [`# Conversation — ${loadedModelId || '(no model loaded)'}`, ''];
   for (const m of chatHistory) {
-    lines.push(m.role === 'user' ? '### You' : '### Assistant', '', m.content, '');
+    lines.push(m.role === 'user' ? '### You' : '### Assistant', '');
+    if (m.thinking) {
+      lines.push('> **Thinking**', ...m.thinking.split('\n').map(l => `> ${l}`), '');
+    }
+    lines.push(m.content, '');
   }
   return lines.join('\n').trim() + '\n';
 }
