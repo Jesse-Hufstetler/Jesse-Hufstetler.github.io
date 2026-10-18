@@ -153,6 +153,30 @@
   .msg .content{ font-size:14px; line-height:1.6; white-space:pre-wrap; padding-top:3px; }
   .msg .content.pending::after{ content:"▍"; animation:blink 1s step-start infinite; color:var(--accent); }
   @keyframes blink{ 50%{ opacity:0; } }
+  /* Rendered Markdown inside assistant answers. */
+  .answer.md{ white-space:normal; }
+  .answer.md > :first-child{ margin-top:0; }
+  .answer.md > :last-child{ margin-bottom:0; }
+  .answer.md p{ margin:0 0 .8em; }
+  .answer.md h1, .answer.md h2, .answer.md h3, .answer.md h4{ margin:1.1em 0 .4em; line-height:1.3; font-weight:600; }
+  .answer.md h1{ font-size:18px; } .answer.md h2{ font-size:16px; } .answer.md h3, .answer.md h4{ font-size:14.5px; }
+  .answer.md ul, .answer.md ol{ margin:0 0 .8em; padding-left:1.5em; }
+  .answer.md li{ margin:.15em 0; }
+  .answer.md code{
+    font-family:var(--mono); font-size:12.5px; background:var(--panel-2);
+    border:1px solid var(--border); border-radius:4px; padding:1px 5px;
+  }
+  .answer.md pre{
+    background:var(--panel-2); border:1px solid var(--border); border-radius:8px;
+    padding:10px 12px; overflow-x:auto; margin:0 0 .8em;
+  }
+  .answer.md pre code{ background:none; border:0; padding:0; font-size:12.5px; line-height:1.5; }
+  .answer.md blockquote{ margin:0 0 .8em; padding:2px 12px; border-left:3px solid var(--border); color:var(--text-dim); }
+  .answer.md table{ border-collapse:collapse; margin:0 0 .8em; display:block; overflow-x:auto; max-width:100%; }
+  .answer.md th, .answer.md td{ border:1px solid var(--border); padding:5px 10px; text-align:left; }
+  .answer.md th{ background:var(--panel-2); font-weight:600; }
+  .answer.md hr{ border:0; border-top:1px solid var(--border); margin:1em 0; }
+  .answer.md a{ color:var(--accent); }
   /* Collapsible "thinking" bubble for reasoning models (<think>…</think>). */
   .think-bubble{
     margin:0 0 10px; padding:8px 12px; border:1px solid var(--border); border-radius:10px;
@@ -1233,6 +1257,34 @@ function addModelSwitchDivider(label) {
   els.transcript.scrollTop = els.transcript.scrollHeight;
 }
 
+// Markdown rendering for assistant answers. marked parses it and DOMPurify
+// sanitizes the result, because model output must never be able to inject
+// script or load remote content into this page (images are dropped
+// entirely, since an <img src> pointing at a URL is a way to leak data).
+// Loaded lazily; until it arrives (or if the CDN is blocked) answers just
+// show as plain text.
+const MARKED_URL = 'https://cdn.jsdelivr.net/npm/marked@12.0.2/lib/marked.esm.js';
+const PURIFY_URL = 'https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.es.mjs';
+let mdRender = null; // (markdownText) => safe HTML string, once the libraries load
+async function loadMarkdownLibs() {
+  try {
+    const [{ marked }, purifyMod] = await Promise.all([import(MARKED_URL), import(PURIFY_URL)]);
+    const DOMPurify = purifyMod.default;
+    DOMPurify.addHook('afterSanitizeAttributes', (node) => {
+      if (node.tagName === 'A') {
+        node.setAttribute('target', '_blank');
+        node.setAttribute('rel', 'noopener noreferrer');
+      }
+    });
+    mdRender = (text) => DOMPurify.sanitize(marked.parse(text, { gfm: true }), {
+      FORBID_TAGS: ['img', 'style', 'form', 'input', 'button', 'iframe'],
+      ADD_ATTR: ['target'],
+    });
+  } catch (err) {
+    console.warn('Markdown renderer unavailable; answers will show as plain text.', err);
+  }
+}
+
 // Reasoning models wrap their scratch work in <think>…</think> before the
 // real answer. Split that apart so the thinking can be shown in its own
 // bubble and, importantly, NOT be sent back to the model as history (their
@@ -1276,7 +1328,13 @@ function renderAssistant(el, full) {
     // Fold the bubble away once, when the answer begins; the reader can reopen it.
     if (!open && !bubble.dataset.folded) { bubble.open = false; bubble.dataset.folded = '1'; }
   }
-  ans.textContent = answer;
+  if (mdRender && answer) {
+    ans.classList.add('md');
+    ans.innerHTML = mdRender(answer);
+  } else {
+    ans.classList.remove('md');
+    ans.textContent = answer;
+  }
   return { thinking, answer };
 }
 
@@ -1448,6 +1506,7 @@ const DEFAULT_MODEL_ID = 'SmolLM2-135M-Instruct-q0f16-MLC';
   // Run first and independently — must show a result even if the
   // library CDN below is unreachable.
   await probeGPU();
+  loadMarkdownLibs(); // background; never blocks the page, falls back to plain text
 
   try {
     await loadWebLLMLibrary();
