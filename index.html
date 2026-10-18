@@ -97,6 +97,8 @@
         gap: 6px;
     }
 
+    .grid.narrow { grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); }
+
     .card {
         display: flex;
         align-items: center;
@@ -245,11 +247,9 @@
         <section>
             <h2><svg class="ic" aria-hidden="true"><use href="#i-zap"/></svg>Vibecoded</h2>
             <div class="grid">
-                <a class="card" href="webllm-console.html" style="--c:#6b8cae"><svg class="ic" aria-hidden="true"><use href="#i-bot"/></svg><div class="tx"><strong>Local LLM Toy</strong></div></a>
-                <a class="card" href="h3-globe.html" style="--c:#e8590c"><svg class="ic" aria-hidden="true"><use href="#i-hexmesh"/></svg><div class="tx"><strong>H3 Hexagons on a 3D Globe</strong></div></a>
                 <a class="card" href="money-3d.html" style="--c:#f08c00"><svg class="ic" aria-hidden="true"><use href="#i-cash"/></svg><div class="tx"><strong>Big Money in 3D</strong><span>Fly around piles of $20 bills up to $100 trillion</span></div></a>
                 <a class="card" href="weather.html" style="--c:#f0b35a"><svg class="ic" aria-hidden="true"><use href="#i-cloud"/></svg><div class="tx"><strong>Weather Consensus</strong><span>Compare forecasts from many sources on one timeline</span></div></a>
-                <a class="card ext" href="https://github.com/Jesse-Hufstetler/farlens/releases" style="--c:#12a8a8"><svg class="ic" aria-hidden="true"><use href="#i-search"/></svg><div class="tx"><strong>Farlens</strong><span>Windows download; a tray magnifier for when you sit far from the screen. Puts your desktop on a floating 3D plane with a camera that follows the mouse</span></div></a>
+                <a class="card ext" href="https://github.com/Jesse-Hufstetler/farlens/releases" style="--c:#12a8a8"><svg class="ic" aria-hidden="true"><use href="#i-search"/></svg><div class="tx"><strong>Farlens</strong><span>Windows tray magnifier for sitting far from the screen. Puts your desktop on a floating 3D plane that follows the mouse</span></div></a>
                 <a class="card ext" href="https://vibeclones.github.io/" style="--c:#7c5cff"><svg class="ic" aria-hidden="true"><use href="#i-copy"/></svg><div class="tx"><strong>Vibeclones</strong><span>AI-powered browser software clones</span></div></a>
             </div>
         </section>
@@ -269,7 +269,7 @@
 
         <section>
             <h2><svg class="ic" aria-hidden="true"><use href="#i-grid"/></svg>Tools &amp; Reference</h2>
-            <div class="grid">
+            <div class="grid narrow">
                 <a class="card" href="Resolutions.html" style="--c:#3b6df0"><svg class="ic" aria-hidden="true"><use href="#i-monitor"/></svg><div class="tx"><strong>Screen Resolutions</strong></div></a>
                 <a class="card" href="Screens.html" style="--c:#4c6ef5"><svg class="ic" aria-hidden="true"><use href="#i-ruler"/></svg><div class="tx"><strong>Screen Sizes</strong></div></a>
                 <a class="card" href="BassNotes.html" style="--c:#845ef7"><svg class="ic" aria-hidden="true"><use href="#i-music"/></svg><div class="tx"><strong>Bass Notes</strong></div></a>
@@ -279,7 +279,7 @@
                 <a class="card" href="FindYourRouter.html" style="--c:#20c997"><svg class="ic" aria-hidden="true"><use href="#i-wifi"/></svg><div class="tx"><strong>Find Your Router</strong></div></a>
                 <a class="card" href="EmojiTest.html" style="--c:#e0b97d"><svg class="ic" aria-hidden="true"><use href="#i-smile"/></svg><div class="tx"><strong>Emoji Test Page</strong></div></a>
                 <a class="card" href="unicode.html" style="--c:#adb5bd"><svg class="ic" aria-hidden="true"><use href="#i-type"/></svg><div class="tx"><strong>Unicode Test Page</strong></div></a>
-                <a class="card" href="divider.html" style="--c:#8a8a8a"><svg class="ic" aria-hidden="true"><use href="#i-minus"/></svg><div class="tx"><strong>Divider webpage</strong><span>For vertical bookmarks dropdown lists, vertical tabs, etc (transparent favicon + dashes as meta title)</span></div></a>
+                <a class="card" href="divider.html" style="--c:#8a8a8a"><svg class="ic" aria-hidden="true"><use href="#i-minus"/></svg><div class="tx"><strong>Divider webpage</strong><span>Bookmark separator</span></div></a>
                 <a class="card ext" href="https://github.com/Jesse-Hufstetler/Jesse-Hufstetler.github.io/tree/main/DefaultReaperThemes" style="--c:#e64980"><svg class="ic" aria-hidden="true"><use href="#i-palette"/></svg><div class="tx"><strong>Old Default Reaper Themes</strong></div></a>
             </div>
         </section>
@@ -290,6 +290,8 @@
             <section>
                 <h2><svg class="ic" aria-hidden="true"><use href="#i-home"/></svg>Personal Projects</h2>
                 <div class="grid">
+                    <a class="card" href="webllm-console.html" style="--c:#6b8cae"><svg class="ic" aria-hidden="true"><use href="#i-bot"/></svg><div class="tx"><strong>Local LLM Toy</strong></div></a>
+                    <a class="card" href="h3-globe.html" style="--c:#e8590c"><svg class="ic" aria-hidden="true"><use href="#i-hexmesh"/></svg><div class="tx"><strong>H3 Hexagons on a 3D Globe</strong></div></a>
                     <a class="card" href="josh-game/" style="--c:#e6b800"><svg class="ic" aria-hidden="true"><use href="#i-moon"/></svg><div class="tx"><strong>Night Without Sun</strong><span>Survive 10 minutes after the sun disappears. A silly 3D game I vibecoded with an 8-year-old</span></div></a>
                     <a class="card" href="JoshSadieDash.html" style="--c:#ff8787"><svg class="ic" aria-hidden="true"><use href="#i-users"/></svg><div class="tx"><strong>Josh &amp; Sadie Dash</strong></div></a>
                     <a class="card" href="dash.html" style="--c:#868e96"><svg class="ic" aria-hidden="true"><use href="#i-laptop"/></svg><div class="tx"><strong>Chromebook Dash</strong></div></a>
