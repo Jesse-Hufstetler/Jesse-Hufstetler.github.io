@@ -970,8 +970,12 @@ function fitBadge(record) {
   if (needsF16 && gpuCaps.supported && !gpuCaps.hasShaderF16) {
     return { cls: 'bad', label: 'needs shader-f16, unavailable' };
   }
+  // This is only a guess, not a verdict: the limit applies to each single GPU
+  // buffer, while vram_required_MB is the model's total footprint spread over
+  // many buffers. Models above the limit have loaded fine in practice
+  // (e.g. 2.3-2.4 GB models on a 2,048 MB limit), so it's amber, not red.
   if (gpuCaps.supported && gpuCaps.maxBufferMB && record.vram_required_MB > gpuCaps.maxBufferMB) {
-    return { cls: 'bad', label: 'exceeds browser buffer limit' };
+    return { cls: 'warn', label: `bigger than the ${gpuCaps.maxBufferMB.toLocaleString()} MB buffer limit; may or may not load, try it` };
   }
   if (record.low_resource_required) return { cls: 'good', label: 'low resource' };
   if (record.vram_required_MB > 6000) return { cls: 'warn', label: 'needs a strong GPU' };
