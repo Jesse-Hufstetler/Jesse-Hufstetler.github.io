@@ -338,20 +338,21 @@
   </header>
   <div class="body">
     <div class="presets">
+      <button class="preset-btn" data-preset="precise">Precise</button>
       <button class="preset-btn" data-preset="coherent">Coherent</button>
       <button class="preset-btn" data-preset="chaotic">Chaotic</button>
       <button class="preset-btn" data-preset="feral">Feral</button>
     </div>
 
     <div class="field">
-      <label>Temperature <span class="val" id="temp-val">0.80</span></label>
-      <input type="range" id="temp" min="0" max="2.5" step="0.01" value="0.8" />
+      <label>Temperature <span class="val" id="temp-val">0.70</span></label>
+      <input type="range" id="temp" min="0" max="2.5" step="0.01" value="0.7" />
       <div class="hint">0 = deterministic. Past ~1.6, most small models stop forming real sentences — that's the "unhinged" zone. If output ever locks the tab up, use Stop; it's a symptom of the model never emitting an end-of-text token, not a WebGPU crash.</div>
     </div>
 
     <div class="field">
-      <label>Top-p <span class="val" id="topp-val">0.95</span></label>
-      <input type="range" id="topp" min="0.05" max="1" step="0.01" value="0.95" />
+      <label>Top-p <span class="val" id="topp-val">0.90</span></label>
+      <input type="range" id="topp" min="0.05" max="1" step="0.01" value="0.9" />
       <div class="hint">Limits each next word to the smallest set of candidates whose probabilities add up to this fraction, then picks among just those — so 0.95 considers almost every plausible word, while 0.5 restricts it to only the most likely ones. Lower values make output safer and more repetitive; 1.0 disables the limit entirely, leaving temperature as the only thing controlling randomness.</div>
     </div>
 
@@ -362,8 +363,8 @@
     </div>
 
     <div class="field">
-      <label>Max tokens per reply <span class="val" id="maxtok-val">512</span></label>
-      <input type="range" id="maxtok" min="16" max="2048" step="16" value="512" />
+      <label>Max tokens per reply <span class="val" id="maxtok-val">1024</span></label>
+      <input type="range" id="maxtok" min="16" max="2048" step="16" value="1024" />
     </div>
 
     <div class="field">
@@ -812,10 +813,10 @@ function escapeHtml(s) {
 // ---------------------------------------------------------------------
 
 const genParams = {
-  temperature: 0.8,
-  top_p: 0.95,
+  temperature: 0.7,
+  top_p: 0.9,
   repetition_penalty: 1.1,
-  max_tokens: 512,
+  max_tokens: 1024, // reasoning models spend many tokens thinking before they answer
   system: "",
   injectRandomWord: false,
 };
@@ -1206,6 +1207,13 @@ document.getElementById('inject-random').addEventListener('change', (e) => {
 });
 
 const PRESETS = {
+  // Greedy decoding: always the single most likely next token, so the same
+  // prompt gives the same reply. top_p 1 switches off nucleus sampling. The
+  // repetition penalty is deliberately light (1.05): with no randomness a
+  // model that starts repeating can never escape, so a small brake helps, but
+  // a heavy one would hurt Markdown tables, which legitimately repeat `|`
+  // and `---` a lot.
+  precise: { temperature: 0, top_p: 1, repetition_penalty: 1.05 },
   coherent: { temperature: 0.7, top_p: 0.9, repetition_penalty: 1.1 },
   chaotic: { temperature: 0.99, top_p: 0.98, repetition_penalty: 1.15 },
   feral: { temperature: 1.10, top_p: 1.0, repetition_penalty: 1.0 },
