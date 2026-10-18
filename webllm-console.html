@@ -1306,13 +1306,27 @@ function splitThinking(full) {
   const t = full.trimStart();
   if (t && '<think>'.startsWith(t)) return { thinking: '', answer: '', open: false }; // tag still arriving
   const m = full.match(/^\s*<think>([\s\S]*?)(<\/think>|$)/);
-  if (!m) return { thinking: '', answer: full, open: false };
-  const closed = m[2] === '</think>';
-  return {
-    thinking: m[1].trim(),
-    answer: closed ? full.slice(m[0].length).replace(/^\s+/, '') : '',
-    open: !closed,
-  };
+  if (m) {
+    const closed = m[2] === '</think>';
+    return {
+      thinking: m[1].trim(),
+      answer: closed ? full.slice(m[0].length).replace(/^\s+/, '') : '',
+      open: !closed,
+    };
+  }
+  // Some models start reasoning without ever writing the opening tag (the chat
+  // template can put it in the prompt instead), so they only emit </think>.
+  // A lone closing tag still marks where the reasoning ends. Until it arrives
+  // the text shows as the answer, then moves into the bubble.
+  const close = full.indexOf('</think>');
+  if (close !== -1) {
+    return {
+      thinking: full.slice(0, close).trim(),
+      answer: full.slice(close + '</think>'.length).replace(/^\s+/, ''),
+      open: false,
+    };
+  }
+  return { thinking: '', answer: full, open: false };
 }
 
 function renderAssistant(el, full) {
@@ -1401,6 +1415,7 @@ async function sendMessage() {
       renderAssistant(assistantEl, full);
       els.transcript.scrollTop = els.transcript.scrollHeight;
     }
+    console.debug('[raw reply]', JSON.stringify(full)); // for diagnosing models that format thinking oddly
     const { thinking, answer } = splitThinking(full);
     // A reply stopped mid-thought has no answer; keep it out of the history.
     if (answer) chatHistory.push({ role: 'assistant', content: answer, thinking });
