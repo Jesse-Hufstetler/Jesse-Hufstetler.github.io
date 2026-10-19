@@ -170,6 +170,15 @@
     background:var(--panel-2); border:1px solid var(--border); border-radius:8px;
     padding:10px 12px; overflow-x:auto; margin:0 0 .8em;
   }
+  .codewrap{ position:relative; margin:0 0 .8em; }
+  .codewrap pre{ margin:0 !important; }
+  .copy-code{
+    position:absolute; top:6px; right:6px; font:11px var(--mono); color:var(--text-dim);
+    background:var(--panel); border:1px solid var(--border); border-radius:6px;
+    padding:2px 8px; cursor:pointer; opacity:0; transition:opacity .15s;
+  }
+  .codewrap:hover .copy-code, .copy-code:focus-visible{ opacity:1; }
+  @media (hover:none){ .copy-code{ opacity:1; } }
   .answer.md pre code{ background:none; border:0; padding:0; font-size:12.5px; line-height:1.5; }
   .answer.md blockquote{ margin:0 0 .8em; padding:2px 12px; border-left:3px solid var(--border); color:var(--text-dim); }
   .answer.md table{ border-collapse:collapse; margin:0 0 .8em; display:block; overflow-x:auto; max-width:100%; }
@@ -585,6 +594,7 @@ const MODEL_META = {
   'LFM2.5-1.2B-Instruct-q4-ONNX': [1200000000, '2026-01-06', 'Liquid AI', 'USA', 'Runs via transformers.js (ONNX), not WebLLM; license: LFM Open License; ~6 tokens/sec on a GT 1030'],
   'MiniCPM5-1B-q4f32_1-MLC': [1100000000, '2026-05-21', 'OpenBMB', 'China', 'Self-compiled (github.com/Jesse-Hufstetler/mlc-compile); 4k context; reasoning model (thinks before answering)'],
   'MiniCPM5-2B-q4f32_1-MLC': [2500000000, '2026-09-06', 'OpenBMB', 'China', 'Self-compiled (github.com/Jesse-Hufstetler/mlc-compile); 4k context; reasoning model; hung a GT 1030 (2 GB) mid-reply, needs a stronger GPU'],
+  'Dory1.0-4B-q4f16_1-MLC': [4000000000, '2026-10-16', 'NVIDIA', 'USA', 'Self-compiled port (github.com/Jesse-Hufstetler/mlc-compile); looped model, 2 loops baked in; 4k context; reasoning model; ~3.3 GB, needs a 4 GB+ GPU'],
 };
 
 // ---------------------------------------------------------------------
@@ -595,7 +605,7 @@ const MODEL_META = {
 // part of its appConfig. Add a row here after a successful compile.
 // ---------------------------------------------------------------------
 const CUSTOM_HF_USER = 'JesseHufstetler';
-function customModel(modelId, vramMB) {
+function customModel(modelId, vramMB, convConfig = { system_prefix_token_ids: [0] }) {
   const base = `https://huggingface.co/${CUSTOM_HF_USER}/${modelId}`;
   return {
     model: base,
@@ -605,12 +615,14 @@ function customModel(modelId, vramMB) {
     low_resource_required: false,
     // The model's own chat template starts every prompt with <s> (token 0),
     // which MLC's stock chatml template does not emit.
-    overrides: { context_window_size: 4096, conv_config: { system_prefix_token_ids: [0] } },
+    overrides: { context_window_size: 4096, conv_config: convConfig },
   };
 }
 const CUSTOM_MODELS = [
   customModel('MiniCPM5-1B-q4f32_1-MLC', 1600),
   customModel('MiniCPM5-2B-q4f32_1-MLC', 2500),
+  // Dory's chat template has no BOS token, so no conv_config override.
+  customModel('Dory1.0-4B-q4f16_1-MLC', 3300, {}),
 ];
 let appConfig = null; // web-llm's prebuilt config plus CUSTOM_MODELS; set in buildCatalog()
 
@@ -1329,6 +1341,32 @@ function splitThinking(full) {
   return { thinking: '', answer: full, open: false };
 }
 
+// Wrap each rendered code block so a Copy button can sit in its corner
+// without scrolling away with the code.
+function addCopyButtons(root) {
+  root.querySelectorAll('pre').forEach((pre) => {
+    const wrap = document.createElement('div');
+    wrap.className = 'codewrap';
+    pre.replaceWith(wrap);
+    wrap.appendChild(pre);
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'copy-code';
+    btn.textContent = 'Copy';
+    btn.addEventListener('click', async () => {
+      const text = pre.innerText.replace(/\n$/, '');
+      try {
+        await navigator.clipboard.writeText(text);
+        btn.textContent = 'Copied';
+      } catch (e) {
+        btn.textContent = 'Copy failed';
+      }
+      setTimeout(() => { btn.textContent = 'Copy'; }, 1500);
+    });
+    wrap.appendChild(btn);
+  });
+}
+
 function renderAssistant(el, full) {
   const { thinking, answer, open } = splitThinking(full);
   let bubble = el.querySelector('.think-bubble');
@@ -1357,6 +1395,7 @@ function renderAssistant(el, full) {
   if (mdRender && answer) {
     ans.classList.add('md');
     ans.innerHTML = mdRender(answer);
+    addCopyButtons(ans);
   } else {
     ans.classList.remove('md');
     ans.textContent = answer;
