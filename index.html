@@ -97,7 +97,11 @@
         gap: 6px;
     }
 
+    .grid.medium { grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); }
     .grid.narrow { grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); }
+    @media (max-width: 480px) {
+        .grid.narrow { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
 
     .card {
         display: flex;
@@ -257,7 +261,7 @@
 
         <section>
             <h2><svg class="ic" aria-hidden="true"><use href="#i-shuffle"/></svg>Randomizers</h2>
-            <div class="grid">
+            <div class="grid medium">
                 <a class="card" href="passwords.html" style="--c:#868e96"><svg class="ic" aria-hidden="true"><use href="#i-key"/></svg><div class="tx"><strong>Random Passwords</strong></div></a>
                 <a class="card" href="RandomNDE.html" style="--c:#55c0db"><svg class="ic" aria-hidden="true"><use href="#i-nde"/></svg><div class="tx"><strong>Random NDE</strong></div></a>
                 <a class="card" href="RandomVerse.html" style="--c:#f4a261"><svg class="ic" aria-hidden="true"><use href="#i-book"/></svg><div class="tx"><strong>Random Bible Verse</strong></div></a>
