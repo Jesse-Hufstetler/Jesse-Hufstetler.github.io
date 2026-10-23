@@ -1,15 +1,16 @@
 <!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Weather Consensus</title>
 <style>
 @font-face{font-family:Seg;src:url(https://cdn.jsdelivr.net/npm/dseg@0.46.0/fonts/DSEG14-Classic/DSEG14Classic-Regular.woff2) format('woff2')}
-:root{--bg:#141414;--panel:#1c1c1c;--fg:#e8e8e8;--dim:#969696;--line:#333333}
+:root{--bg:#141414;--panel:#1c1c1c;--fg:#e8e8e8;--dim:#969696;--line:#333333;--adv:#212121;--hov:#595959;--warn:#f0b35a;--tick:#4a4a4a;--daytxt:#c8c8c8;--mid:rgba(255,255,255,.16);--cursor:#fff;--night:#242424;--night-rgb:36,36,36;--curve:#6fb1ff;color-scheme:dark}
+@media (prefers-color-scheme:light){:root{--bg:#f4f4f2;--panel:#ffffff;--fg:#1a1a1a;--dim:#666666;--line:#d2d2d0;--adv:#eaeae7;--hov:#999999;--warn:#a85f00;--tick:#b4b4b4;--daytxt:#444444;--mid:rgba(0,0,0,.18);--cursor:#000;--night:#5a647c;--night-rgb:90,100,124;--curve:#1f6fd1;color-scheme:light}}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--fg);font:13px/1.35 system-ui,"Segoe UI",sans-serif}
 header{padding:10px 16px;display:flex;flex-wrap:wrap;gap:8px 22px;align-items:center;border-bottom:1px solid var(--line)}
 h1{font-size:16px;margin:0;font-weight:600}
 .dim{color:var(--dim)} label{color:var(--dim);white-space:nowrap} label.m{color:var(--fg);margin-right:6px}
 select,input{vertical-align:middle}
-#adv{display:contents} #adv[hidden]{display:none}
-#warn{padding:4px 16px;color:#f0b35a;font-size:12px}
+#adv{flex:1 0 100%;display:flex;flex-wrap:wrap;gap:8px 22px;align-items:center;background:var(--adv);margin:2px -16px -10px;padding:8px 16px} #adv[hidden],#adv:not(:has(*)){display:none} /* open Advanced = its own full-width, slightly shaded row */
+#warn{padding:4px 16px;color:var(--warn);font-size:12px}
 #wrap{position:relative;padding:8px 16px 0;overflow-x:hidden}
 canvas{display:block}
 #over{position:absolute;left:16px;top:8px;pointer-events:none}
@@ -17,7 +18,7 @@ canvas{display:block}
 #when{font:26px/1.3 Seg,system-ui,sans-serif;margin-bottom:6px;display:flex;align-items:baseline;gap:16px} /* 2x the page's 13px; symbols DSEG lacks (·) fall back to system-ui */
 #sun{margin-left:auto;font:13px/1.35 system-ui,"Segoe UI",sans-serif;color:var(--dim);white-space:nowrap} /* sunrise/sunset, normal font, right end of the row */
 #tbl{position:relative}
-#tbl::after{content:"";position:absolute;inset:0;background:rgba(36,36,36,.38);opacity:var(--dark,0);pointer-events:none} /* same wash as the chart's night shading (NIGHT @ .38), faded by --dark */
+#panel::after{content:"";position:absolute;inset:0;background:rgba(var(--night-rgb),.38);opacity:var(--dark,0);pointer-events:none} /* same wash as the chart's night shading (NIGHT @ .38), faded by --dark */
 table{border-collapse:separate;border-spacing:2px;width:100%}
 th,td{padding:2px 4px;text-align:center;font-variant-numeric:tabular-nums;font-size:12px}
 #tbl td{padding-top:var(--padv,2px);padding-bottom:var(--padv,2px)} /* grown by fitBarH when there's room to spare */
@@ -25,7 +26,7 @@ th{width:1%;padding:2px 8px} th.med{width:auto} /* every column shrinks to fit; 
 th{color:var(--dim);font-weight:500} td.m{text-align:left;color:var(--dim);white-space:nowrap}
 td.v{border-radius:3px;color:#000}
 button{background:var(--panel);color:var(--fg);border:1px solid var(--line);border-radius:4px;padding:2px 10px;cursor:pointer;font:inherit}
-button:hover{border-color:#595959}
+button:hover{border-color:var(--hov)}
 input[type=text],input[type=password]{background:var(--panel);color:var(--fg);border:1px solid var(--line);border-radius:4px;padding:2px 6px;font:inherit}
 a,.lnk{color:var(--dim);cursor:pointer;text-decoration:underline;background:none;border:0;padding:0}
 .pw{display:inline-block;background:#f0b35a;color:#000;border-radius:3px;padding:0 4px;font-size:11px;line-height:15px;font-weight:700;cursor:help}
@@ -63,7 +64,10 @@ function start(D){
 const $ = id => document.getElementById(id);
 $('msg').hidden = true; $('panel').hidden = false;
 const cv = $('c'), ov = $('over'), ctx = cv.getContext('2d'), octx = ov.getContext('2d');
-const GUT = 132, PADR = 6, ROW = 13, GAP = 2, CONS = 24, TITLE = 34, NIGHT = '#242424', DAY = '#e9d38a';
+const GUT = 132, PADR = 6, ROW = 13, GAP = 2, CONS = 24, TITLE = 34, DAY = '#e9d38a';
+const T = {};   // canvas colors, read from the CSS variables so they follow light/dark mode
+const loadTheme = () => { const cs = getComputedStyle(document.documentElement), v = n => cs.getPropertyValue(n).trim(); Object.assign(T, { fg: v('--fg'), dim: v('--dim'), line: v('--line'), tick: v('--tick'), daytxt: v('--daytxt'), mid: v('--mid'), cursor: v('--cursor'), night: v('--night'), panel: v('--panel'), curve: v('--curve') }); };
+loadTheme();
 const NOW = D.generated;
 // Slider settings persist in this browser, like the OpenWeatherMap key (try/catch: storage can be blocked).
 const store = { get: k => { try { const v = parseFloat(localStorage.getItem(k)); return isFinite(v) ? Math.min(100, Math.max(0, v)) : null; } catch { return null; } },
@@ -92,7 +96,7 @@ function applyPess() {
 }
 // Consensus average of picked points. Rain chance: average the forecasts' own values, then apply pessimism once (not per source).
 const avgOf = (m, ps) => m.key === 'pop' ? Math.round(remap(mean(ps.map(p => p[3])) / 100, pessN()) * 1000) / 10 : mean(ps.map(p => p[2]));
-const PESS_TIP ='Pessimism applied - open Advanced for details';
+const pessTip = () => $('pess').getClientRects().length ? 'Pessimism applied - see the Rain pessimism slider' : 'Pessimism applied - open Advanced for details';   // only send people to Advanced if the slider is hidden there
 function showTip(text, x, y) {   // instant, styled tooltip above the point (below if there's no room)
   const t = $('tip'); t.textContent = text; t.style.display = 'block';
   t.style.left = Math.max(4, Math.min(x + 8, window.innerWidth - t.offsetWidth - 8)) + 'px';
@@ -108,14 +112,14 @@ function drawWarn(x, base) {   // yellow box with a black warning sign, top-left
 }
 function drawPess() {
   const c = $('pc'), g = c.getContext('2d'), S = 64, p = 4, n = pessN();
-  g.clearRect(0, 0, S, S); g.fillStyle = '#1c1c1c'; g.fillRect(0, 0, S, S);
+  g.clearRect(0, 0, S, S); g.fillStyle = T.panel; g.fillRect(0, 0, S, S);
   const X = u => p + u * (S - 2 * p), Y = u => S - p - u * (S - 2 * p);
-  g.strokeStyle = '#333'; g.lineWidth = 1; g.strokeRect(p + .5, p + .5, S - 2 * p - 1, S - 2 * p - 1);
+  g.strokeStyle = T.line; g.lineWidth = 1; g.strokeRect(p + .5, p + .5, S - 2 * p - 1, S - 2 * p - 1);
   g.setLineDash([2, 2]); g.beginPath(); g.moveTo(X(0), Y(0)); g.lineTo(X(1), Y(1)); g.stroke(); g.setLineDash([]);
-  g.strokeStyle = '#6fb1ff'; g.lineWidth = 1.5; g.beginPath();
+  g.strokeStyle = T.curve; g.lineWidth = 1.5; g.beginPath();
   for (let i = 0; i <= 40; i++) { const u = i / 40; i ? g.lineTo(X(u), Y(remap(u, n))) : g.moveTo(X(u), Y(remap(u, n))); }
   g.stroke();
-  g.fillStyle = '#969696'; g.font = '8px system-ui'; g.fillText('in →', S - 20, S - 6); g.save(); g.translate(10, 22); g.rotate(-Math.PI / 2); g.fillText('out →', -10, 0); g.restore();
+  g.fillStyle = T.dim; g.font = '8px system-ui'; g.fillText('in →', S - 20, S - 6); g.save(); g.translate(10, 22); g.rotate(-Math.PI / 2); g.fillText('out →', -10, 0); g.restore();
 }
 const pessWarn = applied => applied ? ` <span class="pw">⚠</span>` : '';
 const pessLabel = () => { $('pv').textContent = st.pess === 0 ? 'off' : `20→${Math.round(remap(.2, pessN()) * 100)}%`; $('pc').title = `Forecast rain chance (across) → shown rain chance (up). 20% reads as ${Math.round(remap(.2, pessN()) * 100)}%, 50% as ${Math.round(remap(.5, pessN()) * 100)}%.`; };
@@ -229,18 +233,18 @@ function fitBarH(cssW) {
   return barOf(med);
 }
 function drawKey(m, y0) {   // metric title in the gutter + gradient legend bar with stop values
-  ctx.font = '600 12px system-ui'; ctx.fillStyle = '#e8e8e8'; ctx.textAlign = 'left'; ctx.fillText(`${m.label} (${m.unit})`, 0, y0 + 14);
+  ctx.font = '600 12px system-ui'; ctx.fillStyle = T.fg; ctx.textAlign = 'left'; ctx.fillText(`${m.label} (${m.unit})`, 0, y0 + 14);
   const lo = m.st[0].v, hi = m.st[m.st.length - 1].v, LW = 300;
   for (let i = 0; i < LW; i++) { ctx.fillStyle = rgb(colorAt(m, lo + (hi - lo) * i / (LW - 1))); ctx.fillRect(GUT + i, y0 + 3, 1.5, 9); }
-  ctx.font = '9px system-ui'; ctx.fillStyle = '#969696'; let lx = -99;
+  ctx.font = '9px system-ui'; ctx.fillStyle = T.dim; let lx = -99;
   for (const s of m.st) { const x = GUT + (s.v - lo) / (hi - lo) * (LW - 1); if (x - lx < 22) continue; lx = x; ctx.textAlign = 'center'; ctx.fillText(s.v, x, y0 + 23); }
   ctx.textAlign = 'left';
 }
 function drawKeyInline(m, x0, y0) {   // collapsed mode: title above the bar, stop values below
-  ctx.font = '600 11px system-ui'; ctx.fillStyle = '#e8e8e8'; ctx.textAlign = 'left'; ctx.fillText(`${m.label} (${m.unit})`, x0, y0 + 11);
+  ctx.font = '600 11px system-ui'; ctx.fillStyle = T.fg; ctx.textAlign = 'left'; ctx.fillText(`${m.label} (${m.unit})`, x0, y0 + 11);
   const lo = m.st[0].v, hi = m.st[m.st.length - 1].v;
   for (let i = 0; i < KW; i++) { ctx.fillStyle = rgb(colorAt(m, lo + (hi - lo) * i / (KW - 1))); ctx.fillRect(x0 + i, y0 + 16, 1.5, 9); }
-  ctx.font = '9px system-ui'; ctx.fillStyle = '#969696'; let lx = -99;
+  ctx.font = '9px system-ui'; ctx.fillStyle = T.dim; let lx = -99;
   for (const s of m.st) { const x = x0 + (s.v - lo) / (hi - lo) * (KW - 1); if (x - lx < 22) continue; lx = x; ctx.textAlign = 'center'; ctx.fillText(s.v, x, y0 + 35); }
   ctx.textAlign = 'left';
 }
@@ -264,14 +268,14 @@ function draw() {
 
   // collapsed mode: all the color keys live above the chart
   if (legends.length) {
-    ctx.font = '10px system-ui'; ctx.fillStyle = '#969696'; ctx.textAlign = 'left'; ctx.fillText('color keys', 0, 10);
+    ctx.font = '10px system-ui'; ctx.fillStyle = T.dim; ctx.textAlign = 'left'; ctx.fillText('color keys', 0, 10);
     for (const { m, x, y0 } of legends) drawKeyInline(m, x, y0);
-    ctx.strokeStyle = '#333333'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(0, KEYS - 3.5); ctx.lineTo(cssW, KEYS - 3.5); ctx.stroke();
+    ctx.strokeStyle = T.line; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(0, KEYS - 3.5); ctx.lineTo(cssW, KEYS - 3.5); ctx.stroke();
   }
   ctx.setTransform(dpr, 0, 0, dpr, 0, KEYS * dpr);   // everything below is drawn in chart-relative coordinates
 
   // relative ticks
-  ctx.font = '10px system-ui'; ctx.fillStyle = '#969696'; ctx.strokeStyle = '#4a4a4a';
+  ctx.font = '10px system-ui'; ctx.fillStyle = T.dim; ctx.strokeStyle = T.tick;
   let lastX = -99;
   [[0, 'now'], [1, '+1h'], [3, '+3h'], [6, '+6h'], [12, '+12h'], [24, '+1d'], [48, '+2d'], [72, '+3d'], [120, '+5d'], [168, '+7d'], [240, '+10d'], [336, '+14d']].forEach(([h, l]) => {
     if (h * 3600 > H()) return; const x = GUT + xOf(h * 3600) * W; if (x - lastX < 30) return; lastX = x;
@@ -282,18 +286,18 @@ function draw() {
 
   // day names
   const mids = midnights(); const bounds = [NOW, ...mids.filter(t => t > NOW && t < NOW + H()), NOW + H()];
-  ctx.font = '11px system-ui'; ctx.fillStyle = '#c8c8c8'; ctx.textAlign = 'center';
+  ctx.font = '11px system-ui'; ctx.fillStyle = T.daytxt; ctx.textAlign = 'center';
   for (let i = 0; i < bounds.length - 1; i++) {
     const xa = GUT + xOf(bounds[i] - NOW) * W, xb = GUT + xOf(bounds[i + 1] - NOW) * W, w = xb - xa;
     const name = fDay.format(((bounds[i] + bounds[i + 1]) / 2) * 1000);
     if (w >= 30) ctx.fillText(name, (xa + xb) / 2, 32); else if (w >= 13) ctx.fillText(name[0], (xa + xb) / 2, 32);
   }
-  ctx.textAlign = 'left'; ctx.fillStyle = '#969696'; ctx.font = '10px system-ui'; ctx.fillText('local day', 0, 32);
+  ctx.textAlign = 'left'; ctx.fillStyle = T.dim; ctx.font = '10px system-ui'; ctx.fillText('local day', 0, 32);
 
   // daylight strip
   ctx.fillText('daylight', 0, 47);
   const light = Array.from({ length: N }, (_, i) => { const [a, b] = span(i); return Math.round(lightOver(a, b) * 100) / 100; });
-  const dayC = parseHex(DAY), nightC = parseHex(NIGHT);
+  const dayC = parseHex(DAY), nightC = parseHex(T.night);
   runs(37, 10, N, i => rgb([0, 1, 2].map(j => Math.round(nightC[j] + (dayC[j] - nightC[j]) * light[i]))));
 
   // metric blocks
@@ -305,11 +309,11 @@ function draw() {
     if (st.showSrc) {
       drawKey(m, y0); y += TITLE;
       if (m.key === 'pop' && popApplied) { ctx.font = '600 12px system-ui'; drawWarn(ctx.measureText(`${m.label} (${m.unit})`).width + 6, y0 + 14); }
-      ctx.font = '600 11px system-ui'; ctx.fillStyle = '#e8e8e8'; ctx.fillText('Low / average / high', 0, y + 15);
+      ctx.font = '600 11px system-ui'; ctx.fillStyle = T.fg; ctx.fillText('Low / average / high', 0, y + 15);
     } else {
-      ctx.font = '600 12px system-ui'; ctx.fillStyle = '#e8e8e8'; ctx.fillText(`${m.label} (${m.unit})`, 0, y + barH / 2 - 3);
+      ctx.font = '600 12px system-ui'; ctx.fillStyle = T.fg; ctx.fillText(`${m.label} (${m.unit})`, 0, y + barH / 2 - 3);
       if (m.key === 'pop' && popApplied) drawWarn(ctx.measureText(`${m.label} (${m.unit})`).width + 6, y + barH / 2 - 3);
-      ctx.font = '9px system-ui'; ctx.fillStyle = '#969696'; ctx.fillText('low / average / high', 0, y + barH / 2 + 10);
+      ctx.font = '9px system-ui'; ctx.fillStyle = T.dim; ctx.fillText('low / average / high', 0, y + barH / 2 + 10);
     }
     const cons = new Array(N);
     for (let i = 0; i < N; i++) {
@@ -325,7 +329,7 @@ function draw() {
 
     ctx.font = '11px system-ui';
     if (st.showSrc) for (const s of rows) {
-      ctx.fillStyle = '#969696'; ctx.fillText(D.sources[srcIdx[s.src]].name, 0, y + ROW - 3);
+      ctx.fillStyle = T.dim; ctx.fillText(D.sources[srcIdx[s.src]].name, 0, y + ROW - 3);
       runs(y, ROW, N, i => { const [a, b] = span(i), p = pick(s.s, a, b, m); return p ? rgb(colorAt(m, p[2])) : null; });
       y += ROW + GAP;
     }
@@ -334,7 +338,7 @@ function draw() {
   runs(47, CHART - 6 - 47, N, i => light[i] < 1 ? `rgba(${nightC[0]},${nightC[1]},${nightC[2]},${(.38 * (1 - light[i])).toFixed(3)})` : null, 0);
 
   // midnight lines
-  ctx.strokeStyle = 'rgba(255,255,255,.16)'; ctx.lineWidth = 1;
+  ctx.strokeStyle = T.mid; ctx.lineWidth = 1;
   for (const t of mids) { if (t <= NOW || t >= NOW + H()) continue; const x = Math.round(GUT + xOf(t - NOW) * W) + .5; ctx.beginPath(); ctx.moveTo(x, 36); ctx.lineTo(x, CHART - 6); ctx.stroke(); }
   showAt(hoverT);
 }
@@ -344,7 +348,7 @@ let hoverT = NOW;
 function overlay(x) {
   octx.clearRect(0, 0, ov.width, ov.height);
   if (x == null) return;
-  octx.strokeStyle = '#fff'; octx.lineWidth = 1; octx.beginPath(); octx.moveTo(Math.round(x) + .5, KEYS); octx.lineTo(Math.round(x) + .5, KEYS + CHART); octx.stroke();
+  octx.strokeStyle = T.cursor; octx.lineWidth = 1; octx.beginPath(); octx.moveTo(Math.round(x) + .5, KEYS); octx.lineTo(Math.round(x) + .5, KEYS + CHART); octx.stroke();
 }
 function showAt(t) {
   hoverT = t; overlay(GUT + xOf(t - NOW) * W);
@@ -366,21 +370,36 @@ function panel(t) {
       used.map(s => { const p = vals[s.id]; return cell(p ? p[2] : null, p ? `${fClock.format(p[0] * 1000)} – ${fClock.format(p[1] * 1000)} (${rel(p[1] - p[0])} span)` : ''); }).join('') + '</tr>';
   }
   $('tbl').innerHTML = h + '</table>';
-  $('tbl').style.setProperty('--dark', (1 - lightAt(t)).toFixed(3));
+  $('panel').style.setProperty('--dark', (1 - lightAt(t)).toFixed(3));
 }
 cv.addEventListener('mouseleave', hideTip);
-$('tbl').addEventListener('mouseover', e => { const w = e.target.closest('.pw'); if (w) { const r = w.getBoundingClientRect(); showTip(PESS_TIP, r.left, r.top); } else hideTip(); });
+$('tbl').addEventListener('mouseover', e => { const w = e.target.closest('.pw'); if (w) { const r = w.getBoundingClientRect(); showTip(pessTip(), r.left, r.top); } else hideTip(); });
 $('tbl').addEventListener('mouseleave', hideTip);
 cv.addEventListener('mousemove', e => {
   const r = cv.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top;
   const hit = warnBoxes.some(b => x >= b.x && x <= b.x + b.w && y >= b.y && y <= b.y + b.h);
-  if (hit) showTip(PESS_TIP, e.clientX, e.clientY); else hideTip();
+  if (hit) showTip(pessTip(), e.clientX, e.clientY); else hideTip();
   if (x < GUT || x > GUT + W) return;
   showAt(NOW + tOf((x - GUT) / W));
 });
 
 // ---- controls ----
-$('title').textContent = D.place + ' · weather consensus';
+$('title').textContent = D.place; const tsuf = document.createElement('span'); tsuf.textContent = ' · weather consensus'; $('title').appendChild(tsuf);
+// Header responsiveness. Narrowest state: no title suffix; 'fetched', Location and every other control inside Advanced.
+// As width allows, things come back out in STEPS order; the first one that would wrap the header is undone and the rest stay put.
+const adv = $('adv'), advb = $('advb'), hdr = document.querySelector('header'), locf = $('locf'), gen = $('gen'), genMark = document.createComment('gen');
+gen.before(genMark);   // the 'fetched' text's home in the header row
+const advItems = [...adv.children];   // Horizon, API key, Time squeeze, Rain pessimism, sources, color keys, metrics button, metrics list
+const STEPS = [[gen], [locf], [tsuf], ...[[0], [1], [2], [3], [4], [5], [6, 7]].map(a => a.map(i => advItems[i]))];
+const settle = n => {
+  adv.prepend(gen); adv.prepend(locf); advItems.forEach(e => adv.append(e)); tsuf.hidden = true;
+  STEPS.slice(0, n).forEach(g => g.forEach(e => e === tsuf ? tsuf.hidden = false : e === gen ? genMark.after(e) : advb.before(e)));
+  advb.hidden = !adv.querySelector(':scope > *');
+};
+const cy = e => { const r = e.getBoundingClientRect(); return r.top + r.height / 2; };
+const wraps = () => { const y = cy(hdr.firstElementChild); return [...hdr.children].some(e => e !== adv && !e.hidden && e.getClientRects().length && Math.abs(cy(e) - y) > 8); };
+function fitTitle() { let n = 0; settle(0); while (n < STEPS.length) { settle(n + 1); if (wraps()) { settle(n); break; } n++; } }
+window.addEventListener('resize', fitTitle);
 $('gen').textContent = 'fetched ' + fFull.format(NOW * 1000) + ' local';
 $('warn').textContent = D.warnings.length ? '⚠ ' + D.warnings.join('  |  ') : '';
 [1, 2, 3, 5, 7, 10, 14, 16].forEach(d => { const o = document.createElement('option'); o.value = d; o.textContent = d + ' day' + (d > 1 ? 's' : ''); if (d === st.days) o.selected = true; $('days').appendChild(o); });
@@ -403,9 +422,10 @@ $('mets').onclick = () => { $('chk').hidden = !$('chk').hidden; setFlag('wxMetri
 metsLabel();
 D.metrics.forEach(m => { const l = document.createElement('label'); l.className = 'm'; l.innerHTML = `<input type="checkbox"> ${m.label}`; l.firstChild.checked = st.on.has(m.key); l.firstChild.onchange = e => { e.target.checked ? st.on.add(m.key) : st.on.delete(m.key); try { localStorage.setItem('wxHidden', JSON.stringify(D.metrics.map(x => x.key).filter(k => !st.on.has(k)))); } catch {} draw(); }; $('chk').appendChild(l); });
 // Watch the container, not the window: the scrollbar appearing after the first draw changes its width without firing 'resize'.
-let lastW = 0; new ResizeObserver(() => { const w = $('wrap').clientWidth; if (w !== lastW) { lastW = w; draw(); } }).observe($('wrap'));
+let lastW = 0; new ResizeObserver(() => { const w = $('wrap').clientWidth; if (w !== lastW) { lastW = w; fitTitle(); draw(); } }).observe($('wrap'));
 let lastH = 0; window.addEventListener('resize', () => { const h = document.documentElement.clientHeight + document.querySelector('header').offsetHeight / 1000; if (h !== lastH) { lastH = h; draw(); } });
-kLabel(); draw();
+fitTitle(); kLabel(); draw();
+matchMedia('(prefers-color-scheme: light)').addEventListener('change', () => { loadTheme(); drawPess(); draw(); });
 document.fonts.ready.then(() => draw());   // re-fit once the segment font has loaded (it changes the panel's height)
 }
 </script>
