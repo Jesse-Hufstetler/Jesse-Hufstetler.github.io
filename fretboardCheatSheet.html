@@ -485,8 +485,15 @@
                 if (S.bg === 'scale' && !inScale) continue;
                 const x = fx(f), y = rowY(i);
                 const txt = (S.bg === 'scale' && mode === 'num') ? String(d) : spell(pc, key);
-                s += `<circle class="${inScale ? 'bg-scale' : 'bg-all'}" cx="${x}" cy="${y}" r="${r * 0.66}"/>`;
-                s += `<text class="tb ${inScale ? 'on-scale' : 'chrom'}" x="${x}" y="${y + 0.5}" font-size="${fs(txt.length > 1 ? 9.5 : 11)}">${esc(txt)}</text>`;
+                const both = inScale && mode !== 'num' && mode !== 'name';
+                const cls = `tb ${inScale ? 'on-scale' : 'chrom'}`;
+                s += `<circle class="${inScale ? 'bg-scale' : 'bg-all'}" cx="${x}" cy="${y}" r="${r * (both ? 0.78 : 0.66)}"/>`;
+                if (both) {
+                    s += `<text class="${cls}" x="${x}" y="${y - 2.6 * z}" font-size="${fs(10)}">${esc(txt)}</text>`;
+                    s += `<text class="${cls}" x="${x}" y="${y + 6 * z}" font-size="${fs(7.5)}">${d}</text>`;
+                } else {
+                    s += `<text class="${cls}" x="${x}" y="${y + 0.5}" font-size="${fs(txt.length > 1 ? 9.5 : 11)}">${esc(txt)}</text>`;
+                }
             }
         }
         for (const m of noodle) {
