@@ -89,7 +89,7 @@
     .wire { stroke: #8a8a8a; stroke-width: 1; }
     .str { stroke: #3a3a3a; }
     .nut { fill: #222; }
-    .inlay { fill: #dedede; }
+    .inlay { fill: url(#inlayGrad); stroke: #444; stroke-width: 2; }
     .board-bg { fill: #fafafa; stroke: #999; stroke-width: 1; }
     .fnum { fill: #777; text-anchor: middle; }
     .fnum.big { fill: #222; font-weight: 700; }
@@ -424,14 +424,14 @@
         const pcAt = (i, f) => (T.abs[i] + f) % 12;
         const mode = labelMode();
 
-        let s = `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMinYMin meet" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Fretboard, key of ${esc(key.name)}">`;
+        let s = `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMinYMin meet" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Fretboard, key of ${esc(key.name)}"><defs><radialGradient id="inlayGrad" cx="35%" cy="35%" r="75%"><stop offset="0" stop-color="#fafafa"/><stop offset="0.45" stop-color="#9c9c9c"/><stop offset="1" stop-color="#3a3a3a"/></radialGradient></defs>`;
         s += `<rect class="board-bg" x="${NUT_X}" y="${top}" width="${RIGHT - NUT_X}" height="${bottom - top}"/>`;
 
         const midY = (top + bottom) / 2, off = n % 2 === 0 ? GAP : GAP * 1.5;
         for (let f = 1; f <= N; f++) {
             const x = NUT_X + (f - 0.5) * fw;
-            if (INLAY_ONE.includes(f)) s += `<circle class="inlay" cx="${x}" cy="${midY}" r="${GAP * 0.2}"/>`;
-            if (INLAY_TWO.includes(f)) s += `<circle class="inlay" cx="${x}" cy="${midY - off}" r="${GAP * 0.2}"/><circle class="inlay" cx="${x}" cy="${midY + off}" r="${GAP * 0.2}"/>`;
+            if (INLAY_ONE.includes(f)) s += `<circle class="inlay" cx="${x}" cy="${midY}" r="${GAP * 0.22}"/>`;
+            if (INLAY_TWO.includes(f)) s += `<circle class="inlay" cx="${x}" cy="${midY - off}" r="${GAP * 0.22}"/><circle class="inlay" cx="${x}" cy="${midY + off}" r="${GAP * 0.22}"/>`;
         }
         for (let f = 1; f <= N; f++) s += `<line class="wire" x1="${NUT_X + f * fw}" x2="${NUT_X + f * fw}" y1="${top}" y2="${bottom}"/>`;
         s += `<rect class="nut" x="${NUT_X - 7}" y="${top}" width="7" height="${bottom - top}"/>`;
