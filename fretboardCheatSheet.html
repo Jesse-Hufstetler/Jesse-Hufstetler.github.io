@@ -386,7 +386,7 @@
     }
 
     /* ------------------------------- drawing ------------------------------- */
-    const W = 1000, NUT_X = 80, RIGHT = 995;
+    const W = 1000, NUT_X = 100, RIGHT = 995;
     const INLAY_ONE = [3, 5, 7, 9, 15, 17, 19, 21], INLAY_TWO = [12, 24];
 
     // Where to play the 1/4/5/6 low on the neck. The 4-5-6 run (frets f, f+2, f+4) lives on one of the two
@@ -444,7 +444,9 @@
         const fs = v => (v * z).toFixed(1);
         const pad = r + 6, top = 4, bottom = top + 2 * pad + (n - 1) * GAP, H = bottom + 18 * zf + 4;
         const rowY = i => top + pad + (n - 1 - i) * GAP;
-        const fx = f => f === 0 ? NUT_X - 7 - r - 4 : NUT_X + (f - 0.5) * fw;
+        // fingers sit just behind the fret wire, so markers lean right and overlap the wire a little
+        // (open strings overlap the nut the same way)
+        const fx = f => f === 0 ? NUT_X - 7 - r * 0.75 : NUT_X + f * fw - r * 0.75;
         const pcAt = (i, f) => (T.abs[i] + f) % 12;
         const mode = labelMode();
 
@@ -466,7 +468,7 @@
         }
         for (let f = 1; f <= N; f++) {
             const big = INLAY_ONE.includes(f) || INLAY_TWO.includes(f);
-            s += `<text class="fnum${big ? ' big' : ''}" font-size="${(12 * zf).toFixed(1)}" x="${NUT_X + (f - 0.5) * fw}" y="${bottom + 12 * zf + 2}">${f}</text>`;
+            s += `<text class="fnum${big ? ' big' : ''}" font-size="${(12 * zf).toFixed(1)}" x="${fx(f)}" y="${bottom + 12 * zf + 2}">${f}</text>`;
         }
 
         const label = (pc, deg) => {
