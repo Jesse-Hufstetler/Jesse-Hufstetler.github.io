@@ -152,7 +152,6 @@
             <h3>Keys (one fretboard each)</h3>
             <div class="chips" id="keys"></div>
             <div class="row"><button id="keysAll">All</button><button id="keysNone">None</button></div>
-            <div class="hint">Boards grow to fill the page. Up to 6 share one page (more keys = a bit smaller); beyond 6 they spill onto extra pages. Portrait gives the biggest boards.</div>
         </div>
 
         <div class="card">
@@ -395,7 +394,7 @@
         }
         const kinds = new Set();
         for (const r of roots) {
-            if (r.f === 0) kinds.add('open root');
+            if (r.f === 0 && c.f !== 0) kinds.add('open root');
             else if (r.i !== c.X && r.f === c.f + 2) kinds.add('T shape');
             else if (r.i !== c.X && (r.f === c.f || r.f === c.f + 4)) kinds.add('L shape');
         }
