@@ -4,15 +4,17 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#67a336">
 <title>Fretboard Cheat Sheet</title>
 <style>
     :root {
         color-scheme: light dark;
-        --bg: #ececec; --panel: #ffffff; --ink: #171717; --muted: #6b6b6b; --line: #d2d2d2;
-        --chip: #f1f1f1; --accent: #1f1f1f; --accent-ink: #ffffff;
+        /* everything except the paper is lightly tinted Planning Center green (#67a336) */
+        --bg: #e2ebda; --panel: #f3f8ee; --ink: #172013; --muted: #5d6b54; --line: #c2d3b2;
+        --chip: #e5eedc; --accent: #4c8a22; --accent-ink: #ffffff;
     }
     @media (prefers-color-scheme: dark) {
-        :root { --bg: #121212; --panel: #1e1e1e; --ink: #ebebeb; --muted: #9a9a9a; --line: #353535; --chip: #292929; --accent: #ebebeb; --accent-ink: #141414; }
+        :root { --bg: #11170f; --panel: #1a2318; --ink: #e8f0e2; --muted: #93a38a; --line: #2f3e2b; --chip: #25301f; --accent: #8fcf5f; --accent-ink: #0f1d08; }
     }
     * { box-sizing: border-box; }
     body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.4 system-ui, -apple-system, "Segoe UI", sans-serif; }
@@ -23,12 +25,13 @@
     p.lede { margin: 0 0 14px; color: var(--muted); }
 
     .layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; align-items: start; }
-    .previewcol { min-width: 0; }
+    /* the page's bottom gutter lives inside the preview column so the sticky controls panel isn't pushed up at the very end of the scroll */
+    .wrap { padding-bottom: 0; }
+    .previewcol { min-width: 0; padding-bottom: 16px; }
     .controls { display: grid; grid-template-columns: repeat(auto-fit, minmax(270px, 1fr)); gap: 12px; }
     /* wide screens: options on the left, live print preview beside them */
     @media (min-width: 1000px) {
-        .layout { grid-template-columns: 350px minmax(0, 1fr); }
-        .controls { grid-template-columns: 1fr; position: sticky; top: 8px; max-height: calc(100vh - 16px); overflow-y: auto; padding-right: 2px; }
+        .layout { grid-template-columns: 350px minmax(0, 1fr); }        .controls { grid-template-columns: 1fr; position: sticky; top: 8px; max-height: calc(100vh - 16px); overflow-y: auto; padding: 1px 12px 1px 1px; margin-right: -12px; scrollbar-width: thin; scrollbar-color: var(--line) transparent; }
     }
     .card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; display: flex; flex-direction: column; gap: 9px; }
     .card h3 { margin: 0; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
@@ -49,7 +52,11 @@
     .hint { color: var(--muted); font-size: 13px; }
 
     /* ---------- print preview ---------- */
-    .previewbar { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; position: sticky; top: 0; z-index: 5; background: var(--bg); padding: 8px 0; margin-bottom: 6px; }
+    .previewbar { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; position: sticky; top: 8px; z-index: 5; width: 100%; margin-left: auto; margin-right: auto; transition: width .2s ease; background: color-mix(in srgb, var(--panel) 65%, transparent); -webkit-backdrop-filter: blur(10px) saturate(1.4); backdrop-filter: blur(10px) saturate(1.4); border: 1px solid var(--line); border-radius: 10px; padding: 8px 8px 8px 16px; margin-bottom: 14px; box-shadow: 0 2px 8px rgba(0, 0, 0, .15); }
+    @media (min-width: 1000px) {   /* desktop: once it floats over the paper, shrink into a dialog-like card */
+        .previewbar.stuck { width: calc(min(100%, var(--maxw, 800px)) - 48px); }
+    }
+    #sentinel { height: 1px; margin-bottom: -1px; pointer-events: none; }
     .previewbar h2 { margin: 0; font-size: 16px; }
     .previewbar .sub { color: var(--muted); font-size: 13px; font-weight: 400; }
     #pages {
@@ -71,9 +78,10 @@
     .legend svg { height: calc(1.9cqw * var(--f)); width: auto; }
     .board { display: flex; flex-direction: column; min-height: 0; padding-top: .5cqw; }
     .board-head { display: flex; align-items: baseline; flex-wrap: wrap; gap: 0 1.4cqw; border-bottom: 1px solid #bbb; }
-    .board-head h2 { margin: 0; font-size: calc(1.5cqw * var(--f)); }
-    .board-head .sub { font-size: calc(1.1cqw * var(--f)); color: #333; }
-    .board-head .tag { margin-left: auto; font-size: calc(1.1cqw * var(--f)); font-weight: 700; color: #333; }
+    .board-head { align-items: center; }
+    .board-head h2 { margin: 0; font-size: calc(3.4cqw * var(--f)); line-height: 1.1; }
+    .board-head .sub { font-size: calc(1.8cqw * var(--f)); color: #222; }
+    .board-head .tag { margin-left: auto; font-size: calc(1.6cqw * var(--f)); font-weight: 700; color: #222; }
     .board svg { display: block; flex: 1 1 auto; min-height: 0; width: 100%; height: 100%; }
     .empty { padding: 40px 0; text-align: center; color: var(--muted); }
 
@@ -110,6 +118,7 @@
         body { background: #fff; }
         .wrap { max-width: none; padding: 0; }
         .layout { display: block; }
+        .previewcol { padding-bottom: 0; }
         .noprint { display: none !important; }
         #pages { display: block; }
         .pagewrap { display: block; break-after: page; page-break-after: always; }
@@ -148,20 +157,8 @@
 
         <div class="card">
             <h3>Highlights</h3>
-            <label class="check"><input type="checkbox" id="roots"> Power-chord roots</label>
-            <div class="row"><span class="lbl">Degrees</span><div class="chips" id="degrees"></div></div>
-            <div class="row"><span class="lbl">Shape</span>
-                <select id="shape">
-                    <option value="auto">Auto: best T / L / open-root fit</option>
-                    <option value="1,0">4·5·6 on 2nd-lowest string, root on lowest</option>
-                    <option value="0,1">4·5·6 on lowest string, root on 2nd-lowest</option>
-                    <option value="0,0">Everything on the lowest string</option>
-                    <option value="1,1">Everything on the 2nd-lowest string</option>
-                </select>
-            </div>
-            <label class="check"><input type="checkbox" id="octave"> Repeat the shape an octave up</label>
+            <label class="check"><input type="checkbox" id="roots"> Chord roots</label>
             <label class="check"><input type="checkbox" id="noodle"> Noodle zone (1 / 7 / 5 / 5)</label>
-            <div class="row"><span class="lbl">Anchor string</span><select id="anchor"></select></div>
             <label class="check"><input type="checkbox" id="partial"> Show partial noodle shapes</label>
             <div class="row"><span class="lbl">Background</span>
                 <select id="bg">
@@ -186,7 +183,8 @@
     </section>
 
     <div class="previewcol">
-        <div class="previewbar noprint">
+        <div id="sentinel" class="noprint"></div>
+        <div class="previewbar noprint" id="previewbar">
             <h2>Print preview <span class="sub" id="pageCount"></span></h2>
             <button class="primary" id="print">Print / Save PDF</button>
         </div>
@@ -271,8 +269,8 @@
 
     const STORE = 'fretCheatSheet.v3';
     const defaults = {
-        tuning: 'g-dropc', custom: '', frets: 17, keys: [9, 0], roots: true, degrees: [1, 4, 5, 6], shape: 'auto', octave: false, partial: true,
-        noodle: true, anchor: 'auto', bg: 'none', showNum: true, showName: true, color: true,
+        tuning: 'g-dropc', custom: '', frets: 17, keys: [9, 0], roots: true, partial: true,
+        noodle: true, bg: 'none', showNum: true, showName: true, color: true,
         paper: 'letter', orient: 'portrait', title: 'Fretboard Cheat Sheet',
     };
     let S = (() => {
@@ -300,7 +298,7 @@
         }
         return p && { ...p, label, bass };
     }
-    const anchorIndex = n => S.anchor === 'auto' ? n - 2 : Math.min(Math.max(+S.anchor || 0, 0), n - 1);
+    const anchorIndex = n => n - 2;   // noodle zone lives on the 2nd string from the top
     const labelMode = () => (S.showNum && S.showName) ? 'both' : S.showName ? 'name' : 'num';
 
     /* ------------------------------ controls ------------------------------ */
@@ -315,22 +313,7 @@
     }
     const buildKeys = () => buildChips('keys', KEYS.map((k, i) => ({ v: i, label: k.name })), S.keys, 'keys');
 
-    let stringSig = '';
-    function buildStringControls() {
-        const T = getTuning();
-        el('customErr').hidden = !(S.tuning === 'custom' && !T);
-        if (!T) return;
-        const n = T.abs.length;
-        const sig = T.names.join(',');
-        if (sig === stringSig) return;
-        stringSig = sig;
-        if (S.anchor !== 'auto' && +S.anchor >= n) S.anchor = 'auto';
-        const items = [];
-        for (let i = n - 1; i >= 0; i--) items.push({ v: i, label: `${n - i} · ${T.names[i]}` });
-        el('anchor').innerHTML = `<option value="auto">Auto (2nd from top)</option>` +
-            items.map(it => `<option value="${it.v}">String ${it.label}</option>`).join('');
-        el('anchor').value = String(S.anchor);
-    }
+    const checkCustom = () => { el('customErr').hidden = !(S.tuning === 'custom' && !getTuning()); };
 
     function initControls() {
         const tun = el('tuning');
@@ -348,13 +331,9 @@
         el('frets').value = String(S.frets);
 
         buildKeys();
-        buildChips('degrees', [1, 4, 5, 6].map(d => ({ v: d, label: d })), S.degrees, 'degrees');
         el('partial').checked = !!S.partial;
         el('partial').onchange = e => { S.partial = e.target.checked; save(); renderSheet(); };
-        el('shape').value = S.shape; el('octave').checked = !!S.octave;
-        el('shape').onchange = e => { S.shape = e.target.value; save(); renderSheet(); };
-        el('octave').onchange = e => { S.octave = e.target.checked; save(); renderSheet(); };
-        buildStringControls();
+        checkCustom();
 
         el('roots').checked = !!S.roots;
         el('noodle').checked = !!S.noodle;
@@ -364,15 +343,14 @@
 
         const bind = (id, prop, ev, get) => { el(id)[ev] = e => { S[prop] = get(e.target); save(); renderSheet(); }; };
         tun.onchange = () => {
-            S.tuning = tun.value; S.anchor = 'auto'; stringSig = '';
+            S.tuning = tun.value;
             el('customRow').hidden = S.tuning !== 'custom';
-            buildStringControls(); save(); renderSheet();
+            checkCustom(); save(); renderSheet();
         };
-        el('custom').oninput = e => { S.custom = e.target.value; buildStringControls(); save(); renderSheet(); };
+        el('custom').oninput = e => { S.custom = e.target.value; checkCustom(); save(); renderSheet(); };
         bind('frets', 'frets', 'onchange', t => +t.value);
         bind('roots', 'roots', 'onchange', t => t.checked);
         bind('noodle', 'noodle', 'onchange', t => t.checked);
-        bind('anchor', 'anchor', 'onchange', t => t.value);
         bind('bg', 'bg', 'onchange', t => t.value);
         bind('showNum', 'showNum', 'onchange', t => t.checked);
         bind('showName', 'showName', 'onchange', t => t.checked);
@@ -405,18 +383,15 @@
             cands.push({ X, Y, f, g, rank, reach: Math.max(f + 4, g) });
         }
         cands.sort((a, b) => a.reach - b.reach || a.rank - b.rank || a.g - b.g || a.X - b.X || a.Y - b.Y);
-        const [mx, my] = String(S.shape).split(',').map(Number);
-        const c = (S.shape !== 'auto' && cands.find(c => c.X === mx && c.Y === my)) || cands[0];
-        // In auto mode also show an open-string root next to the run (just lift your fingers), and a T/L root
+        const c = cands[0];
+        // Also show an open-string root next to the run (just lift your fingers), and a T/L root
         // on the string below the run (lower is better), alongside the main root.
         const roots = [{ i: c.Y, f: c.g }];
-        if (S.shape === 'auto') {
-            for (const Y of [c.X - 1, c.X, c.X + 1]) {
-                if (Y < 0 || Y >= T.abs.length) continue;
-                const g = mod(key.pc - T.abs[Y]);
-                if (roots.some(r => r.i === Y && r.f === g)) continue;
-                if ((g === 0 && openOK) || (Y === c.X - 1 && g >= c.f && g <= c.f + 4)) roots.push({ i: Y, f: g });
-            }
+        for (const Y of [c.X - 1, c.X, c.X + 1]) {
+            if (Y < 0 || Y >= T.abs.length) continue;
+            const g = mod(key.pc - T.abs[Y]);
+            if (roots.some(r => r.i === Y && r.f === g)) continue;
+            if ((g === 0 && openOK) || (Y === c.X - 1 && g >= c.f && g <= c.f + 4)) roots.push({ i: Y, f: g });
         }
         const kinds = new Set();
         for (const r of roots) {
@@ -486,9 +461,7 @@
         const degOf = pc => MAJOR.indexOf(((pc - key.pc) % 12 + 12) % 12) + 1;
         if (S.roots) {
             for (const m of shape.marks) {
-                if (!S.degrees.includes(m.d)) continue;
                 if (m.f <= N) power.push(m);
-                if (S.octave && shape.marks.every(o => o.f + 12 <= N)) power.push({ ...m, f: m.f + 12 });
             }
         }
         if (S.noodle) {
@@ -534,9 +507,8 @@
     function legendHtml(T) {
         const sw = inner => `<svg viewBox="0 0 24 24" width="24" height="24">${inner}</svg>`;
         const items = [], n = T.abs.length;
-        if (S.roots && S.degrees.length) {
-            const degs = [...S.degrees].sort((a, b) => a - b).join(' ');
-            items.push(`<span>${sw('<circle class="k-p1" cx="12" cy="12" r="9"/>')}${sw('<circle class="k-p" cx="12" cy="12" r="9"/>')} Power-chord roots (${degs})</span>`);
+        if (S.roots) {
+            items.push(`<span>${sw('<circle class="k-p1" cx="12" cy="12" r="9"/>')}${sw('<circle class="k-p" cx="12" cy="12" r="9"/>')} Chord roots (1 4 5 6)</span>`);
         }
         if (S.noodle) items.push(`<span>${sw('<rect class="k-n1" x="3" y="3" width="18" height="18" rx="4"/>')}${sw('<rect class="k-n" x="3" y="3" width="18" height="18" rx="4"/>')} Noodle zone 1 / 7 / 5 / 5 (string ${n - anchorIndex(n)})</span>`);
         if (S.bg !== 'none') items.push(`<span>${sw('<circle class="bg-scale" cx="12" cy="12" r="8"/>')} ${S.bg === 'scale' ? 'Other scale notes' : 'Every note'}</span>`);
@@ -563,6 +535,7 @@
 
         const host = el('pages');
         host.className = S.color ? '' : 'bw';
+        host.parentElement.style.setProperty('--maxw', `${portrait ? 800 : 1100}px`);   // preview bar matches the paper width
         const T = getTuning();
         const keys = (Array.isArray(S.keys) ? S.keys : []).filter(k => KEYS[k]).sort((a, b) => a - b);
         if (!T) { host.innerHTML = `<div class="empty">Enter a valid custom tuning to see the fretboard.</div>`; el('pageCount').textContent = ''; return; }
@@ -575,20 +548,26 @@
         const head = `<div class="phead"><h1>${esc(S.title || '')}</h1><div class="meta">${esc(T.label)} · ${T.names.join(' ')} (low to high) · ${S.frets} frets</div><div class="legend">${legendHtml(T)}</div></div>`;
 
         host.innerHTML = pages.map((pg, pi) => {
-            // inner box in inches, minus header (~0.85in) and each board's title row (~0.3in)
-            const aspect = (pw - 2 * MARGIN) / Math.max(0.5, (ph - 2 * MARGIN - 0.85) / pg.rows - 0.3);
+            // inner box in inches, minus header (~0.85in) and each board's title row (~0.55in)
+            const aspect = (pw - 2 * MARGIN) / Math.max(0.5, (ph - 2 * MARGIN - 0.85) / pg.rows - 0.55);
             const boards = pg.keys.map(k => {
                 const key = KEYS[k];
                 let sub = '';
-                if (S.roots && S.degrees.length) sub = [...S.degrees].sort((a, b) => a - b).map(d => `${d} = ${key.scale[d - 1]}`).join('  ·  ');
+                if (S.roots) sub = [1, 4, 5, 6].map(d => `${d} = ${key.scale[d - 1]}`).join('  ·  ');
                 else if (S.noodle) sub = `1 = ${key.scale[0]}`;
                 const b = drawBoard(key, T, aspect);
-                const tag = S.roots && S.degrees.length && b.tag ? `<span class="tag">${esc(b.tag)}</span>` : '';
+                const tag = S.roots && b.tag ? `<span class="tag">${esc(b.tag)}</span>` : '';
                 return `<section class="board"><div class="board-head"><h2>Key of ${esc(key.name)}</h2><span class="sub">${esc(sub)}</span>${tag}</div>${b.svg}</section>`;
             }).join('');
             return `<div class="pagewrap"><div class="pagelabel noprint">Page ${pi + 1} of ${pages.length}</div>` +
                 `<div class="paper ${portrait ? 'portrait' : 'landscape'}" style="${style}"><div class="inner" style="--rows:${pg.rows}">${head}${boards}</div></div></div>`;
         }).join('');
+    }
+
+    // the preview bar is a full-width row until it sticks to the top of the window, then it shrinks into a card
+    if ('IntersectionObserver' in window) {
+        new IntersectionObserver(([e]) => el('previewbar').classList.toggle('stuck', !e.isIntersecting),
+            { rootMargin: '-9px 0px 0px 0px', threshold: 0 }).observe(el('sentinel'));
     }
 
     initControls();
