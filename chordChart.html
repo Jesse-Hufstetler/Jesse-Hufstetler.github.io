@@ -1,0 +1,851 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#67a336">
+<title>Chord Chart Formatter</title>
+<style>
+    :root {
+        color-scheme: light dark;
+        /* everything except the paper is lightly tinted Planning Center green (#67a336) */
+        --bg: #e2ebda; --panel: #f3f8ee; --ink: #172013; --muted: #5d6b54; --line: #c2d3b2;
+        --chip: #e5eedc; --accent: #4c8a22; --accent-ink: #ffffff;
+    }
+    @media (prefers-color-scheme: dark) {
+        :root { --bg: #11170f; --panel: #1a2318; --ink: #e8f0e2; --muted: #93a38a; --line: #2f3e2b; --chip: #25301f; --accent: #8fcf5f; --accent-ink: #0f1d08; }
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.4 system-ui, -apple-system, "Segoe UI", sans-serif; }
+    .wrap { max-width: 1500px; margin: 0 auto; padding: 16px 16px 0; }
+    a.back { color: var(--muted); font-size: 14px; }
+    a.back:hover { color: var(--ink); }
+    h1.page { font-size: 22px; margin: 4px 0 2px; }
+    p.lede { margin: 0 0 14px; color: var(--muted); }
+
+    .layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; align-items: start; }
+    .previewcol { min-width: 0; padding-bottom: 16px; }
+    .controls { display: grid; grid-template-columns: repeat(auto-fit, minmax(290px, 1fr)); gap: 12px; }
+    @media (min-width: 1000px) {
+        .layout { grid-template-columns: 380px minmax(0, 1fr); }
+        .controls { grid-template-columns: 1fr; position: sticky; top: 8px; max-height: calc(100vh - 16px); overflow-y: auto; padding: 1px 12px 1px 1px; margin-right: -12px; scrollbar-width: thin; scrollbar-color: var(--line) transparent; }
+    }
+    .card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; display: flex; flex-direction: column; gap: 9px; }
+    .card h3 { margin: 0; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+    .row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .row > span.lbl { min-width: 96px; color: var(--muted); font-size: 13px; }
+    select, input[type=text], input[type=number], textarea { font: inherit; padding: 6px 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel); color: var(--ink); max-width: 100%; }
+    input[type=text] { flex: 1; min-width: 0; }
+    input[type=number] { width: 72px; }
+    select { min-width: 0; flex: 1; }
+    textarea { width: 100%; resize: vertical; }
+    textarea.mono { font: 12px/1.35 Consolas, "Courier New", monospace; white-space: pre; }
+    label.check { display: flex; align-items: center; gap: 8px; cursor: pointer; font-weight: 600; }
+    label.check input { width: 18px; height: 18px; accent-color: var(--accent); }
+    input[type=range] { flex: 1; accent-color: var(--accent); }
+    button { font: inherit; padding: 6px 12px; border: 1px solid var(--line); border-radius: 6px; background: var(--chip); color: var(--ink); cursor: pointer; }
+    button.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 600; padding: 8px 18px; }
+    .hint { color: var(--muted); font-size: 13px; }
+    ol.steps { margin: 0; padding-left: 1.3em; display: flex; flex-direction: column; gap: 6px; font-size: 14px; }
+    details summary { cursor: pointer; font-size: 13px; color: var(--muted); }
+    details[open] summary { margin-bottom: 6px; }
+    code.bm { display: block; max-height: 5.5em; overflow: auto; font: 11px/1.3 Consolas, monospace; background: var(--chip); border: 1px solid var(--line); border-radius: 6px; padding: 6px; word-break: break-all; }
+    a.bmlink { display: inline-block; padding: 4px 10px; border: 1px dashed var(--accent); border-radius: 6px; color: var(--ink); text-decoration: none; font-weight: 600; cursor: grab; }
+
+    /* ---------- preview ---------- */
+    .previewbar { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; position: sticky; top: 8px; z-index: 5; background: color-mix(in srgb, var(--panel) 70%, transparent); -webkit-backdrop-filter: blur(10px) saturate(1.4); backdrop-filter: blur(10px) saturate(1.4); border: 1px solid var(--line); border-radius: 10px; padding: 8px 8px 8px 16px; margin-bottom: 14px; box-shadow: 0 2px 8px rgba(0, 0, 0, .15); }
+    .previewbar h2 { margin: 0; font-size: 16px; }
+    .previewbar .sub { color: var(--muted); font-size: 13px; font-weight: 400; }
+    #pages { display: flex; flex-direction: column; align-items: center; gap: 22px; }
+    .pagebox { position: relative; width: calc(var(--pw) * var(--z, 1)); height: calc(var(--ph) * var(--z, 1)); box-shadow: 0 2px 14px rgba(0, 0, 0, .35); background: #fff; }
+    .paper { position: absolute; left: 0; top: 0; width: var(--pw); height: var(--ph); transform: scale(var(--z, 1)); transform-origin: 0 0; background: #fff; overflow: hidden; }
+    .empty { padding: 40px 0; text-align: center; color: var(--muted); }
+    #meas { position: absolute; left: -20000px; top: 0; visibility: hidden; pointer-events: none; }
+
+    /* ---------- the chart itself (same CSS for the paper and the hidden measuring box) ---------- */
+    .cs { font-family: Arial, Helvetica, sans-serif; font-size: var(--fs, 14.667px); line-height: 1.15; color: #000; font-variant-ligatures: none; }
+    .cs .r { margin: 0; }
+    .cs .hd b { font-weight: 700; }
+    .cs .lyr { white-space: pre-wrap; }
+    .cs .ly { white-space: pre; }
+    .cs .cl { white-space: nowrap; }
+    .cs .seg { display: inline-flex; flex-direction: column; vertical-align: top; }
+    .cs .ch { min-height: 1.15em; padding-right: .3em; white-space: pre; }
+    .cs .cc { font-weight: 700; white-space: pre; }
+    .cs .nm { font-weight: 400; font-size: .62em; margin-left: .3em; color: #333; }
+    .cs sup { font-size: .62em; line-height: 0; vertical-align: baseline; position: relative; top: -.55em; }
+    .cs .rhy { display: flex; flex-wrap: wrap; column-gap: .3em; align-items: flex-end; }
+    .cs .bar { display: inline-flex; align-items: flex-end; gap: .3em; white-space: nowrap; }
+    /* small names always sit above the number on bar lines, where there is no spare width beside it */
+    .cs .rhy .cc { display: inline-flex; flex-direction: column-reverse; align-items: flex-start; }
+    .cs .rhy .nm { margin-left: 0; line-height: 1; }
+    .cs.stk .ch { display: flex; align-items: flex-end; min-height: 1.8em; }
+    .cs.stk .cc { display: inline-flex; flex-direction: column-reverse; align-items: flex-start; vertical-align: bottom; }
+    .cs.stk .nm { margin-left: 0; line-height: 1; }
+
+    .cs .sec { box-sizing: border-box; border: 0 solid #000; }
+    .cs .sec:not(.ol-none) { padding: .2em .4em .25em; border-radius: .45em; }
+    .cs .ol-thin { border-width: 1px; border-style: solid; }
+    .cs .ol-med { border-width: 2px; border-style: solid; }
+    .cs .ol-thick { border-width: 3.5px; border-style: solid; }
+    .cs .ol-dashed { border-width: 2px; border-style: dashed; }
+    .cs .ol-dotted { border-width: 2.5px; border-style: dotted; }
+    .cs .ol-double { border-width: 5px; border-style: double; }
+    .cs .ol-xthick { border-width: 6px; border-style: solid; }
+    .cs .sec.fx { position: relative; padding: .65em .8em .7em; }
+    .cs .sec .fxsvg { position: absolute; left: 0; top: 0; pointer-events: none; overflow: visible; }
+    .cs .ol-thin { --bw: 1px; } .cs .ol-med, .cs .ol-dashed { --bw: 2px; } .cs .ol-thick { --bw: 3.5px; } .cs .ol-dotted { --bw: 2.5px; } .cs .ol-double { --bw: 5px; } .cs .ol-xthick { --bw: 6px; }
+    /* accent: a decoration down the right edge of a section */
+    .cs .sec.ac { position: relative; padding-right: 1.3em; }
+    .cs .sec.ac::after { content: ''; position: absolute; top: calc(-1 * var(--bw, 0px)); bottom: calc(-1 * var(--bw, 0px)); right: calc(-1 * var(--bw, 0px)); width: .6em; border-radius: 0 .45em .45em 0; pointer-events: none; }
+    .cs .sec.ac-bar::after { background: #000; }
+    .cs .sec.ac-dots::after { background: radial-gradient(circle, #000 0 42%, transparent 46%) center top / .6em .6em repeat-y; }
+    .cs .sec.ac-double::after { width: .7em; background: linear-gradient(90deg, #000 0 28%, transparent 28% 64%, #000 64%); }
+    .cs .sec.ac-hair::after { width: 1em; background: linear-gradient(#000, #000) right / .16em 100% no-repeat, repeating-linear-gradient(to bottom, #000 0 1.5px, transparent 1.5px .42em) left / calc(100% - .16em) 100% no-repeat; }
+    .cs .sec.ac-tracks { padding-right: 2em; }
+    .cs .sec.ac-tracks::after { right: .7em; width: 1em; background: linear-gradient(#000, #000) 18% 0 / 2.2px 100% no-repeat, linear-gradient(#000, #000) 82% 0 / 2.2px 100% no-repeat, repeating-linear-gradient(to bottom, #000 0 2.6px, transparent 2.6px .55em) center / 100% 100% no-repeat; }
+    .cs .sec.ac-wave::after { width: .8em; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 16'%3E%3Cpath d='M5 0Q10 4 5 8T5 16' fill='none' stroke='%23000' stroke-width='2.2' stroke-linejoin='round'/%3E%3C/svg%3E") center top / .8em 1.28em repeat-y; }
+    .cs .sec.ac-zigzag::after { width: .8em; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 16'%3E%3Cpath d='M5 0L9 4L1 12L5 16' fill='none' stroke='%23000' stroke-width='2.2' stroke-linejoin='round'/%3E%3C/svg%3E") center top / .8em 1.28em repeat-y; }
+    .cs .sec.ac-chevrons::after { width: .8em; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 8'%3E%3Cpath d='M2 0L8 4L2 8' fill='none' stroke='%23000' stroke-width='2.4' stroke-linejoin='round'/%3E%3C/svg%3E") center top / .8em .64em repeat-y; }
+    /* wide sawtooth edge, solid at the right and fading inward, no outline: the left edge is cut by the mask */
+    .cs .sec.ac-saw { padding-right: 2em; overflow: hidden; }
+    .cs .sec.ac-saw::after { top: 0; bottom: 0; right: 0; width: 1.7em; background: linear-gradient(to left, #000, rgba(0, 0, 0, .12)); border-radius: 0;
+        -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 16' preserveAspectRatio='none'%3E%3Cpath d='M9 0L1 4L9 8L1 12L9 16H10V0Z'/%3E%3C/svg%3E") 0 0 / 100% 1.6em repeat-y; mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 16' preserveAspectRatio='none'%3E%3Cpath d='M9 0L1 4L9 8L1 12L9 16H10V0Z'/%3E%3C/svg%3E") 0 0 / 100% 1.6em repeat-y; }
+    /* arc: a half-ellipse of fixed depth running corner to corner, thin outline, grey fill darker at the tip, lighter at the edge */
+    .cs .sec.ac-arc { padding-right: 2.7em; overflow: hidden; }
+    .cs .sec.ac-arc::after { top: var(--arc-top, 0); height: var(--arc-h, 100%); bottom: auto; right: 0; width: 2.2em; background: linear-gradient(to right, #b9b9b9, #f5f5f5); border: 1.5px solid #000; border-right-width: 0; border-radius: 100% 0 0 100% / 50% 0 0 50%; }
+    .cs .sec.ac-fade::after { width: 1.2em; background: linear-gradient(to left, #000, rgba(0, 0, 0, 0)); }
+    .cs .sec.ac-fadev::after { background: linear-gradient(to bottom, #000, rgba(0, 0, 0, .08)); }
+    .cs .sec.ac-open { border-right-width: 0; border-top-right-radius: 0; border-bottom-right-radius: 0; padding-right: .4em; }
+    .cs .sec.ac-open::after { display: none; }
+    .row > span.lbl.s { min-width: 64px; }
+    .cs .sec.ot { border-top-width: 0; border-top-left-radius: 0; border-top-right-radius: 0; padding-top: 0; }
+    .cs .sec.ob { border-bottom-width: 0; border-bottom-left-radius: 0; border-bottom-right-radius: 0; padding-bottom: 0; }
+
+    .cs .hw { position: absolute; left: var(--m, 48px); right: var(--m, 48px); top: 28.8px; }
+    .cs .cols { position: absolute; left: var(--m, 48px); display: grid; align-items: start; }
+    .cs .hdr { display: flex; justify-content: space-between; align-items: center; gap: .2in; background: #e4e4e4; padding: .1in .18in; border-radius: 6px; font-size: 11pt; line-height: 1.2; }
+    .cs .hdr .ttl { min-width: 0; }
+    .cs .hdr .t { font: 700 22pt/1.1 Arial, Helvetica, sans-serif; }
+    .cs .hdr .sub { font: 700 9pt/1.3 Arial, Helvetica, sans-serif; margin-top: 2pt; }
+    .cs .hdr .rm { font: 700 12pt/1.25 Arial, Helvetica, sans-serif; margin-top: 4pt; }
+    .cs .hdr .nt { font: italic 9pt/1.3 Arial, Helvetica, sans-serif; margin-top: 2pt; white-space: pre-wrap; }
+    .cs .hdr .bdg { display: flex; gap: 8pt; align-items: center; flex: none; }
+    .cs .hdr .b { font: 700 15pt/1 Arial, Helvetica, sans-serif; border: 2.5pt solid #000; border-radius: 6pt; padding: 5pt 8pt; background: #fff; white-space: nowrap; text-align: center; }
+    .cs .hdr .b.key { display: flex; flex-direction: column; align-items: center; padding: 3pt 10pt; }
+    .cs .hdr .b.key small { font: 700 7pt/1 Arial, Helvetica, sans-serif; letter-spacing: .1em; }
+    .cs .hdr .b.key span { font: 700 26pt/1 Arial, Helvetica, sans-serif; }
+    .cs .hdr .b.pg { background: #000; color: #fff; }
+    .cs .hdr.h2 { padding: .05in .14in; }
+    .cs .hdr.h2 .t { font-size: 13pt; }
+    .cs .hdr.h2 .b { font-size: 11pt; padding: 3pt 6pt; border-width: 2pt; }
+    .cs .hdr.h2 .b.key { flex-direction: row; gap: 4pt; align-items: baseline; padding: 3pt 7pt; }
+    .cs .hdr.h2 .b.key span { font-size: 13pt; }
+    .cs .ftr { position: absolute; left: var(--m, 48px); right: var(--m, 48px); bottom: 29px; height: 40px; display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; font: 8pt/1.25 Arial, Helvetica, sans-serif; color: #222; }
+    .cs .ftr .c { flex: 1; text-align: center; white-space: pre-line; }
+    .cs .ftr .pp { display: inline-block; font: 700 7pt/1 Arial, Helvetica, sans-serif; background: #000; color: #fff; border-radius: 6pt; padding: 3pt 7pt; letter-spacing: .02em; }
+    .cs .ftr .n { font: 700 11pt Arial, Helvetica, sans-serif; white-space: nowrap; }
+
+    @media (max-width: 600px) {
+        .wrap { padding: 10px; }
+        select, input[type=text], input[type=number], textarea { font-size: 16px; }
+        .row > span.lbl { min-width: 100%; }
+    }
+    @media print {
+        body { background: #fff; }
+        .wrap { max-width: none; padding: 0; }
+        .layout { display: block; }
+        .previewcol { padding-bottom: 0; }
+        .noprint { display: none !important; }
+        #pages { display: block; }
+        .pagebox { width: var(--pwin); height: var(--phin); box-shadow: none; break-after: page; page-break-after: always; overflow: hidden; }
+        .pagebox:last-child { break-after: auto; page-break-after: auto; }
+        .paper { transform: none; }
+        #meas { display: none !important; }   /* the hidden measuring box is tall and was adding an empty page */
+        * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    }
+</style>
+<style id="pageStyle">@page { size: letter portrait; margin: 0; }</style>
+</head>
+<body>
+<div class="wrap">
+    <a class="back noprint" href="index.html">(My Other Stuff)</a>
+    <h1 class="page noprint">Chord Chart Formatter</h1>
+    <p class="lede noprint">Paste the Planning Center chord chart markup, pick a key and how chords are shown, and print a page the way you want it on your music stand.</p>
+
+    <div class="layout">
+    <section class="controls noprint">
+        <div class="card">
+            <h3>1 · Get the chart from Planning Center</h3>
+            <ol class="steps">
+                <li>Drag <a class="bmlink" id="bmLink" href="#">Get chord chart</a> up to your bookmarks bar. You only do this once.</li>
+                <li>In Planning Center Services, open a plan (or a song's arrangement) and click that bookmark. If the plan has several songs it asks which one. A green message at the top of the page confirms the chart was copied.</li>
+                <li>Come back here and paste it into the box below (Ctrl+V), or press “Paste from clipboard”.</li>
+            </ol>
+            <details>
+                <summary>Can't drag it?</summary>
+                <p class="hint">Make a new bookmark in your browser, give it any name, and paste this code as its address (URL).</p>
+                <code class="bm" id="bmCode"></code>
+                <div class="row" style="margin-top:6px"><button id="bmCopy">Copy the code</button></div>
+            </details>
+        </div>
+
+        <div class="card">
+            <h3>2 · Paste the chart</h3>
+            <textarea id="markup" class="mono" rows="9" spellcheck="false" data-k="markup" placeholder="Paste the chart text here"></textarea>
+            <div class="row"><button id="paste">Paste from clipboard</button><button id="sample">Load example</button><button id="clear">Clear</button></div>
+        </div>
+
+        <div class="card">
+            <h3>Song &amp; key</h3>
+            <div class="row"><span class="lbl">Play in key</span><select id="keySel" data-k="keySel"></select></div>
+            <div class="row"><span class="lbl">Chart is in</span><select id="chartKeySel" data-k="chartKeySel"></select></div>
+            <div class="row"><span class="lbl">Title</span><input type="text" id="title" data-k="title" placeholder=""></div>
+            <div class="row"><span class="lbl">Arrangement</span><input type="text" id="arr" data-k="arr"></div>
+            <div class="row"><span class="lbl">Author</span><input type="text" id="author" data-k="author"></div>
+            <div class="row"><span class="lbl">BPM · time</span><input type="text" id="bpm" data-k="bpm" style="max-width:90px"><input type="text" id="meter" data-k="meter" style="max-width:90px"></div>
+            <div class="hint" id="keyNote"></div>
+        </div>
+
+        <div class="card">
+            <h3>Chords</h3>
+            <div class="row"><span class="lbl">Show</span>
+                <select data-k="mode"><option value="both">Numbers + chord names</option><option value="nums">Numbers only</option><option value="names">Chord names only</option></select>
+            </div>
+            <div class="row"><span class="lbl">Small names</span>
+                <select data-k="pos"><option value="beside">Beside the number</option><option value="above">Above the number</option></select>
+            </div>
+            <label class="check"><input type="checkbox" data-k="sup"> Raise the chord type (2<sup>m7</sup>)</label>
+        </div>
+
+        <div class="card">
+            <h3>Section accents</h3>
+            <div class="hint">Every section has a thin outline. The accent decorates its right edge.</div>
+            <div class="row"><span class="lbl s">Chorus</span><select data-k="ac_chorus" data-opts="ac"></select></div>
+            <div class="row"><span class="lbl s">Verse</span><select data-k="ac_verse" data-opts="ac"></select></div>
+            <div class="row"><span class="lbl s">Bridge</span><select data-k="ac_bridge" data-opts="ac"></select></div>
+            <div class="row"><span class="lbl s">Other</span><select data-k="ac_other" data-opts="ac"></select></div>
+        </div>
+
+        <div class="card">
+            <h3>Labels</h3>
+            <label class="check"><input type="checkbox" data-k="showSong" id="showSong"> Show “Song 3 of 4”</label>
+            <div class="hint" id="songNote"></div>
+            <div class="row"><span class="lbl">Page X of Y</span>
+                <select data-k="pageBadge"><option value="multi">Only on multi-page songs</option><option value="always">Always</option><option value="never">Never</option></select>
+            </div>
+            <div class="row"><span class="lbl">Key shown</span>
+                <select data-k="keyStyle"><option value="badge">Big badge</option><option value="title">In the title [A, 70 bpm, 4/4]</option><option value="both">Both</option><option value="none">Not shown</option></select>
+            </div>
+            <label class="check"><input type="checkbox" data-k="showMeta"> Show BPM and time signature</label>
+            <label class="check"><input type="checkbox" data-k="roadmap" id="roadmap"> Show the roadmap line</label>
+            <div class="hint" id="roadNote"></div>
+            <textarea rows="2" data-k="notes" placeholder="Notes (printed under the title)"></textarea>
+            <textarea rows="2" id="footer" data-k="footer" placeholder="Footer (copyright / CCLI). Blank uses what the bookmarklet found."></textarea>
+        </div>
+
+        <div class="card">
+            <h3>Layout &amp; fitting</h3>
+            <div class="row"><span class="lbl">Paper</span>
+                <select data-k="paper"><option value="auto">Auto</option><option value="letter">Letter</option><option value="a4">A4</option></select>
+                <select data-k="orient"><option value="auto">Auto</option><option value="portrait">Portrait</option><option value="landscape">Landscape</option></select>
+            </div>
+            <div class="row"><span class="lbl">Columns</span>
+                <select data-k="cols"><option value="auto">Auto</option><option value="1">1 column</option><option value="2">2 columns</option><option value="3">3 columns</option></select>
+            </div>
+            <div class="row"><span class="lbl">Text size</span>
+                <select data-k="size"><option value="auto">Auto</option><option>9</option><option>10</option><option>11</option><option>12</option><option>13</option><option>14</option><option>16</option></select><span class="hint">pt</span>
+            </div>
+            <div class="row"><span class="lbl">Margins</span>
+                <select data-k="margin"><option value="auto">Auto</option><option value="0.25">0.25 in</option><option value="0.35">0.35 in</option><option value="0.5">0.5 in</option><option value="0.75">0.75 in</option><option value="1">1 in</option></select>
+            </div>
+            <div class="hint" id="autoNote"></div>
+            <label class="check"><input type="checkbox" data-k="fit"> Squeeze to avoid a nearly-empty extra page</label>
+            <div class="row"><span class="lbl">Shrink to</span><input type="range" min="70" max="100" step="1" data-k="minScale" data-t="n"><span id="minLbl" class="hint" style="min-width:3em"></span></div>
+            <div class="hint">At most this small. Blank lines tighten first, then the text shrinks, and only as far as it takes to save a page.</div>
+            <div class="row"><span class="lbl">Column breaks</span>
+                <select data-k="breaks"><option value="smart">Keep mine, ignore only if it saves a page</option><option value="honor">Always keep the leader's</option><option value="ignore">Ignore them</option></select>
+            </div>
+            <div class="row"><span class="lbl">Blank lines</span>
+                <select data-k="blanks"><option value="asis">As written</option><option value="one">Collapse to one</option><option value="half">Collapse to half a line</option></select>
+            </div>
+        </div>
+    </section>
+
+    <div class="previewcol">
+        <div class="previewbar noprint">
+            <h2>Print preview <span class="sub" id="status"></span></h2>
+            <button class="primary" id="print">Print / Save PDF</button>
+        </div>
+        <main id="pages"></main>
+        <p class="hint noprint">Tip: in the print dialog, turn off “Headers and footers”, set margins to None, and leave scale at 100%.</p>
+    </div>
+    </div>
+</div>
+<div id="meas" class="cs"></div>
+
+<script type="text/plain" id="bm1">javascript:(async()=>{const A='https://api.planningcenteronline.com/services/v2';const g=async u=>{const r=await fetch(A+u,{credentials:'include'});if(!r.ok)throw r.status+' '+u;return r.json()};const note=(h,bad)=>{const d=document.createElement('div');d.style.cssText='position:fixed;top:16px;left:50%;transform:translateX(-50%);z-index:2147483647;color:#fff;font:600 15px/1.4 system-ui,sans-serif;padding:12px 18px;border-radius:10px;box-shadow:0 4px 20px rgba(0,0,0,.35);max-width:80vw;background:'+(bad?'#b42318':'#1c7a3c');d.textContent=h;document.body.appendChild(d);setTimeout(()=>d.remove(),6000)};try{const L=location.pathname;let m=L.match(/songs\/(\d+)\/arrangements\/(\d+)/),key='',seq='',pos='';const pm=L.match(/plans\/(\d+)/);if(!m&&!pm)throw 'Open a plan or a song arrangement first';if(!m){const ln=[...document.querySelectorAll('a[href*="/arrangements/"]')].map(x=>x.getAttribute('href').match(/songs\/(\d+)\/arrangements\/(\d+)/)).find(Boolean);const p=await g('/plans/'+pm[1]);const st=p.data.relationships.service_type.data.id;const its=(await g(`/service_types/${st}/plans/${pm[1]}/items?per_page=100`)).data.filter(i=>i.relationships.arrangement?.data);let it=ln&&its.find(i=>i.relationships.arrangement.data.id===ln[2]);if(!it){const n=prompt('Which song?\n'+its.map((i,k)=>`${k+1}. ${i.attributes.title}`).join('\n'),'1');it=its[n-1];if(!it)throw 'No song picked'}m=[0,it.relationships.song.data.id,it.relationships.arrangement.data.id];key=it.attributes.key_name||'';seq=[].concat(it.attributes.custom_arrangement_sequence_short||[]).join(', ');pos=(its.indexOf(it)+1)+' of '+its.length}const [s,ar]=await Promise.all([g('/songs/'+m[1]),g(`/songs/${m[1]}/arrangements/${m[2]}`)]);const a=ar.data.attributes,sa=s.data.attributes,c=v=>String(v).replace(/\|/g,'/'),rm=seq||[].concat(a.sequence_short||[]).join(', ');const t=`${sa.title} | ${a.name} | chart key ${a.chord_chart_key}${key?' | plan key '+key:''}${a.bpm?' | bpm '+Math.round(a.bpm*10)/10:''}${a.meter?' | meter '+c(a.meter):''}${sa.author?' | by '+c(sa.author):''}${sa.copyright?' | copyright '+c(sa.copyright):''}${sa.ccli_number?' | ccli '+c(sa.ccli_number):''}${rm?' | roadmap '+c(rm):''}${pos?' | song '+pos:''}${a.chord_chart_columns?' | columns '+a.chord_chart_columns:''}${a.chord_chart_font_size?' | fontsize '+a.chord_chart_font_size:''}${a.print_margin?' | margin '+c(a.print_margin):''}${a.print_page_size?' | paper '+c(a.print_page_size):''}${a.print_orientation?' | orientation '+c(a.print_orientation):''}\n\n${(a.chord_chart||'(no chart)').replace(/\r/g,'')}`;try{await Promise.race([navigator.clipboard.writeText(t),new Promise((_,r)=>setTimeout(()=>r('timeout'),2500))]);note('\u2713 Copied "'+sa.title+'". Now paste it into the chord chart formatter.')}catch(e){const o=document.createElement('div');o.style.cssText='position:fixed;inset:0;z-index:2147483647;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center';const x=document.createElement('div');x.style.cssText='background:#fff;color:#000;font:14px system-ui,sans-serif;padding:16px;border-radius:10px;width:min(720px,90vw)';const m=document.createElement('div');m.textContent='Could not copy automatically. Press Ctrl+C (Cmd+C on a Mac) to copy this, then close it.';const ta=document.createElement('textarea');ta.value=t;ta.style.cssText='width:100%;height:50vh;margin:8px 0;font:12px monospace';const c=document.createElement('button');c.textContent='Close';c.onclick=()=>o.remove();x.append(m,ta,c);o.append(x);document.body.appendChild(o);ta.focus();ta.select()}}catch(e){note('Failed: '+e,1)}})();</script>
+
+<script>
+(() => {
+    /* ------------------------------- music theory ------------------------------- */
+    const LETTERS = ['C', 'D', 'E', 'F', 'G', 'A', 'B'];
+    const NAT = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
+    const MAJOR = [0, 2, 4, 5, 7, 9, 11];
+    const SHARP = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+    const FLAT = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B'];
+    const NUMS = ['1', '♭2', '2', '♭3', '3', '4', '♯4', '5', '♭6', '6', '♭7', '7'];
+    // Planning Center numbers a minor key from its own tonic with the natural minor scale as 1-7 (Cm: Bb = 7, Ab = 6, A = 6#)
+    const NUMS_MIN = ['1', '2♭', '2', '3', '3♯', '4', '5♭', '5', '6', '6♯', '7', '7♯'];
+    const accStr = a => a > 0 ? '#'.repeat(a) : 'b'.repeat(-a);
+
+    // Index in KEYS === pitch class of the major key.
+    const KEYS = [
+        { l: 'C', a: 0 }, { l: 'D', a: -1 }, { l: 'D', a: 0 }, { l: 'E', a: -1 }, { l: 'E', a: 0 }, { l: 'F', a: 0 },
+        { l: 'F', a: 1 }, { l: 'G', a: 0 }, { l: 'A', a: -1 }, { l: 'A', a: 0 }, { l: 'B', a: -1 }, { l: 'B', a: 0 },
+    ];
+    for (const k of KEYS) {
+        k.pc = (NAT[k.l] + k.a + 12) % 12;
+        k.name = k.l + accStr(k.a);
+        k.flat = k.a < 0 || k.name === 'F';
+        const li = LETTERS.indexOf(k.l);
+        k.scale = MAJOR.map((iv, d) => {
+            const L = LETTERS[(li + d) % 7];
+            const diff = (((k.pc + iv) % 12 - NAT[L] + 18) % 12) - 6;
+            return L + accStr(diff);
+        });
+    }
+    const spell = (pc, key) => {
+        const d = MAJOR.indexOf(((pc - key.pc) % 12 + 12) % 12);
+        return d >= 0 ? key.scale[d] : (key.flat ? FLAT : SHARP)[pc];
+    };
+    const keyLabel = (pc, minor) => minor ? spell(pc, KEYS[(pc + 3) % 12]) + 'm' : KEYS[pc].name;
+
+    function parseKey(s) {
+        const m = /^([A-Ga-g])([#b♯♭]?)(m|min|minor)?$/.exec(String(s || '').trim());
+        if (!m) return null;
+        const acc = (m[2] === '#' || m[2] === '♯') ? 1 : m[2] ? -1 : 0;
+        return { pc: (NAT[m[1].toUpperCase()] + acc + 12) % 12, minor: !!m[3] };
+    }
+    const CHORD = /^([A-G])([#b♯♭]?)((?:[^/]|\/(?=\d))*)(?:\/([A-G])([#b♯♭]?))?$/;
+    const QUAL = /^[A-Za-z0-9()#♯♭+\-°ø,]*$/;
+    const accPc = a => (a === '#' || a === '♯') ? 1 : a ? -1 : 0;
+    function parseChord(t) {
+        const m = CHORD.exec(t);
+        if (!m || !QUAL.test(m[3])) return null;
+        return { r: (NAT[m[1]] + accPc(m[2]) + 12) % 12, q: m[3], b: m[4] ? (NAT[m[4]] + accPc(m[5]) + 12) % 12 : null };
+    }
+
+    /* ---------------------------------- parsing ---------------------------------- */
+    const KW = 'pre[- ]?chorus|post[- ]?chorus|chorus|verse|bridge|intro|outro|ending|tag|turnaround|instrumental|interlude|refrain|vamp|coda|solo|break(?:down)?|channel|hook|rap|prayer|reprise|build|tail|ad[- ]?lib';
+    const HEAD2 = new RegExp(`^\\s*((?:(?:final|last|repeat)\\s+)?(?:${KW})(?:\\s+\\d+[a-z]?)?)\\s*((?:\\([^)]*\\)|<[iI]>.*?<\\/[iI]>|\\s)*)$`, 'i');
+    const HEAD = /^\s*([A-Z][A-Z0-9 \-'’&./]*?)\s*((?:\([^)]*\)|<[iI]>.*?<\/[iI]>|\s)*)$/;
+    function parseMarkup(text) {
+        const lines = String(text).replace(/\r/g, '').split('\n');
+        const meta = {};
+        let i = 0;
+        while (i < lines.length && !lines[i].trim()) i++;
+        if (i < lines.length && lines[i].includes('|') && /chart key/i.test(lines[i])) {
+            const seg = lines[i].split('|').map(s => s.trim());
+            meta.title = seg[0]; meta.arr = seg[1];
+            for (const p of seg.slice(2)) {
+                let m;
+                if ((m = /^chart key\s+(.+)$/i.exec(p))) meta.chartKey = m[1];
+                else if ((m = /^plan key\s+(.+)$/i.exec(p))) meta.planKey = m[1];
+                else if ((m = /^bpm\s+(.+)$/i.exec(p))) meta.bpm = m[1];
+                else if ((m = /^meter\s+(.+)$/i.exec(p))) meta.meter = m[1];
+                else if ((m = /^by\s+(.+)$/i.exec(p))) meta.author = m[1];
+                else if ((m = /^copyright\s+(.+)$/i.exec(p))) meta.copyright = m[1];
+                else if ((m = /^ccli\s+(.+)$/i.exec(p))) meta.ccli = m[1];
+                else if ((m = /^roadmap\s+(.+)$/i.exec(p))) meta.roadmap = m[1];
+                else if ((m = /^song\s+(\d+)\s+of\s+(\d+)$/i.exec(p))) { meta.songNo = m[1]; meta.songOf = m[2]; }
+                else if ((m = /^(columns|fontsize|margin|paper|orientation)\s+(.+)$/i.exec(p))) meta[m[1].toLowerCase()] = m[2];
+            }
+            i++;
+        }
+        const secs = [];
+        let cur = null, blanks = 0, brk = false;
+        for (; i < lines.length; i++) {
+            const ln = lines[i], t = ln.trim();
+            if (t === 'COLUMN_BREAK' || t === 'PAGE_BREAK') { brk = (t === 'PAGE_BREAK' || brk === 'page') ? 'page' : 'col'; cur = null; continue; }
+            if (!t) { blanks++; continue; }
+            let hm = HEAD.exec(ln);
+            if (!(hm && hm[1].replace(/[^A-Z]/g, '').length >= 2)) hm = ln.includes('[') ? null : HEAD2.exec(ln);
+            if (hm) {
+                cur = { head: hm[1].trim(), rest: hm[2].trim(), gap: blanks, brk, body: [] };
+                secs.push(cur); blanks = 0; brk = false;
+            } else {
+                if (!cur) { cur = { head: '', rest: '', gap: blanks, brk, body: [] }; secs.push(cur); brk = false; }
+                else if (blanks) cur.body.push({ sp: blanks });
+                blanks = 0;
+                cur.body.push(ln.replace(/\s+$/, ''));
+            }
+        }
+        return { meta, secs };
+    }
+    function guessKey(model) {
+        for (const s of model.secs) for (const r of s.body) {
+            if (typeof r !== 'string') continue;
+            if (!r.includes('[') && !r.includes('|')) continue;
+            const toks = r.includes('[') ? [...r.matchAll(/\[([^\]]*)\]/g)].map(m => m[1].trim()) : r.split(/\s+/);
+            for (const t of toks) {
+                const c = parseChord(t);
+                if (c) return { pc: c.r, minor: /^m(?!aj)/.test(c.q) };
+            }
+        }
+        return null;
+    }
+    const catOf = h => {
+        h = h.toUpperCase();
+        if (/\bVERSE\b|^V\d+$/.test(h)) return 'verse';
+        if (/\bBRIDGE\b|^B\d+$/.test(h)) return 'bridge';
+        if (/PRE[- ]?CHORUS/.test(h)) return 'other';
+        if (/\bCHORUS\b/.test(h)) return 'chorus';
+        return 'other';
+    };
+
+    /* ----------------------------- settings & storage ----------------------------- */
+    const SAMPLE = `Here In Your Presence | Christ For All Nations Worship | chart key D | plan key A
+
+INTRO
+D / / / / / | D / / / / / | Em7 / / / / / | Em7 / / / / / |
+G / / / / / | G / / / / / | D / / / / / | D / / / / / |
+
+
+VERSE
+[Dsus]Found in Your [D]hands [Dsus]fullness of [D]joy
+[Em7]Every fear suddenly [D/F#]wiped a - [G]way
+Here in Your [D]Presence
+[Dsus]All of my [D]gains[Dsus] now fade a - [G]way
+[Em7]Every crown no longer [D/F#]on dis - [G]play
+Here in Your [D]Presence
+
+
+REPEAT VERSE
+
+
+PRE-CHORUS
+[Bm7]          Heaven is [A]trembling
+In awe of Your [G2]wonders
+[Bm7]          The kings and their [A]kingdoms
+Are standing a - [G2]mazed
+
+
+CHORUS
+Here in Your [D2]Presence
+We are un - [A/C#]done
+Here in Your [Bm7]Presence
+[A]Heaven and earth become [G]one
+Here in Your [D]Presence
+All things are [A/C#]new
+Here in Your [Bm7]Presence
+[A]Everything [A/C#]bows before [G]You
+COLUMN_BREAK
+INTERLUDE
+D / / / / / | D / / / / / | Em7 / / / / / | Em7 / / / / / |
+G / / / / / | G / / / / / | D / / / / / | D / / / / / |
+
+
+VERSE
+
+PRE-CHORUS (2x)
+
+CHORUS
+
+INSTRUMENTAL (2x)
+Bm7 / / / / / | A / / / / / | G / / / / / | D/F# / / / / / |
+Bm7 / / / / / | A / / / / / | G / / / / / | D/F# / / / / / |
+
+
+BRIDGE (4x) <I>1 +2 low, 3rd building, 4th driving </i>
+[Bm]Wonderful, [A]beautiful, [G]glorious
+[D/F#]Matchless in every way
+[Bm]Wonderful, [A]beautiful, [G]glorious
+[D/F#]Matchless in every way[Bm]
+
+
+CHORUS (2x)
+
+INSTRUMENTAL <i>(freely)</i>
+Bm7 / / / / / | A / / / / / | G / / / / / | D/F# / / / / / |
+Bm7 / / / / / | A / / / / / | G / / / / / | D/F# / / / / / |
+
+BRIDGE <i>(freely)</i>
+
+CHORUS`;
+    const STORE = 'chordChart.v1';
+    const defaults = {
+        markup: SAMPLE, keySel: 'auto', chartKeySel: 'auto', title: '', arr: '', author: '', bpm: '', meter: '',
+        mode: 'both', pos: 'beside', sup: true,
+        ol_chorus: 'thin', ol_verse: 'thin', ol_bridge: 'thin', ol_other: 'thin',
+        ac_chorus: 'saw', ac_verse: 'arc', ac_bridge: 'tracks', ac_other: 'none', v: 2,
+        showSong: true, pageBadge: 'multi', keyStyle: 'badge', showMeta: true, notes: '', footer: '',
+        roadmap: false, paper: 'auto', orient: 'auto', margin: 'auto', cols: 'auto', size: 'auto', fit: true, minScale: 85, breaks: 'smart', blanks: 'asis',
+    };
+    let S = (() => {
+        try {
+            const j = JSON.parse(localStorage.getItem(STORE));
+            const o = Object.assign({}, defaults, j && typeof j === 'object' ? j : {});
+            // settings saved before v2: outlines go thin, and paper/columns/size follow Planning Center
+            if (j && (j.v || 1) < 2) Object.assign(o, { v: 2, ol_chorus: 'thin', ol_verse: 'thin', ol_bridge: 'thin', ol_other: 'thin', cols: 'auto', size: 'auto', paper: 'auto' });
+            return o;
+        } catch (e) { return { ...defaults }; }
+    })();
+    const save = () => { try { localStorage.setItem(STORE, JSON.stringify(S)); } catch (e) { } };
+
+    const el = id => document.getElementById(id);
+    const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+    /* ---------------------------- chart row rendering ---------------------------- */
+    // <i>, <b>, <u> are kept; everything else is escaped. Open tags carry across the chord segments of a line.
+    function fmtMaker() {
+        const open = { i: 0, b: 0, u: 0 };
+        return t => {
+            let out = '';
+            for (const k of 'ibu') if (open[k]) out += `<${k}>`;
+            out += esc(t).replace(/&lt;(\/?)([ibu])&gt;/gi, (m, c, k) => { k = k.toLowerCase(); open[k] = c ? 0 : 1; return `<${c}${k}>`; });
+            for (const k of 'ibu') if (open[k]) out += `</${k}>`;
+            return out;
+        };
+    }
+    function chordHtml(raw, ctx) {
+        if (/\s/.test(raw.trim())) return raw.trim().split(/(\s+)/).map(t => /^\s+$/.test(t) ? t : chordHtml(t, ctx)).join('');
+        const c = parseChord(raw);
+        if (!c) return `<span class="cc">${esc(raw)}</span>`;
+        const rp = (c.r + ctx.shift) % 12, bp = c.b == null ? null : (c.b + ctx.shift) % 12;
+        const name = ctx.shift ? spell(rp, ctx.key) + c.q + (bp == null ? '' : '/' + spell(bp, ctx.key)) : raw;
+        if (ctx.mode === 'names') return `<span class="cc">${esc(name)}</span>`;
+        const deg = p => (ctx.minor ? NUMS_MIN : NUMS)[((p - ctx.num) % 12 + 12) % 12];
+        const nu = `<span class="nu">${deg(rp)}${c.q ? (ctx.sup ? `<sup>${esc(c.q)}</sup>` : esc(c.q)) : ''}${bp == null ? '' : '/' + deg(bp)}</span>`;
+        return ctx.mode === 'nums' ? `<span class="cc">${nu}</span>` : `<span class="cc">${nu}<span class="nm">${esc(name)}</span></span>`;
+    }
+    function rowHtml(line, ctx) {
+        // bar lines come in many spellings: bare, one [ ] per token, or the whole row in one [ ]; "Cb ///|Gb" and "A/C#/" too
+        const barToks = parts => parts.join(' ').split(/\s+/).filter(Boolean)
+            .flatMap(t => t.split(/(\|)/).filter(Boolean)).flatMap(t => /^\/+$/.test(t) ? [...t] : [t])
+            .flatMap(t => { const m = /^(.*[^/])(\/+)$/.exec(t); return m ? [m[1], ...m[2]] : [t]; });
+        const br = barToks([...line.matchAll(/\[([^\]]*)\]/g)].map(m => m[1]));
+        const chordOnly = br.length && !line.replace(/\[[^\]]*\]/g, '').trim() && br.some(t => t === '/' || t === '|');
+        if (chordOnly || (line.includes('|') && !line.includes('['))) {       // rhythm / bar line, bare or with every token in [ ]
+            const bars = []; let cur = null;
+            const toks = chordOnly ? br : barToks([line]);
+            for (const t of toks) {
+                const sep = t === '/' || t === '|';
+                if (!sep || !cur) { cur = []; bars.push(cur); }          // each chord starts a unit that keeps its slashes and bar line
+                cur.push(sep ? `<span>${esc(t)}</span>` : chordHtml(t, ctx));
+            }
+            return `<div class="r rhy">${bars.map(b => `<span class="bar">${b.join('')}</span>`).join('')}</div>`;
+        }
+        const f = fmtMaker();
+        if (!/\[[^\]]*\]/.test(line)) return `<div class="r lyr">${f(line)}</div>`;
+        const segs = [], re = /\[([^\]]*)\]/g;
+        let m, idx = 0, ch = null;
+        // a stray ] left over from a typo like [F#m]] is dropped, as Planning Center does
+        while ((m = re.exec(line))) { segs.push({ ch, tx: line.slice(idx, m.index).replace(/\]/g, '') }); ch = m[1]; idx = re.lastIndex; }
+        segs.push({ ch, tx: line.slice(idx).replace(/\]/g, '').replace(/\s+$/, '') });
+        const html = segs.filter(s => s.ch != null || s.tx).map(s =>
+            `<span class="seg"><span class="ch">${s.ch != null ? chordHtml(s.ch, ctx) : ''}</span><span class="ly">${f(s.tx)}</span></span>`).join('');
+        return `<div class="r cl">${html}</div>`;
+    }
+    function buildBlocks(model, ctx) {
+        const blankN = n => S.blanks === 'half' ? .5 : S.blanks === 'one' ? 1 : Math.max(n, 1);
+        return model.secs.map(sec => {
+            const cat = catOf(sec.head), rows = [];
+            if (sec.head) rows.push(`<div class="r hd"><b>${esc(sec.head)}</b>${sec.rest ? ' ' + fmtMaker()(sec.rest) : ''}</div>`);
+            for (const r of sec.body) rows.push(typeof r === 'object' ? `<div class="r sp" style="height:${(r.sp * 1.15).toFixed(2)}em"></div>` : rowHtml(r, ctx));
+            return { cat, rows, ref: !sec.body.length, gapN: blankN(sec.gap), breakBefore: sec.brk, ol: 'thin', ac: S['ac_' + cat] || 'none' };
+        });
+    }
+    // outline styles CSS can't draw: an SVG is laid over the section after it is placed (see decorate)
+    const tri = t => 2 * Math.abs(t - Math.round(t));
+    const FX = {
+        dashL: { sw: 2.5, dash: '14 8' }, dashH: { sw: 4, dash: '18 10' },
+        wavy: { sw: 2, amp: 2.5, per: 14, f: t => Math.sin(2 * Math.PI * t) },
+        zig: { sw: 2, amp: 3, per: 12, f: tri }, spikes: { sw: 2, amp: 5, per: 10, f: tri },
+        scallop: { sw: 2, amp: 3.5, per: 14, f: t => Math.abs(Math.sin(Math.PI * t)) },
+    };
+    function decorate(root) {
+        root.querySelectorAll('.sec[data-fx]').forEach(sec => {
+            const st = FX[sec.dataset.fx], w = sec.offsetWidth, h = sec.offsetHeight;
+            const ot = sec.classList.contains('ot'), ob = sec.classList.contains('ob');
+            const i = (st.amp || 0) + st.sw / 2 + 1, y0 = ot ? 0 : i, y1 = ob ? h : h - i;
+            const edges = [];
+            if (!ot) edges.push([i, i, w - i, i, 0, -1]);
+            edges.push([w - i, y0, w - i, y1, 1, 0]);
+            if (!ob) edges.push([w - i, h - i, i, h - i, 0, 1]);
+            edges.push([i, y1, i, y0, -1, 0]);
+            const d = edges.map(([x0, y0, x1, y1, ox, oy]) => {
+                if (!st.f) return `M${x0} ${y0}L${x1} ${y1}`;
+                const L = Math.hypot(x1 - x0, y1 - y0), n = Math.max(1, Math.round(L / st.per)), steps = n * 16;
+                let out = '';
+                for (let k = 0; k <= steps; k++) {
+                    const t = k / steps, o = st.amp * st.f(t * n);
+                    out += `${k ? 'L' : 'M'}${(x0 + (x1 - x0) * t + ox * o).toFixed(1)} ${(y0 + (y1 - y0) * t + oy * o).toFixed(1)}`;
+                }
+                return out;
+            }).join('');
+            sec.insertAdjacentHTML('beforeend', `<svg class="fxsvg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}"><path d="${d}" fill="none" stroke="#000" stroke-width="${st.sw}" stroke-linejoin="round"${st.dash ? ` stroke-dasharray="${st.dash}"` : ''}/></svg>`);
+        });
+    }
+    const padEmFor = (b, lv) => Math.max(b.gapN * 1.15 * lv.g, b.ol !== 'none' ? .3 : 0);
+    const frag = (b, rows, openTop, openBottom, padEm, arc) =>
+        `<div class="blk" style="padding-top:${padEm.toFixed(3)}em"><div${FX[b.ol] ? ` data-fx="${b.ol}"` : ''} class="sec c-${b.cat} ol-${b.ol}${FX[b.ol] ? ' fx' : ''}${b.ac !== 'none' ? ` ac ac-${b.ac}` : ''}${b.ref ? ' ref' : ''}${openTop ? ' ot' : ''}${openBottom ? ' ob' : ''}"${arc ? ` style="--arc-top:${(-arc.y0).toFixed(1)}px;--arc-h:${b.secH.toFixed(1)}px"` : ''}>${rows.map(r => r.html).join('')}</div></div>`;
+
+    /* ------------------------------ measuring & placing ------------------------------ */
+    let R = { cols: 2, size: 11, paper: 'letter', orient: 'portrait', margin: .5 };
+    function geometry() {
+        let [wi, hi] = R.paper === 'a4' ? [8.268, 11.693] : [8.5, 11];
+        if (R.orient === 'landscape') [wi, hi] = [hi, wi];
+        const pw = wi * 96, ph = hi * 96, M = R.margin * 96, gut = .35 * 96, cols = R.cols;
+        return { wi, hi, pw, ph, M, gut, cols, colW: (pw - 2 * M - (cols - 1) * gut) / cols, contentW: pw - 2 * M, TOP: 28.8, GAP: 12, BOT: 78 };
+    }
+    function measureBlocks(blocks, lv, geo, stk) {
+        const m = el('meas');
+        m.className = 'cs' + (stk ? ' stk' : '');
+        m.style.width = geo.colW + 'px';
+        m.style.setProperty('--fs', (R.size * lv.s * 96 / 72) + 'px');
+        const draw = bl => { m.innerHTML = bl.map(b => frag(b, b.rows.map(html => ({ html })), false, false, padEmFor(b, lv))).join(''); };
+        draw(blocks);
+        // a chord line wider than its column is shrunk to fit rather than wrapping its chords onto a new line
+        const fitted = blocks.map((b, i) => {
+            const sec = m.children[i].firstElementChild;
+            return { ...b, rows: b.rows.map((html, j) => {
+                const r = sec.children[j];
+                if (!r.classList.contains('cl') || r.scrollWidth <= r.clientWidth + 1) return html;
+                const f = Math.max(.65, r.clientWidth / r.scrollWidth);
+                return html.replace('<div class="r cl"', `<div class="r cl" style="font-size:${(f * 100).toFixed(1)}%"`);
+            }) };
+        });
+        draw(fitted);
+        return fitted.map((b, i) => {
+            const blk = m.children[i], sec = blk.firstElementChild;
+            const sh = sec.getBoundingClientRect().height, bh = blk.getBoundingClientRect().height;
+            const rowHs = [...sec.children].map(e => e.getBoundingClientRect().height);
+            return { ...b, padEm: padEmFor(b, lv), secH: sh, padH: bh - sh, rowHs, chrome: sh - rowHs.reduce((a, x) => a + x, 0) };
+        });
+    }
+    // Pour sections into column slots (page 1 col 1, page 1 col 2, page 2 col 1 ...). A section moves whole to the
+    // next slot if it fits there; only one taller than a whole column is split across two.
+    function place(blocks, geo, honor, pages, split) {
+        const slots = [];
+        const mk = () => { const p = Math.floor(slots.length / geo.cols); const s = { p, items: [], used: 0, cap: geo.cap(p) }; slots.push(s); return s; };
+        let s = mk();
+        for (const b of blocks) {
+            if (b.breakBefore === 'page' && pages && (s.items.length || (slots.length - 1) % geo.cols !== 0)) {
+                do { s = mk(); } while ((slots.length - 1) % geo.cols !== 0);
+            } else if (honor && b.breakBefore && s.items.length) s = mk();
+            let rows = b.rows.map((html, i) => ({ html, h: b.rowHs[i] })), first = true, done = 0;   // done: height of rows already placed
+            while (rows.length) {
+                const padH = (first && s.items.length) ? b.padH : 0, padEm = padH ? b.padEm : 0;
+                const total = rows.reduce((a, r) => a + r.h, 0) + b.chrome;
+                if (s.used + padH + total <= s.cap + .5) { s.items.push(frag(b, rows, !first, false, padEm, first ? null : { y0: b.chrome / 2 + done })); s.used += padH + total; break; }
+                const canSplit = split && rows.length >= 6;                 // only a longer section may be broken across columns
+                if (s.items.length && total <= s.cap && !canSplit) { s = mk(); continue; }
+                const avail = s.cap - s.used - padH - b.chrome;
+                let n = 0, acc = 0;
+                while (n < rows.length && acc + rows[n].h <= avail + .5) { acc += rows[n].h; n++; }
+                if (n < (first ? Math.min(3, rows.length - 1) : 1) && s.items.length) { s = mk(); continue; }
+                if (n === 0) n = 1;
+                if (rows.length - n === 1 && n > 1) n--;
+                s.items.push(frag(b, rows.slice(0, n), !first, true, padEm, { y0: first ? 0 : b.chrome / 2 + done }));
+                done += rows.slice(0, n).reduce((a, r) => a + r.h, 0);
+                rows = rows.slice(n); first = false; s = mk();
+            }
+        }
+        return { slots, pages: Math.floor((slots.length - 1) / geo.cols) + 1 };
+    }
+    function levels() {
+        const out = [{ s: 1, g: 1 }];
+        if (!S.fit) return out;
+        out.push({ s: 1, g: .75 }, { s: 1, g: .5 });
+        for (let s = .98; s >= S.minScale / 100 - 1e-9; s -= .02) out.push({ s: +s.toFixed(3), g: .5 });
+        return out;
+    }
+
+    /* ------------------------------- header & footer ------------------------------- */
+    function hdrHtml(I, p, total, full) {
+        const showPg = full || S.pageBadge === 'always' || (S.pageBadge === 'multi' && total > 1);
+        const badges = (I.keyBadge ? `<div class="b key"><small>KEY</small><span>${esc(I.key)}</span></div>` : '') +
+            (I.song ? `<div class="b song">${esc(I.song)}</div>` : '') +
+            (showPg && S.pageBadge !== 'never' ? `<div class="b pg">PAGE ${p + 1} OF ${total}</div>` : '');
+        if (p === 0) return `<div class="hdr"><div class="ttl"><div class="t">${esc(I.title)}${I.suffix ? ' ' + esc(I.suffix) : ''}</div>` +
+            (I.sub ? `<div class="sub">${esc(I.sub)}</div>` : '') + (I.roadmap ? `<div class="rm">${esc(I.roadmap)}</div>` : '') + (I.notes ? `<div class="nt">${esc(I.notes)}</div>` : '') +
+            `</div><div class="bdg">${badges}</div></div>`;
+        return `<div class="hdr h2"><div class="ttl"><div class="t">${esc(I.title)}</div></div><div class="bdg">${badges}</div></div>`;
+    }
+
+    /* ----------------------------------- render ----------------------------------- */
+    let lastMarkup = null, model = null, keySig = '';
+    function fillKeySelects(ck, meta, guessed) {
+        const ckLabel = keyLabel(ck.pc, ck.minor);
+        const chartOpts = [['auto', 'Auto: ' + (guessed ? 'guessed ' + ckLabel : meta.chartKey)]];
+        for (let i = 0; i < 24; i++) chartOpts.push([String(i), keyLabel(i % 12, i >= 12)]);
+        const playOpts = [['auto', meta.planKey && parseKey(meta.planKey) ? `Auto: plan key (${meta.planKey})` : `Auto: as pasted (${ckLabel})`]];
+        if (meta.planKey && parseKey(meta.planKey)) playOpts.push(['chart', `As pasted (${ckLabel})`]);
+        for (let i = 0; i < 12; i++) playOpts.push([String(i), keyLabel(i, ck.minor)]);
+        const sig = JSON.stringify([chartOpts, playOpts]);
+        if (sig !== keySig) {
+            keySig = sig;
+            const mk = o => o.map(([v, l]) => `<option value="${v}">${esc(l)}</option>`).join('');
+            el('chartKeySel').innerHTML = mk(chartOpts);
+            el('keySel').innerHTML = mk(playOpts);
+        }
+        el('chartKeySel').value = S.chartKeySel;
+        el('keySel').value = S.keySel;
+        if (el('keySel').value !== S.keySel) { S.keySel = 'auto'; el('keySel').value = 'auto'; }
+        if (el('chartKeySel').value !== S.chartKeySel) { S.chartKeySel = 'auto'; el('chartKeySel').value = 'auto'; }
+    }
+
+    function render() {
+        if (S.markup !== lastMarkup) { model = parseMarkup(S.markup); lastMarkup = S.markup; }
+        const meta = model.meta, host = el('pages');
+        // paper, columns, size and margins: Planning Center's own settings for the arrangement unless overridden
+        const inches = v => { const m = /^([\d.]+)\s*(in|cm|mm|pt|px)?$/.exec(String(v || '').trim()); return m ? +m[1] / { in: 1, cm: 2.54, mm: 25.4, pt: 72, px: 96 }[m[2] || 'in'] : null; };
+        R = {
+            cols: Math.min(3, Math.max(1, S.cols === 'auto' ? (+meta.columns || 2) : +S.cols)),
+            size: Math.min(20, Math.max(7, S.size === 'auto' ? (+meta.fontsize || 11) : +S.size)),
+            paper: S.paper === 'auto' ? (/a4/i.test(meta.paper) ? 'a4' : 'letter') : S.paper,
+            orient: S.orient === 'auto' ? (/land/i.test(meta.orientation) ? 'landscape' : 'portrait') : S.orient,
+            margin: Math.min(1.5, Math.max(.2, S.margin === 'auto' ? (inches(meta.margin) || .5) : +S.margin)),
+        };
+        const pcSet = ['columns', 'fontsize', 'paper', 'orientation', 'margin'].filter(k => meta[k]);
+        el('autoNote').textContent = pcSet.length
+            ? `Auto uses Planning Center's settings for this song: ${meta.columns || '?'} columns, ${meta.fontsize || '?'} pt, ${meta.paper || '?'} ${(meta.orientation || '').toLowerCase()}, ${meta.margin || '?'} margins.`
+            : "Auto uses Planning Center's settings when the pasted chart includes them (run the bookmarklet in step 1 again to get them), otherwise 2 columns, 11 pt, Letter.";
+        el('minLbl').textContent = S.minScale + '%';
+        el('roadmap').disabled = !model.meta.roadmap;
+        el('showSong').disabled = !model.meta.songNo;
+        el('songNote').textContent = model.meta.songNo ? '' : "This paste doesn't say where the song sits in the plan. Planning Center only gives that when the bookmarklet is run from a plan page, not from a song's arrangement page.";
+        el('roadNote').textContent = model.meta.roadmap ? '' : "This paste doesn't include it. Planning Center only hands it over through the bookmarklet in step 1, so run that again to get it.";
+        for (const k of ['title', 'arr', 'author', 'bpm', 'meter']) el(k).placeholder = meta[k] || '';
+        el('footer').placeholder = [meta.copyright && '© ' + meta.copyright, meta.ccli && 'CCLI Song # ' + meta.ccli].filter(Boolean).join('\n') || 'Footer (copyright / CCLI)';
+
+        // keys
+        let ck, guessed = false;
+        if (S.chartKeySel !== 'auto') ck = { pc: (+S.chartKeySel) % 12, minor: +S.chartKeySel >= 12 };
+        else if (meta.chartKey && (ck = parseKey(meta.chartKey))) { }
+        else { ck = guessKey(model) || { pc: 0, minor: false }; guessed = true; }
+        fillKeySelects(ck, meta, guessed);
+        let tpc = ck.pc;
+        if (S.keySel === 'auto') { const pk = parseKey(meta.planKey); if (pk) tpc = pk.pc; }
+        else if (S.keySel !== 'chart') tpc = +S.keySel;
+        const shift = ((tpc - ck.pc) % 12 + 12) % 12, tonic = ck.minor ? (tpc + 3) % 12 : tpc;
+        const keyName = shift === 0 && S.chartKeySel === 'auto' && meta.chartKey ? meta.chartKey : keyLabel(tpc, ck.minor);
+        el('keyNote').textContent = guessed ? 'No “chart key” in the first line, so the key was guessed from the first chord. Fix it under “Chart is in”.'
+            : shift ? `Transposing ${keyLabel(ck.pc, ck.minor)} → ${keyName} (${shift} semitone${shift > 1 ? 's' : ''} up).` : '';
+
+        const geo = geometry();
+        const portraitPx = `--pw:${geo.pw}px;--ph:${geo.ph}px;--pwin:${geo.wi}in;--phin:calc(${geo.hi}in - .03in)`;
+        el('pageStyle').textContent = `@page { size: ${geo.wi}in ${geo.hi}in; margin: 0; }`;
+        host.setAttribute('style', portraitPx);
+
+        if (!model.secs.length) { host.innerHTML = `<div class="empty">Paste some chart markup to get started.</div>`; el('status').textContent = ''; return; }
+
+        const ctx = { shift, num: tpc, minor: ck.minor, key: KEYS[tonic], mode: S.mode, sup: S.sup };
+        const stk = S.mode === 'both' && S.pos === 'above';
+        const blocks = buildBlocks(model, ctx);
+
+        // header text
+        const title = S.title || meta.title || 'Untitled', bpm = S.bpm || meta.bpm || '', meter = S.meter || meta.meter || '';
+        const arr = S.arr || meta.arr || '', author = S.author || meta.author || '';
+        const keyInTitle = S.keyStyle === 'title' || S.keyStyle === 'both';
+        const nums = [bpm && bpm + ' bpm', meter].filter(Boolean);
+        const I = {
+            roadmap: S.roadmap && meta.roadmap ? meta.roadmap : '', title, key: keyName, keyBadge: S.keyStyle === 'badge' || S.keyStyle === 'both', notes: S.notes.trim(),
+            suffix: keyInTitle ? `[${[keyName, ...nums].join(', ')}]` : '',
+            sub: [(arr ? `[${arr}]` : '') + (author ? ` by ${author}` : ''), !keyInTitle && S.showMeta ? nums.join(' · ') : ''].map(x => x.trim()).filter(Boolean).join(' · '),
+            song: S.showSong && meta.songNo ? `SONG ${meta.songNo} OF ${meta.songOf}` : '',
+        };
+        const hm = el('meas'); hm.className = 'cs'; hm.style.width = geo.contentW + 'px';
+        hm.innerHTML = hdrHtml(I, 0, 2, true); const h1 = hm.firstElementChild.getBoundingClientRect().height;
+        hm.innerHTML = hdrHtml(I, 1, 2, true); const h2 = hm.firstElementChild.getBoundingClientRect().height;
+        geo.hdr = [h1, h2];
+        geo.cap = p => geo.ph - geo.TOP - geo.hdr[p ? 1 : 0] - geo.GAP - geo.BOT;
+
+        // try gentler layouts first; take the first one that reaches the fewest pages
+        // [keep column breaks, keep page breaks]; a PAGE_BREAK is always kept unless you chose to ignore breaks
+        const modes = S.breaks === 'ignore' ? [[false, false]] : geo.cols === 1 ? [[false, true]] : (S.breaks === 'honor' || !S.fit) ? [[true, true]] : [[true, true], [false, true]];
+        const lvs = levels(), measured = lvs.map(lv => measureBlocks(blocks, lv, geo, stk));
+        const cands = [];
+        // whole sections only first; a section may be split across columns only if that is what saves a page
+        for (const split of S.fit ? [false, true] : [false]) for (const [honor, pg] of modes) lvs.forEach((lv, i) => cands.push({ lv, honor, split, res: place(measured[i], geo, honor, pg, split) }));
+        const kmin = Math.min(...cands.map(c => c.res.pages));
+        const pick = cands.find(c => c.res.pages === kmin), natural = cands[0].res.pages;
+
+        const total = pick.res.pages;
+        const footer = (S.footer.trim() || [meta.copyright && '© ' + meta.copyright.replace(/^©\s*/, ''), meta.ccli && 'CCLI Song # ' + meta.ccli].filter(Boolean).join('\n'));
+        const fs = (R.size * pick.lv.s * 96 / 72) + 'px';
+        let out = '';
+        for (let p = 0; p < total; p++) {
+            const colsHtml = Array.from({ length: geo.cols }, (_, c) => `<div class="col">${(pick.res.slots[p * geo.cols + c] || { items: [] }).items.join('')}</div>`).join('');
+            const top = geo.TOP + geo.hdr[p ? 1 : 0] + geo.GAP;
+            out += `<div class="pagebox"><div class="paper cs${stk ? ' stk' : ''}" style="--fs:${fs};--m:${geo.M}px">` +
+                `<div class="hw">${hdrHtml(I, p, total, false)}</div>` +
+                `<div class="cols" style="top:${top.toFixed(1)}px;grid-template-columns:repeat(${geo.cols},${geo.colW.toFixed(2)}px);column-gap:${geo.gut}px">${colsHtml}</div>` +
+                `<div class="ftr"><div class="c">${esc(footer)}</div><div class="n">${p < total - 1 ? `continues on page ${p + 2} ▸` : total > 1 ? 'end' : S.pageBadge === 'multi' ? '<span class="pp">PAGE 1 OF 1</span>' : ''}</div></div></div></div>`;
+        }
+        host.innerHTML = out;
+        decorate(host);
+        applyZoom(geo);
+
+        const bits = [`${total} page${total > 1 ? 's' : ''}`];
+        const shrunk = pick.lv.s < 1, tight = pick.lv.g < 1;
+        if (shrunk || tight) bits.push(`${shrunk ? `text at ${Math.round(pick.lv.s * 100)}%` : ''}${shrunk && tight ? ', ' : ''}${tight ? 'blank lines tightened' : ''}`);
+        if (natural > total) bits.push(`would be ${natural} at full size`);
+        if (!pick.honor && modes.length > 1) bits.push('column breaks ignored');
+        if (pick.split) bits.push('a section runs across two columns');
+        el('status').textContent = '· ' + bits.join(' · ');
+        window.__last = { total, natural, lv: pick.lv, honor: pick.honor, cands: cands.map(c => [c.lv.s, c.lv.g, c.honor, c.res.pages]) };
+    }
+
+    function applyZoom(geo) {
+        geo = geo || geometry();
+        const w = el('pages').clientWidth;
+        el('pages').style.setProperty('--z', w ? Math.min(1, w / geo.pw).toFixed(4) : 1);
+    }
+
+    /* ---------------------------------- controls ---------------------------------- */
+    const OPTS = { ac: [['none', 'No accent'], ['bar', 'Thick bar'], ['dots', 'Thick dotted'], ['double', 'Double bar'], ['hair', 'Bar with hairs'], ['tracks', 'Train tracks'], ['wave', 'Wavy line'], ['zigzag', 'Zigzag line'], ['chevrons', 'Chevrons'], ['saw', 'Sawtooth fade'], ['arc', 'Grey arc'], ['fade', 'Fade inward'], ['fadev', 'Fade downward'], ['open', 'No right edge']], ol: [['none', 'None'], ['thin', 'Thin line'], ['med', 'Medium line'], ['thick', 'Thick line'], ['xthick', 'Extra thick line'], ['dashed', 'Dashed'], ['dashL', 'Long dashes'], ['dashH', 'Thick long dashes'], ['dotted', 'Dotted'], ['double', 'Double line'], ['wavy', 'Wavy'], ['zig', 'Zigzag'], ['spikes', 'Spikes'], ['scallop', 'Scalloped']] };
+    document.querySelectorAll('select[data-opts]').forEach(s => { s.innerHTML = OPTS[s.dataset.opts].map(([v, l]) => `<option value="${v}">${l}</option>`).join(''); });
+    document.querySelectorAll('[data-k]').forEach(c => {
+        const v = S[c.dataset.k];
+        if (c.type === 'checkbox') c.checked = !!v; else c.value = v;
+    });
+    let timer = 0;
+    const onCtl = e => {
+        const t = e.target, k = t.dataset.k;
+        if (!k) return;
+        S[k] = t.type === 'checkbox' ? t.checked : t.dataset.t === 'n' ? +t.value : t.value;
+        save();
+        if (k === 'markup') { clearTimeout(timer); timer = setTimeout(render, 150); } else render();
+    };
+    document.querySelector('.controls').addEventListener('input', onCtl);
+    document.querySelector('.controls').addEventListener('change', onCtl);
+    el('sample').onclick = () => { S.markup = SAMPLE; el('markup').value = SAMPLE; save(); render(); };
+    el('clear').onclick = () => { S.markup = ''; el('markup').value = ''; save(); render(); };
+    el('print').onclick = () => window.print();
+    el('paste').onclick = async () => {
+        try { S.markup = await navigator.clipboard.readText(); el('markup').value = S.markup; save(); render(); }
+        catch (e) { el('markup').focus(); el('paste').textContent = 'Click the box and press Ctrl+V'; setTimeout(() => el('paste').textContent = 'Paste from clipboard', 2500); }
+    };
+
+    const bm = el('bm1').textContent.trim();
+    el('bmCode').textContent = bm;
+    el('bmLink').href = bm.replace(/\s+/g, ' ');
+    el('bmLink').title = 'Drag me to your bookmarks bar';
+    el('bmLink').onclick = e => e.preventDefault();
+    el('bmCopy').onclick = async () => {
+        try { await navigator.clipboard.writeText(bm); el('bmCopy').textContent = 'Copied!'; }
+        catch (e) { const r = document.createRange(); r.selectNodeContents(el('bmCode')); getSelection().removeAllRanges(); getSelection().addRange(r); el('bmCopy').textContent = 'Selected, press Ctrl+C'; }
+        setTimeout(() => el('bmCopy').textContent = 'Copy the code', 1500);
+    };
+
+    if ('ResizeObserver' in window) new ResizeObserver(() => applyZoom()).observe(el('pages'));
+    window.addEventListener('beforeprint', () => el('pages').style.setProperty('--z', 1));
+    window.addEventListener('afterprint', () => applyZoom());
+    render();
+})();
+</script>
+</body>
+</html>
