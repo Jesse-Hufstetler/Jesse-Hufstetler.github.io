@@ -54,7 +54,11 @@
     a.bmlink { display: inline-block; padding: 4px 10px; border: 1px dashed var(--accent); border-radius: 6px; color: var(--ink); text-decoration: none; font-weight: 600; cursor: grab; }
 
     /* ---------- preview ---------- */
-    .previewbar { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; position: sticky; top: 8px; z-index: 5; background: color-mix(in srgb, var(--panel) 70%, transparent); -webkit-backdrop-filter: blur(10px) saturate(1.4); backdrop-filter: blur(10px) saturate(1.4); border: 1px solid var(--line); border-radius: 10px; padding: 8px 8px 8px 16px; margin-bottom: 14px; box-shadow: 0 2px 8px rgba(0, 0, 0, .15); }
+    .previewbar { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; position: sticky; top: 8px; z-index: 5; width: 100%; margin-left: auto; margin-right: auto; transition: width .2s ease; background: color-mix(in srgb, var(--panel) 70%, transparent); -webkit-backdrop-filter: blur(10px) saturate(1.4); backdrop-filter: blur(10px) saturate(1.4); border: 1px solid var(--line); border-radius: 10px; padding: 8px 8px 8px 16px; margin-bottom: 14px; box-shadow: 0 2px 8px rgba(0, 0, 0, .15); }
+    @media (min-width: 1000px) {   /* once it floats over the paper, shrink into a card */
+        .previewbar.stuck { width: calc(min(100%, var(--maxw, 816px)) - 48px); }
+    }
+    #sentinel { height: 1px; margin-bottom: -1px; pointer-events: none; }
     .previewbar h2 { margin: 0; font-size: 16px; }
     .previewbar .sub { color: var(--muted); font-size: 13px; font-weight: 400; }
     #pages { display: flex; flex-direction: column; align-items: center; gap: 22px; }
@@ -73,6 +77,7 @@
     .cs .seg { display: inline-flex; flex-direction: column; vertical-align: top; }
     .cs .ch { min-height: 1.15em; padding-right: .3em; white-space: pre; }
     .cs .cc { font-weight: 700; white-space: pre; }
+    .cs.bxc .cc { box-shadow: 0 0 0 .25px #000; padding: .05em .12em; margin: -.05em -.12em; border-radius: .15em; }
     .cs .nm { font-weight: 400; font-size: .62em; margin-left: .3em; color: #333; }
     .cs sup { font-size: .62em; line-height: 0; vertical-align: baseline; position: relative; top: -.55em; }
     .cs .rhy { display: flex; flex-wrap: wrap; column-gap: .3em; align-items: flex-end; }
@@ -123,7 +128,7 @@
     .cs .sec.ot { border-top-width: 0; border-top-left-radius: 0; border-top-right-radius: 0; padding-top: 0; }
     .cs .sec.ob { border-bottom-width: 0; border-bottom-left-radius: 0; border-bottom-right-radius: 0; padding-bottom: 0; }
 
-    .cs .hw { position: absolute; left: var(--m, 48px); right: var(--m, 48px); top: 28.8px; }
+    .cs .hw { position: absolute; left: var(--m, 48px); right: var(--m, 48px); top: 19.2px; }
     .cs .cols { position: absolute; left: var(--m, 48px); display: grid; align-items: start; }
     .cs .hdr { display: flex; justify-content: space-between; align-items: center; gap: .2in; background: #e4e4e4; padding: .1in .18in; border-radius: 6px; font-size: 11pt; line-height: 1.2; }
     .cs .hdr .ttl { min-width: 0; }
@@ -142,8 +147,8 @@
     .cs .hdr.h2 .b { font-size: 11pt; padding: 3pt 6pt; border-width: 2pt; }
     .cs .hdr.h2 .b.key { flex-direction: row; gap: 4pt; align-items: baseline; padding: 3pt 7pt; }
     .cs .hdr.h2 .b.key span { font-size: 13pt; }
-    .cs .ftr { position: absolute; left: var(--m, 48px); right: var(--m, 48px); bottom: 29px; height: 40px; display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; font: 8pt/1.25 Arial, Helvetica, sans-serif; color: #222; }
-    .cs .ftr .c { flex: 1; text-align: center; white-space: pre-line; }
+    .cs .ftr { position: absolute; left: var(--m, 48px); right: var(--m, 48px); bottom: 18px; display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; font: 8pt/1.25 Arial, Helvetica, sans-serif; color: #222; }
+    .cs .ftr .c { flex: 1; text-align: center; }
     .cs .ftr .pp { display: inline-block; font: 700 7pt/1 Arial, Helvetica, sans-serif; background: #000; color: #fff; border-radius: 6pt; padding: 3pt 7pt; letter-spacing: .02em; }
     .cs .ftr .n { font: 700 11pt Arial, Helvetica, sans-serif; white-space: nowrap; }
 
@@ -217,6 +222,7 @@
                 <select data-k="pos"><option value="beside">Beside the number</option><option value="above">Above the number</option></select>
             </div>
             <label class="check"><input type="checkbox" data-k="sup"> Raise the chord type (2<sup>m7</sup>)</label>
+            <label class="check"><input type="checkbox" data-k="boxChords"> Hairline box around each chord</label>
         </div>
 
         <div class="card">
@@ -274,7 +280,8 @@
     </section>
 
     <div class="previewcol">
-        <div class="previewbar noprint">
+        <div id="sentinel" class="noprint"></div>
+        <div class="previewbar noprint" id="previewbar">
             <h2>Print preview <span class="sub" id="status"></span></h2>
             <button class="primary" id="print">Print / Save PDF</button>
         </div>
@@ -477,7 +484,7 @@ CHORUS`;
     const STORE = 'chordChart.v1';
     const defaults = {
         markup: SAMPLE, keySel: 'auto', chartKeySel: 'auto', title: '', arr: '', author: '', bpm: '', meter: '',
-        mode: 'both', pos: 'beside', sup: true,
+        mode: 'both', pos: 'beside', sup: true, boxChords: true,
         ol_chorus: 'thin', ol_verse: 'thin', ol_bridge: 'thin', ol_other: 'thin',
         ac_chorus: 'saw', ac_verse: 'arc', ac_bridge: 'tracks', ac_other: 'none', v: 2,
         showSong: true, pageBadge: 'multi', keyStyle: 'badge', showMeta: true, notes: '', footer: '',
@@ -598,7 +605,7 @@ CHORUS`;
         let [wi, hi] = R.paper === 'a4' ? [8.268, 11.693] : [8.5, 11];
         if (R.orient === 'landscape') [wi, hi] = [hi, wi];
         const pw = wi * 96, ph = hi * 96, M = R.margin * 96, gut = .35 * 96, cols = R.cols;
-        return { wi, hi, pw, ph, M, gut, cols, colW: (pw - 2 * M - (cols - 1) * gut) / cols, contentW: pw - 2 * M, TOP: 28.8, GAP: 12, BOT: 78 };
+        return { wi, hi, pw, ph, M, gut, cols, colW: (pw - 2 * M - (cols - 1) * gut) / cols, contentW: pw - 2 * M, TOP: 19.2, GAP: 12, BOT: 56 };
     }
     function measureBlocks(blocks, lv, geo, stk) {
         const m = el('meas');
@@ -707,11 +714,11 @@ CHORUS`;
             size: Math.min(20, Math.max(7, S.size === 'auto' ? (+meta.fontsize || 11) : +S.size)),
             paper: S.paper === 'auto' ? (/a4/i.test(meta.paper) ? 'a4' : 'letter') : S.paper,
             orient: S.orient === 'auto' ? (/land/i.test(meta.orientation) ? 'landscape' : 'portrait') : S.orient,
-            margin: Math.min(1.5, Math.max(.2, S.margin === 'auto' ? (inches(meta.margin) || .5) : +S.margin)),
+            margin: Math.min(1.5, Math.max(.2, S.margin === 'auto' ? Math.min(inches(meta.margin) || .5, .3) : +S.margin)),
         };
         const pcSet = ['columns', 'fontsize', 'paper', 'orientation', 'margin'].filter(k => meta[k]);
         el('autoNote').textContent = pcSet.length
-            ? `Auto uses Planning Center's settings for this song: ${meta.columns || '?'} columns, ${meta.fontsize || '?'} pt, ${meta.paper || '?'} ${(meta.orientation || '').toLowerCase()}, ${meta.margin || '?'} margins.`
+            ? `Auto uses Planning Center's settings for this song: ${meta.columns || '?'} columns, ${meta.fontsize || '?'} pt, ${meta.paper || '?'} ${(meta.orientation || '').toLowerCase()}, ${meta.margin || '?'} margins (sides capped at 0.3 in).`
             : "Auto uses Planning Center's settings when the pasted chart includes them (run the bookmarklet in step 1 again to get them), otherwise 2 columns, 11 pt, Letter.";
         el('minLbl').textContent = S.minScale + '%';
         el('roadmap').disabled = !model.meta.roadmap;
@@ -758,40 +765,62 @@ CHORUS`;
             song: S.showSong && meta.songNo ? `SONG ${meta.songNo} OF ${meta.songOf}` : '',
         };
         const hm = el('meas'); hm.className = 'cs'; hm.style.width = geo.contentW + 'px';
-        hm.innerHTML = hdrHtml(I, 0, 2, true); const h1 = hm.firstElementChild.getBoundingClientRect().height;
-        hm.innerHTML = hdrHtml(I, 1, 2, true); const h2 = hm.firstElementChild.getBoundingClientRect().height;
-        geo.hdr = [h1, h2];
+        const footer = (S.footer.trim() || [meta.copyright && '© ' + meta.copyright.replace(/^©\s*/, ''), meta.ccli && 'CCLI Song # ' + meta.ccli].filter(Boolean).join('\n'));
+        const footTxt = footer.split(/\s*\n\s*/).filter(Boolean).join(' · ');
+        hm.innerHTML = `<div class="ftr" style="position:static"><div class="c">${esc(footTxt)}</div><div class="n">continues on page 2 ▸</div></div>`;
+        geo.BOT = 18 + hm.firstElementChild.getBoundingClientRect().height + 8;     // room for the footer as it actually wraps
         geo.cap = p => geo.ph - geo.TOP - geo.hdr[p ? 1 : 0] - geo.GAP - geo.BOT;
 
+        // the header's height depends on whether the PAGE x OF y badge is there (it narrows the title), which depends on the page count:
+        // lay out as if it fits on one page, and redo with the badge if it doesn't
+        let pick, natural, kmin, modes, cands;
+        for (let guess = 1; ; guess++) {
+        const hmh = tot => { hm.className = 'cs'; hm.style.width = geo.contentW + 'px'; hm.innerHTML = hdrHtml(I, tot ? 1 : 0, guess, false); return hm.firstElementChild.getBoundingClientRect().height; };
+        geo.hdr = [hmh(0), hmh(1)];
         // try gentler layouts first; take the first one that reaches the fewest pages
         // [keep column breaks, keep page breaks]; a PAGE_BREAK is always kept unless you chose to ignore breaks
-        const modes = S.breaks === 'ignore' ? [[false, false]] : geo.cols === 1 ? [[false, true]] : (S.breaks === 'honor' || !S.fit) ? [[true, true]] : [[true, true], [false, true]];
+        modes = S.breaks === 'ignore' ? [[false, false]] : geo.cols === 1 ? [[false, true]] : (S.breaks === 'honor' || !S.fit) ? [[true, true]] : [[true, true], [false, true]];
         const lvs = levels(), measured = lvs.map(lv => measureBlocks(blocks, lv, geo, stk));
-        const cands = [];
+        cands = [];
         // whole sections only first; a section may be split across columns only if that is what saves a page
-        for (const split of S.fit ? [false, true] : [false]) for (const [honor, pg] of modes) lvs.forEach((lv, i) => cands.push({ lv, honor, split, res: place(measured[i], geo, honor, pg, split) }));
-        const kmin = Math.min(...cands.map(c => c.res.pages));
-        const pick = cands.find(c => c.res.pages === kmin), natural = cands[0].res.pages;
+        for (const split of S.fit ? [false, true] : [false]) for (const [honor, pg] of modes) lvs.forEach((lv, i) => cands.push({ lv, i, honor, pg, split, res: place(measured[i], geo, honor, pg, split) }));
+        kmin = Math.min(...cands.map(c => c.res.pages));
+        pick = cands.find(c => c.res.pages === kmin); natural = cands[0].res.pages;
+        // space between sections shrinks to a minimum, and what that frees goes to bigger text, as long as the page count holds
+        // and no chord line has to be squeezed to fit its column
+        if (S.fit) {
+            const squeezed = bl => bl.reduce((n, b) => n + b.rows.filter(h => h.includes('class="r cl" style="font-size')).length, 0);
+            const base = squeezed(measured[pick.i]);
+            for (let s = pick.lv.s; s <= 1.4 + 1e-9; s += .02) {
+                const lv = { s: +s.toFixed(3), g: Math.min(pick.lv.g, .25) }, mb = measureBlocks(blocks, lv, geo, stk);
+                if (squeezed(mb) > base) break;
+                const res = place(mb, geo, pick.honor, pick.pg, pick.split);
+                if (res.pages > kmin) break;
+                pick = { ...pick, lv, res };
+            }
+        }
+        if (guess > 1 || pick.res.pages === 1 || S.pageBadge !== 'multi') break;
+        }
 
         const total = pick.res.pages;
-        const footer = (S.footer.trim() || [meta.copyright && '© ' + meta.copyright.replace(/^©\s*/, ''), meta.ccli && 'CCLI Song # ' + meta.ccli].filter(Boolean).join('\n'));
         const fs = (R.size * pick.lv.s * 96 / 72) + 'px';
         let out = '';
         for (let p = 0; p < total; p++) {
             const colsHtml = Array.from({ length: geo.cols }, (_, c) => `<div class="col">${(pick.res.slots[p * geo.cols + c] || { items: [] }).items.join('')}</div>`).join('');
             const top = geo.TOP + geo.hdr[p ? 1 : 0] + geo.GAP;
-            out += `<div class="pagebox"><div class="paper cs${stk ? ' stk' : ''}" style="--fs:${fs};--m:${geo.M}px">` +
+            out += `<div class="pagebox"><div class="paper cs${stk ? ' stk' : ''}${S.boxChords ? ' bxc' : ''}" style="--fs:${fs};--m:${geo.M}px">` +
                 `<div class="hw">${hdrHtml(I, p, total, false)}</div>` +
                 `<div class="cols" style="top:${top.toFixed(1)}px;grid-template-columns:repeat(${geo.cols},${geo.colW.toFixed(2)}px);column-gap:${geo.gut}px">${colsHtml}</div>` +
-                `<div class="ftr"><div class="c">${esc(footer)}</div><div class="n">${p < total - 1 ? `continues on page ${p + 2} ▸` : total > 1 ? 'end' : S.pageBadge === 'multi' ? '<span class="pp">PAGE 1 OF 1</span>' : ''}</div></div></div></div>`;
+                `<div class="ftr"><div class="c">${esc(footTxt)}</div><div class="n">${p < total - 1 ? `continues on page ${p + 2} ▸` : total > 1 ? 'end' : S.pageBadge === 'multi' ? '<span class="pp">PAGE 1 OF 1</span>' : ''}</div></div></div></div>`;
         }
         host.innerHTML = out;
         decorate(host);
         applyZoom(geo);
+        el('previewbar').parentElement.style.setProperty('--maxw', geo.pw + 'px');   // preview bar matches the paper width
 
         const bits = [`${total} page${total > 1 ? 's' : ''}`];
-        const shrunk = pick.lv.s < 1, tight = pick.lv.g < 1;
-        if (shrunk || tight) bits.push(`${shrunk ? `text at ${Math.round(pick.lv.s * 100)}%` : ''}${shrunk && tight ? ', ' : ''}${tight ? 'blank lines tightened' : ''}`);
+        const shrunk = pick.lv.s !== 1, tight = pick.lv.g < 1;
+        if (shrunk) bits.push(`text at ${Math.round(pick.lv.s * 100)}%`);
         if (natural > total) bits.push(`would be ${natural} at full size`);
         if (!pick.honor && modes.length > 1) bits.push('column breaks ignored');
         if (pick.split) bits.push('a section runs across two columns');
@@ -844,6 +873,11 @@ CHORUS`;
     if ('ResizeObserver' in window) new ResizeObserver(() => applyZoom()).observe(el('pages'));
     window.addEventListener('beforeprint', () => el('pages').style.setProperty('--z', 1));
     window.addEventListener('afterprint', () => applyZoom());
+    // the preview bar is a full-width row until it sticks to the top of the window, then it shrinks into a card
+    if ('IntersectionObserver' in window) {
+        new IntersectionObserver(([e]) => el('previewbar').classList.toggle('stuck', !e.isIntersecting),
+            { rootMargin: '-9px 0px 0px 0px', threshold: 0 }).observe(el('sentinel'));
+    }
     render();
 })();
 </script>
