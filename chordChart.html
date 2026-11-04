@@ -70,6 +70,13 @@
     /* ---------- the chart itself (same CSS for the paper and the hidden measuring box) ---------- */
     .cs { font-family: Arial, Helvetica, sans-serif; font-size: var(--fs, 14.667px); line-height: 1.15; color: #000; font-variant-ligatures: none; }
     .cs .r { margin: 0; }
+    .cs .hd { text-align: center; }
+    .cs .sec:not(.ol-none) > .hd { background: linear-gradient(#efefef 0, #efefef 45%, rgba(239, 239, 239, 0)); margin: -.2em -.4em -.15em; padding: .15em .4em .45em; border-radius: .4em .4em 0 0; }
+    .cs .sec.ac-arc:not(.ol-none) > .hd { margin-right: -2.7em; padding-right: 3.1em; }
+    .cs .sec.ac:not(.ol-none) > .hd { margin-right: -1.3em; padding-right: 1.7em; }
+    .cs .sec.ac-tracks:not(.ol-none) > .hd, .cs .sec.ac-saw:not(.ol-none) > .hd { margin-right: -2em; padding-right: 2.4em; }
+    .cs .sec.fx:not(.ol-none) > .hd { margin: -.65em -.8em -.15em; padding: .5em .8em .45em; }
+    .cs .sec.ac-arc.ac-arc:not(.ol-none) > .hd { margin-right: -2.7em; padding-right: 3.1em; }
     .cs .hd b { font-weight: 700; }
     .cs .lyr { white-space: pre-wrap; }
     .cs .ly { white-space: pre; }
@@ -78,6 +85,7 @@
     .cs .ch { min-height: 1.15em; padding-right: .3em; white-space: pre; }
     .cs .cc { font-weight: 700; white-space: pre; }
     .cs.bxc .cc { box-shadow: 0 0 0 .25px #000; padding: .05em .12em; margin: -.05em -.12em; border-radius: .15em; }
+    .cs.bxc .cc.nb { box-shadow: none; }
     .cs .nm { font-weight: 400; font-size: .62em; margin-left: .3em; color: #333; }
     .cs sup { font-size: .62em; line-height: 0; vertical-align: baseline; position: relative; top: -.55em; }
     .cs .rhy { display: flex; flex-wrap: wrap; column-gap: .3em; align-items: flex-end; }
@@ -519,7 +527,7 @@ CHORUS`;
     function chordHtml(raw, ctx) {
         if (/\s/.test(raw.trim())) return raw.trim().split(/(\s+)/).map(t => /^\s+$/.test(t) ? t : chordHtml(t, ctx)).join('');
         const c = parseChord(raw);
-        if (!c) return `<span class="cc">${esc(raw)}</span>`;
+        if (!c) return `<span class="cc${/^[-–—]+$/.test(raw.trim()) ? ' nb' : ''}">${esc(raw)}</span>`;   // a bare dash between chords is a separator, not a chord box
         const rp = (c.r + ctx.shift) % 12, bp = c.b == null ? null : (c.b + ctx.shift) % 12;
         const name = ctx.shift ? spell(rp, ctx.key) + c.q + (bp == null ? '' : '/' + spell(bp, ctx.key)) : raw;
         if (ctx.mode === 'names') return `<span class="cc">${esc(name)}</span>`;
@@ -604,7 +612,7 @@ CHORUS`;
     function geometry() {
         let [wi, hi] = R.paper === 'a4' ? [8.268, 11.693] : [8.5, 11];
         if (R.orient === 'landscape') [wi, hi] = [hi, wi];
-        const pw = wi * 96, ph = hi * 96, M = R.margin * 96, gut = .35 * 96, cols = R.cols;
+        const pw = wi * 96, ph = hi * 96, M = R.margin * 96, gut = 14, cols = R.cols;
         return { wi, hi, pw, ph, M, gut, cols, colW: (pw - 2 * M - (cols - 1) * gut) / cols, contentW: pw - 2 * M, TOP: 19.2, GAP: 12, BOT: 56 };
     }
     function measureBlocks(blocks, lv, geo, stk) {
@@ -628,7 +636,7 @@ CHORUS`;
         return fitted.map((b, i) => {
             const blk = m.children[i], sec = blk.firstElementChild;
             const sh = sec.getBoundingClientRect().height, bh = blk.getBoundingClientRect().height;
-            const rowHs = [...sec.children].map(e => e.getBoundingClientRect().height);
+            const rowHs = [...sec.children].map(e => { const cs = getComputedStyle(e); return e.getBoundingClientRect().height + (parseFloat(cs.marginTop) || 0) + (parseFloat(cs.marginBottom) || 0); });
             return { ...b, padEm: padEmFor(b, lv), secH: sh, padH: bh - sh, rowHs, chrome: sh - rowHs.reduce((a, x) => a + x, 0) };
         });
     }
@@ -790,14 +798,22 @@ CHORUS`;
         // and no chord line has to be squeezed to fit its column
         if (S.fit) {
             const squeezed = bl => bl.reduce((n, b) => n + b.rows.filter(h => h.includes('class="r cl" style="font-size')).length, 0);
-            const base = squeezed(measured[pick.i]);
-            for (let s = pick.lv.s; s <= 1.4 + 1e-9; s += .02) {
-                const lv = { s: +s.toFixed(3), g: Math.min(pick.lv.g, .25) }, mb = measureBlocks(blocks, lv, geo, stk);
-                if (squeezed(mb) > base) break;
-                const res = place(mb, geo, pick.honor, pick.pg, pick.split);
-                if (res.pages > kmin) break;
-                pick = { ...pick, lv, res };
-            }
+            const grow = start => {
+                let pk = start;
+                const base = squeezed(measured[pk.i]);
+                for (let s = pk.lv.s; s <= 1.4 + 1e-9; s += .02) {
+                    const lv = { s: +s.toFixed(3), g: Math.min(pk.lv.g, .25) }, mb = measureBlocks(blocks, lv, geo, stk);
+                    if (squeezed(mb) > base) break;
+                    const res = place(mb, geo, pk.honor, pk.pg, pk.split);
+                    if (res.pages > kmin) break;
+                    pk = { ...pk, lv, res };
+                }
+                return pk;
+            };
+            // also try letting a long section run across columns (as Planning Center does) when that allows bigger text at the same page count
+            const alt = pick.split ? null : cands.find(c => c.split && c.res.pages === kmin && c.honor === pick.honor && c.pg === pick.pg);
+            const a = grow(pick), b = alt ? grow(alt) : null;
+            pick = b && b.lv.s > a.lv.s ? b : a;
         }
         if (guess > 1 || pick.res.pages === 1 || S.pageBadge !== 'multi') break;
         }
@@ -814,6 +830,34 @@ CHORUS`;
                 `<div class="ftr"><div class="c">${esc(footTxt)}</div><div class="n">${p < total - 1 ? `continues on page ${p + 2} ▸` : total > 1 ? 'end' : S.pageBadge === 'multi' ? '<span class="pp">PAGE 1 OF 1</span>' : ''}</div></div></div></div>`;
         }
         host.innerHTML = out;
+        // each column grows its own text to use spare room (sections split across columns keep the shared size)
+        if (S.fit) host.querySelectorAll('.paper').forEach((paper, p) => paper.querySelectorAll('.col').forEach(col => {
+            if (!col.firstElementChild || col.querySelector('.sec.ot, .sec.ob')) return;
+            const cap = geo.cap(p), over = () => col.offsetHeight > cap || [...col.querySelectorAll('.r')].some(r => r.scrollWidth > r.clientWidth + 1);
+            let best = 1;
+            for (let k = 1.03; k * pick.lv.s <= 1.4 + 1e-9; k += .03) {
+                col.style.fontSize = `calc(var(--fs) * ${k.toFixed(2)})`;
+                if (over()) break;
+                best = k;
+            }
+            col.style.fontSize = best > 1 ? `calc(var(--fs) * ${best.toFixed(2)})` : '';
+        }));
+        // spare room at the bottom of a column goes to its empty (title-only) cards, as space for notes
+        host.querySelectorAll('.paper').forEach((paper, p) => paper.querySelectorAll('.col').forEach(col => {
+            const refs = [...col.querySelectorAll('.sec.ref')];
+            const spare = geo.cap(p) - col.offsetHeight;
+            if (!refs.length || spare < 4) return;
+            const add = Math.min(Math.floor(spare / refs.length) - 1, 2.5 * parseFloat(getComputedStyle(col).fontSize));   // roughly half a short card's height at most
+            refs.forEach(r => { r.style.minHeight = (r.offsetHeight + add) + 'px'; });
+        }));
+        // still room left: up to 3 lines of blank space at the bottom of each card that has content, for handwritten notes
+        host.querySelectorAll('.paper').forEach((paper, p) => paper.querySelectorAll('.col').forEach(col => {
+            const cards = [...col.querySelectorAll('.sec:not(.ref):not(.ot):not(.ob)')];
+            const spare = geo.cap(p) - col.offsetHeight;
+            if (!cards.length || spare < 4) return;
+            const add = Math.min(Math.floor(spare / cards.length) - 1, 3 * 1.15 * parseFloat(getComputedStyle(col).fontSize));
+            if (add > 0) cards.forEach(c => { c.style.minHeight = (c.offsetHeight + add) + 'px'; });
+        }));
         decorate(host);
         applyZoom(geo);
         el('previewbar').parentElement.style.setProperty('--maxw', geo.pw + 'px');   // preview bar matches the paper width
