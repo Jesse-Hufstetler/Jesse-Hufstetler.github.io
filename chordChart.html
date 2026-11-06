@@ -71,7 +71,7 @@
     .cs { font-family: Arial, Helvetica, sans-serif; font-size: var(--fs, 14.667px); line-height: 1.15; color: #000; font-variant-ligatures: none; }
     .cs .r { margin: 0; }
     .cs .hd { text-align: center; }
-    .cs .sec:not(.ol-none) > .hd { background: linear-gradient(#efefef 0, #efefef 45%, rgba(239, 239, 239, 0)); margin: -.2em -.4em -.15em; padding: .15em .4em .45em; border-radius: .4em .4em 0 0; }
+    .cs .sec:not(.ol-none) > .hd { background: linear-gradient(var(--hd, #efefef) 0, var(--hd, #efefef) 45%, var(--hd0, rgba(239, 239, 239, 0))); margin: -.2em -.4em -.15em; padding: .15em .4em .45em; border-radius: .4em .4em 0 0; }
     .cs .sec.ac-arc:not(.ol-none) > .hd { margin-right: -2.7em; padding-right: 3.1em; }
     .cs .sec.ac:not(.ol-none) > .hd { margin-right: -1.3em; padding-right: 1.7em; }
     .cs .sec.ac-tracks:not(.ol-none) > .hd, .cs .sec.ac-saw:not(.ol-none) > .hd { margin-right: -2em; padding-right: 2.4em; }
@@ -123,15 +123,44 @@
     .cs .sec.ac-chevrons::after { width: .8em; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 8'%3E%3Cpath d='M2 0L8 4L2 8' fill='none' stroke='%23000' stroke-width='2.4' stroke-linejoin='round'/%3E%3C/svg%3E") center top / .8em .64em repeat-y; }
     /* wide sawtooth edge, solid at the right and fading inward, no outline: the left edge is cut by the mask */
     .cs .sec.ac-saw { padding-right: 2em; overflow: hidden; }
-    .cs .sec.ac-saw::after { top: 0; bottom: 0; right: 0; width: 1.7em; background: linear-gradient(to left, #000, rgba(0, 0, 0, .12)); border-radius: 0;
+    .cs .sec.ac-saw::after { top: 0; bottom: 0; right: 0; width: 1.7em; background: linear-gradient(to left, #000, var(--sawT, rgba(0, 0, 0, .12))); border-radius: 0;
         -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 16' preserveAspectRatio='none'%3E%3Cpath d='M9 0L1 4L9 8L1 12L9 16H10V0Z'/%3E%3C/svg%3E") 0 0 / 100% 1.6em repeat-y; mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 16' preserveAspectRatio='none'%3E%3Cpath d='M9 0L1 4L9 8L1 12L9 16H10V0Z'/%3E%3C/svg%3E") 0 0 / 100% 1.6em repeat-y; }
     /* arc: a half-ellipse of fixed depth running corner to corner, thin outline, grey fill darker at the tip, lighter at the edge */
     .cs .sec.ac-arc { padding-right: 2.7em; overflow: hidden; }
-    .cs .sec.ac-arc::after { top: var(--arc-top, 0); height: var(--arc-h, 100%); bottom: auto; right: 0; width: 2.2em; background: linear-gradient(to right, #b9b9b9, #f5f5f5); border: 1.5px solid #000; border-right-width: 0; border-radius: 100% 0 0 100% / 50% 0 0 50%; }
+    .cs .sec.ac-arc::after { top: var(--arc-top, 0); height: var(--arc-h, 100%); bottom: auto; right: 0; width: 2.2em; background: linear-gradient(to right, var(--arcA, #b9b9b9), var(--arcB, #f5f5f5)); border: 1.5px solid #000; border-right-width: 0; border-radius: 100% 0 0 100% / 50% 0 0 50%; }
     .cs .sec.ac-fade::after { width: 1.2em; background: linear-gradient(to left, #000, rgba(0, 0, 0, 0)); }
     .cs .sec.ac-fadev::after { background: linear-gradient(to bottom, #000, rgba(0, 0, 0, .08)); }
     .cs .sec.ac-open { border-right-width: 0; border-top-right-radius: 0; border-bottom-right-radius: 0; padding-right: .4em; }
     .cs .sec.ac-open::after { display: none; }
+    /* The greys already in a card (title band, arc fill, sawtooth fade) are recoloured by section type. Each is a mix of a full-strength
+       colour (the F... values: pink h355, orange h65, yellow h100, green h150, all the same Rec.601 brightness as the grey they replace)
+       and that plain grey, so a greyscale printer prints exactly the old greys at any setting. TO ADJUST THE COLOUR, change these two:
+       --sat for the cards' greys and --sat-chip for the roadmap chips: 0 = plain grey, 1 = the F... colours, above 1 = more
+       saturated than that (the brightness drifts a little once a channel hits its limit). */
+    .cs { --sat: 0.6; --sat-chip: 2; }
+    .cs .c-verse { --Fhd: rgb(255,231,239); --FarcB: rgb(255,240,245); --FarcA: rgb(231,161,188); --FsawT: rgb(255,208,225); --Fchip: rgb(255,237,243); }
+    .cs .c-chorus { --Fhd: rgb(255,235,217); --FarcB: rgb(255,243,231); --FarcA: rgb(227,175,125); --FsawT: rgb(255,217,181); --Fchip: rgb(255,240,227); }
+    .cs .c-other { --Fhd: rgb(249,242,196); --FarcB: rgb(254,248,209); --FarcA: rgb(201,189,121); --FsawT: rgb(236,228,174); --Fchip: rgb(252,246,207); }
+    .cs .c-bridge { --Fhd: rgb(215,255,222); --FarcB: rgb(230,255,234); --FarcA: rgb(149,208,161); --FsawT: rgb(196,242,204); --Fchip: rgb(225,255,230); }
+    .cs .c-verse, .cs .c-chorus, .cs .c-other, .cs .c-bridge {
+        --hd: rgb(from var(--Fhd) calc(239 + (r - 239) * var(--sat)) calc(239 + (g - 239) * var(--sat)) calc(239 + (b - 239) * var(--sat))); --hd0: transparent;
+        --arcB: rgb(from var(--FarcB) calc(245 + (r - 245) * var(--sat)) calc(245 + (g - 245) * var(--sat)) calc(245 + (b - 245) * var(--sat)));
+        --arcA: rgb(from var(--FarcA) calc(185 + (r - 185) * var(--sat)) calc(185 + (g - 185) * var(--sat)) calc(185 + (b - 185) * var(--sat)));
+        --sawT: rgb(from var(--FsawT) calc(224 + (r - 224) * var(--sat)) calc(224 + (g - 224) * var(--sat)) calc(224 + (b - 224) * var(--sat))); }
+    /* roadmap chips are the one place with a real tint (grey value 243) */
+    .cs .rm .chip.c-verse, .cs .rm .chip.c-chorus, .cs .rm .chip.c-other, .cs .rm .chip.c-bridge { background-color: rgb(from var(--Fchip) calc(243 + (r - 243) * var(--sat-chip)) calc(243 + (g - 243) * var(--sat-chip)) calc(243 + (b - 243) * var(--sat-chip))); }
+    /* roadmap: one small outlined chip per section, with a miniature of that section's edge accent */
+    .cs .rm { display: flex; flex-wrap: wrap; gap: 3pt; }
+    .cs .rm .chip { --saw: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 16' preserveAspectRatio='none'%3E%3Cpath d='M9 0L1 4L9 8L1 12L9 16H10V0Z'/%3E%3C/svg%3E"); position: relative; overflow: hidden; border: .6px solid #000; border-radius: 4px; padding: 1px 5px; font: 700 10pt/1.25 Arial, Helvetica, sans-serif; white-space: nowrap; }
+    .cs .rm .chip::after { content: ''; position: absolute; top: 0; bottom: 0; pointer-events: none; }
+    .cs .rm .chip.ac-tracks { padding-right: 13px; }
+    .cs .rm .chip.ac-tracks::after { right: 3px; width: 6px; background: linear-gradient(#000, #000) 18% 0 / .7px 100% no-repeat, linear-gradient(#000, #000) 82% 0 / .7px 100% no-repeat, repeating-linear-gradient(to bottom, #000 0 .7px, transparent .7px 2.6px) center / 100% 100% no-repeat; }
+    .cs .rm .chip.ac-arc { padding-right: 12px; }
+    .cs .rm .chip.ac-arc::after { right: 0; width: 8px; background: linear-gradient(to right, var(--arcA, #b9b9b9), var(--arcB, #f5f5f5)); border: .6px solid #000; border-right-width: 0; border-radius: 100% 0 0 100% / 50% 0 0 50%; }
+    .cs .rm .chip.ac-saw { padding-right: 12px; }
+    .cs .rm .chip.ac-saw::after { right: 0; width: 9px; background: linear-gradient(to left, #000, var(--sawT, rgba(0, 0, 0, .12))); -webkit-mask: var(--saw) 0 0 / 100% 4px repeat-y; mask: var(--saw) 0 0 / 100% 4px repeat-y; }
+    .cs .rm .chip.ac-zigzag { padding-right: 11px; }
+    .cs .rm .chip.ac-zigzag::after { right: 2px; width: 5px; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 16'%3E%3Cpath d='M5 0L9 4L1 12L5 16' fill='none' stroke='%23000' stroke-width='2.2' stroke-linejoin='round'/%3E%3C/svg%3E") center top / 5px 8px repeat-y; }
     .row > span.lbl.s { min-width: 64px; }
     .cs .sec.ot { border-top-width: 0; border-top-left-radius: 0; border-top-right-radius: 0; padding-top: 0; }
     .cs .sec.ob { border-bottom-width: 0; border-bottom-left-radius: 0; border-bottom-right-radius: 0; padding-bottom: 0; }
@@ -679,13 +708,26 @@ CHORUS`;
     }
 
     /* ------------------------------- header & footer ------------------------------- */
+    // roadmap ("V1, Turn, C1, B×4 ...") as chips coloured and accented like the matching sections
+    const rmCat = t => {
+        t = t.trim().toUpperCase();
+        if (/^(PRE|PC)/.test(t)) return 'other';
+        if (/^(V|VS|VERSE)(?![A-Z])/.test(t)) return 'verse';
+        if (/^(B|BR|BRIDGE)(?![A-Z])/.test(t)) return 'bridge';
+        if (/^(C|CH|CHORUS)(?![A-Z])/.test(t)) return 'chorus';
+        return 'other';
+    };
+    const rmHtml = r => `<div class="rm">${r.split(/\s*,\s*/).filter(Boolean).map(t => {
+        const c = rmCat(t), a = S['ac_' + c] || 'none';
+        return `<span class="chip c-${c}${['tracks', 'arc', 'saw', 'zigzag'].includes(a) ? ' ac-' + a : ''}">${esc(t)}</span>`;
+    }).join('')}</div>`;
     function hdrHtml(I, p, total, full) {
         const showPg = full || S.pageBadge === 'always' || (S.pageBadge === 'multi' && total > 1);
         const badges = (I.keyBadge ? `<div class="b key"><small>KEY</small><span>${esc(I.key)}</span></div>` : '') +
             (I.song ? `<div class="b song">${esc(I.song)}</div>` : '') +
             (showPg && S.pageBadge !== 'never' ? `<div class="b pg">PAGE ${p + 1} OF ${total}</div>` : '');
         if (p === 0) return `<div class="hdr"><div class="ttl"><div class="t">${esc(I.title)}${I.suffix ? ' ' + esc(I.suffix) : ''}</div>` +
-            (I.sub ? `<div class="sub">${esc(I.sub)}</div>` : '') + (I.roadmap ? `<div class="rm">${esc(I.roadmap)}</div>` : '') + (I.notes ? `<div class="nt">${esc(I.notes)}</div>` : '') +
+            (I.sub ? `<div class="sub">${esc(I.sub)}</div>` : '') + (I.roadmap ? rmHtml(I.roadmap) : '') + (I.notes ? `<div class="nt">${esc(I.notes)}</div>` : '') +
             `</div><div class="bdg">${badges}</div></div>`;
         return `<div class="hdr h2"><div class="ttl"><div class="t">${esc(I.title)}</div></div><div class="bdg">${badges}</div></div>`;
     }
