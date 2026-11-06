@@ -48,6 +48,13 @@
   .more { min-width:44px; height:28px; padding:0; font-size:1.2rem; line-height:1; color:inherit;
     background:rgba(127,127,127,.2); border:1.5px solid rgba(127,127,127,.55); border-radius:9px; }
   .more:active { background:rgba(127,127,127,.4); }
+  .grip { display:inline-flex; align-items:center; justify-content:center; width:30px; height:28px; border-radius:9px;
+    background:rgba(127,127,127,.2); border:1.5px solid rgba(127,127,127,.55); color:inherit; font-size:1rem; line-height:1;
+    cursor:grab; touch-action:none; user-select:none; -webkit-user-select:none; }
+  #list { position:relative; }
+  .task.dragging { position:relative; z-index:3; box-shadow:0 8px 22px rgba(0,0,0,.35); opacity:.92; }
+  .dropline { position:absolute; left:0; right:0; height:3px; border-radius:2px; background:var(--accent); pointer-events:none; z-index:4; }
+  body.dragging-now { user-select:none; -webkit-user-select:none; cursor:grabbing; }
   .actions { margin-top:10px; padding-top:10px; border-top:1px solid rgba(127,127,127,.35); display:flex; flex-direction:column; gap:8px; }
   .actions .row { display:flex; align-items:center; gap:6px; }
   .actions .cap { font-size:.75rem; opacity:.75; margin-bottom:-4px; }
@@ -229,6 +236,7 @@ function btn(label, action, id, extra = {}) {
 }
 
 function render() {
+  if (drag) return;   // don't rebuild the list under a finger mid-drag
   const snoozedCount = todos.filter(isSnoozed).length;
   if (!snoozedCount) $('showSnoozed').checked = false;
   $('showSnoozed').hidden = !snoozedCount;
@@ -269,7 +277,13 @@ function render() {
     more.className = 'more';
     const meta = document.createElement('div');
     meta.className = 'meta';
-    meta.append(age, more);
+    const grip = document.createElement('span');
+    grip.className = 'grip';
+    grip.textContent = '⠿';
+    grip.title = 'Drag to reorder';
+    grip.setAttribute('aria-label', 'Drag to reorder');
+    meta.append(age, more, grip);   // grip last so the handles line up down the right edge
+    li.dataset.id = t.id;
     top.append(meta, text);
     li.append(top);
 
@@ -367,6 +381,75 @@ $('list').onclick = async e => {
       return update(id, { snoozed_until: value === '' ? null : new Date(Number(value)).toISOString() });
   }
 };
+
+// Drag to reorder. The list is sorted by `dated` (newest first), so moving a task just
+// means giving it a new `dated`: top = now, bottom = 1 minute older than the last task,
+// in between = halfway between its new neighbours. Pointer events, so touch works too.
+let drag = null;
+
+function dragLayout() {
+  const { li, line } = drag;
+  const dy = (drag.y - drag.startY) + (scrollY - drag.startScroll);
+  li.style.transform = `translateY(${dy}px)`;
+  const items = [...$('list').children].filter(c => c.tagName === 'LI' && c !== li);
+  drag.items = items;
+  drag.idx = items.filter(c => { const r = c.getBoundingClientRect(); return drag.y > r.top + r.height / 2; }).length;
+  const last = items[items.length - 1];
+  line.hidden = !items.length;
+  if (items.length) {
+    line.style.top = (drag.idx < items.length ? items[drag.idx].offsetTop - 4 : last.offsetTop + last.offsetHeight + 2) + 'px';
+  }
+}
+
+function dragLoop() {
+  if (!drag) return;
+  if (drag.y < 70) scrollBy(0, -Math.ceil((70 - drag.y) / 5));
+  else if (drag.y > innerHeight - 70) scrollBy(0, Math.ceil((drag.y - (innerHeight - 70)) / 5));
+  dragLayout();
+  requestAnimationFrame(dragLoop);
+}
+
+function dragEnd(ok) {
+  const d = drag;
+  if (!d) return;
+  if (ok) dragLayout();   // use the final pointer position even if no animation frame ran since the last move
+  drag = null;
+  d.line.remove();
+  d.li.classList.remove('dragging');
+  d.li.style.transform = '';
+  document.body.classList.remove('dragging-now');
+  const t = todos.find(x => x.id === Number(d.li.dataset.id));
+  const vis = d.items.map(li => todos.find(x => x.id === Number(li.dataset.id)));
+  if (!ok || !t || !vis.length || d.idx === d.orig) return render();
+  const when = x => new Date(x.dated).getTime();
+  let next;
+  if (d.idx === 0) next = Math.max(Date.now(), when(vis[0]) + 1000);
+  else if (d.idx === vis.length) next = when(vis[vis.length - 1]) - 60e3;
+  else next = Math.round((when(vis[d.idx - 1]) + when(vis[d.idx])) / 2);
+  t.dated = new Date(next).toISOString();
+  render();
+  update(t.id, { dated: t.dated });
+}
+
+$('list').addEventListener('pointerdown', e => {
+  const grip = e.target.closest('.grip');
+  if (!grip || drag || (e.pointerType === 'mouse' && e.button !== 0)) return;
+  e.preventDefault();
+  const li = grip.closest('li');
+  const line = document.createElement('div');
+  line.className = 'dropline';
+  $('list').append(line);
+  li.classList.add('dragging');
+  document.body.classList.add('dragging-now');
+  const siblings = [...$('list').children].filter(c => c.tagName === 'LI');
+  drag = { li, line, startY: e.clientY, y: e.clientY, startScroll: scrollY, orig: siblings.indexOf(li) };
+  grip.setPointerCapture(e.pointerId);
+  grip.onpointermove = ev => { if (drag) { drag.y = ev.clientY; dragLayout(); } };
+  grip.onpointerup = () => dragEnd(true);
+  grip.onpointercancel = () => dragEnd(false);
+  dragLayout();
+  requestAnimationFrame(dragLoop);
+});
 
 $('list').onchange = e => {
   const s = e.target.closest('select[data-action="snooze"]');
