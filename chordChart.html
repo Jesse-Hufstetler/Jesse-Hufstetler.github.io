@@ -112,15 +112,8 @@
     /* accent: a decoration down the right edge of a section */
     .cs .sec.ac { position: relative; padding-right: 1.3em; }
     .cs .sec.ac::after { content: ''; position: absolute; top: calc(-1 * var(--bw, 0px)); bottom: calc(-1 * var(--bw, 0px)); right: calc(-1 * var(--bw, 0px)); width: .6em; border-radius: 0 .45em .45em 0; pointer-events: none; }
-    .cs .sec.ac-bar::after { background: #000; }
-    .cs .sec.ac-dots::after { background: radial-gradient(circle, #000 0 42%, transparent 46%) center top / .6em .6em repeat-y; }
-    .cs .sec.ac-double::after { width: .7em; background: linear-gradient(90deg, #000 0 28%, transparent 28% 64%, #000 64%); }
-    .cs .sec.ac-hair::after { width: 1em; background: linear-gradient(#000, #000) right / .16em 100% no-repeat, repeating-linear-gradient(to bottom, #000 0 1.5px, transparent 1.5px .42em) left / calc(100% - .16em) 100% no-repeat; }
     .cs .sec.ac-tracks { padding-right: 2em; }
     .cs .sec.ac-tracks::after { right: .7em; width: 1em; background: linear-gradient(#000, #000) 18% 0 / 2.2px 100% no-repeat, linear-gradient(#000, #000) 82% 0 / 2.2px 100% no-repeat, repeating-linear-gradient(to bottom, #000 0 2.6px, transparent 2.6px .55em) center / 100% 100% no-repeat; }
-    .cs .sec.ac-wave::after { width: .8em; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 16'%3E%3Cpath d='M5 0Q10 4 5 8T5 16' fill='none' stroke='%23000' stroke-width='2.2' stroke-linejoin='round'/%3E%3C/svg%3E") center top / .8em 1.28em repeat-y; }
-    .cs .sec.ac-zigzag::after { width: .8em; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 16'%3E%3Cpath d='M5 0L9 4L1 12L5 16' fill='none' stroke='%23000' stroke-width='2.2' stroke-linejoin='round'/%3E%3C/svg%3E") center top / .8em 1.28em repeat-y; }
-    .cs .sec.ac-chevrons::after { width: .8em; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 8'%3E%3Cpath d='M2 0L8 4L2 8' fill='none' stroke='%23000' stroke-width='2.4' stroke-linejoin='round'/%3E%3C/svg%3E") center top / .8em .64em repeat-y; }
     /* wide sawtooth edge, solid at the right and fading inward, no outline: the left edge is cut by the mask */
     .cs .sec.ac-saw { padding-right: 2em; overflow: hidden; }
     .cs .sec.ac-saw::after { top: 0; bottom: 0; right: 0; width: 1.7em; background: linear-gradient(to left, #000, var(--sawT, rgba(0, 0, 0, .12))); border-radius: 0;
@@ -128,10 +121,6 @@
     /* arc: a half-ellipse of fixed depth running corner to corner, thin outline, grey fill darker at the tip, lighter at the edge */
     .cs .sec.ac-arc { padding-right: 2.7em; overflow: hidden; }
     .cs .sec.ac-arc::after { top: var(--arc-top, 0); height: var(--arc-h, 100%); bottom: auto; right: 0; width: 2.2em; background: linear-gradient(to right, var(--arcA, #b9b9b9), var(--arcB, #f5f5f5)); border: 1.5px solid #000; border-right-width: 0; border-radius: 100% 0 0 100% / 50% 0 0 50%; }
-    .cs .sec.ac-fade::after { width: 1.2em; background: linear-gradient(to left, #000, rgba(0, 0, 0, 0)); }
-    .cs .sec.ac-fadev::after { background: linear-gradient(to bottom, #000, rgba(0, 0, 0, .08)); }
-    .cs .sec.ac-open { border-right-width: 0; border-top-right-radius: 0; border-bottom-right-radius: 0; padding-right: .4em; }
-    .cs .sec.ac-open::after { display: none; }
     /* The greys already in a card (title band, arc fill, sawtooth fade) are recoloured by section type. Each is a mix of a full-strength
        colour (the F... values: pink h355, orange h65, yellow h100, green h150, all the same Rec.601 brightness as the grey they replace)
        and that plain grey, so a greyscale printer prints exactly the old greys at any setting. TO ADJUST THE COLOUR, change these two:
@@ -159,8 +148,6 @@
     .cs .rm .chip.ac-arc::after { right: 0; width: 8px; background: linear-gradient(to right, var(--arcA, #b9b9b9), var(--arcB, #f5f5f5)); border: .6px solid #000; border-right-width: 0; border-radius: 100% 0 0 100% / 50% 0 0 50%; }
     .cs .rm .chip.ac-saw { padding-right: 12px; }
     .cs .rm .chip.ac-saw::after { right: 0; width: 9px; background: linear-gradient(to left, #000, var(--sawT, rgba(0, 0, 0, .12))); -webkit-mask: var(--saw) 0 0 / 100% 4px repeat-y; mask: var(--saw) 0 0 / 100% 4px repeat-y; }
-    .cs .rm .chip.ac-zigzag { padding-right: 11px; }
-    .cs .rm .chip.ac-zigzag::after { right: 2px; width: 5px; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 16'%3E%3Cpath d='M5 0L9 4L1 12L5 16' fill='none' stroke='%23000' stroke-width='2.2' stroke-linejoin='round'/%3E%3C/svg%3E") center top / 5px 8px repeat-y; }
     .row > span.lbl.s { min-width: 64px; }
     .cs .sec.ot { border-top-width: 0; border-top-left-radius: 0; border-top-right-radius: 0; padding-top: 0; }
     .cs .sec.ob { border-bottom-width: 0; border-bottom-left-radius: 0; border-bottom-right-radius: 0; padding-bottom: 0; }
@@ -260,15 +247,6 @@
             </div>
             <label class="check"><input type="checkbox" data-k="sup"> Raise the chord type (2<sup>m7</sup>)</label>
             <label class="check"><input type="checkbox" data-k="boxChords"> Hairline box around each chord</label>
-        </div>
-
-        <div class="card">
-            <h3>Section accents</h3>
-            <div class="hint">Every section has a thin outline. The accent decorates its right edge.</div>
-            <div class="row"><span class="lbl s">Chorus</span><select data-k="ac_chorus" data-opts="ac"></select></div>
-            <div class="row"><span class="lbl s">Verse</span><select data-k="ac_verse" data-opts="ac"></select></div>
-            <div class="row"><span class="lbl s">Bridge</span><select data-k="ac_bridge" data-opts="ac"></select></div>
-            <div class="row"><span class="lbl s">Other</span><select data-k="ac_other" data-opts="ac"></select></div>
         </div>
 
         <div class="card">
@@ -523,7 +501,7 @@ CHORUS`;
         markup: SAMPLE, keySel: 'auto', chartKeySel: 'auto', title: '', arr: '', author: '', bpm: '', meter: '',
         mode: 'both', pos: 'beside', sup: true, boxChords: true,
         ol_chorus: 'thin', ol_verse: 'thin', ol_bridge: 'thin', ol_other: 'thin',
-        ac_chorus: 'saw', ac_verse: 'arc', ac_bridge: 'tracks', ac_other: 'none', v: 2,
+        v: 2,
         showSong: true, pageBadge: 'multi', keyStyle: 'badge', showMeta: true, notes: '', footer: '',
         roadmap: false, paper: 'auto', orient: 'auto', margin: 'auto', cols: 'auto', size: 'auto', fit: true, minScale: 85, breaks: 'smart', blanks: 'asis',
     };
@@ -537,6 +515,8 @@ CHORUS`;
         } catch (e) { return { ...defaults }; }
     })();
     const save = () => { try { localStorage.setItem(STORE, JSON.stringify(S)); } catch (e) { } };
+    // the edge accent of each kind of section is fixed (no setting): sawtooth chorus, arc verse, train-track bridge, nothing on the rest
+    const ACCENT = { chorus: 'saw', verse: 'arc', bridge: 'tracks', other: 'none' };
 
     const el = id => document.getElementById(id);
     const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -598,7 +578,7 @@ CHORUS`;
             const cat = catOf(sec.head), rows = [];
             if (sec.head) rows.push(`<div class="r hd"><b>${esc(sec.head)}</b>${sec.rest ? ' ' + fmtMaker()(sec.rest) : ''}</div>`);
             for (const r of sec.body) rows.push(typeof r === 'object' ? `<div class="r sp" style="height:${(r.sp * 1.15).toFixed(2)}em"></div>` : rowHtml(r, ctx));
-            return { cat, rows, ref: !sec.body.length, gapN: blankN(sec.gap), breakBefore: sec.brk, ol: 'thin', ac: S['ac_' + cat] || 'none' };
+            return { cat, rows, ref: !sec.body.length, gapN: blankN(sec.gap), breakBefore: sec.brk, ol: 'thin', ac: ACCENT[cat] || 'none' };
         });
     }
     // outline styles CSS can't draw: an SVG is laid over the section after it is placed (see decorate)
@@ -718,8 +698,8 @@ CHORUS`;
         return 'other';
     };
     const rmHtml = r => `<div class="rm">${r.split(/\s*,\s*/).filter(Boolean).map(t => {
-        const c = rmCat(t), a = S['ac_' + c] || 'none';
-        return `<span class="chip c-${c}${['tracks', 'arc', 'saw', 'zigzag'].includes(a) ? ' ac-' + a : ''}">${esc(t)}</span>`;
+        const c = rmCat(t), a = ACCENT[c] || 'none';
+        return `<span class="chip c-${c}${a !== 'none' ? ' ac-' + a : ''}">${esc(t)}</span>`;
     }).join('')}</div>`;
     function hdrHtml(I, p, total, full) {
         const showPg = full || S.pageBadge === 'always' || (S.pageBadge === 'multi' && total > 1);
@@ -921,8 +901,6 @@ CHORUS`;
     }
 
     /* ---------------------------------- controls ---------------------------------- */
-    const OPTS = { ac: [['none', 'No accent'], ['bar', 'Thick bar'], ['dots', 'Thick dotted'], ['double', 'Double bar'], ['hair', 'Bar with hairs'], ['tracks', 'Train tracks'], ['wave', 'Wavy line'], ['zigzag', 'Zigzag line'], ['chevrons', 'Chevrons'], ['saw', 'Sawtooth fade'], ['arc', 'Grey arc'], ['fade', 'Fade inward'], ['fadev', 'Fade downward'], ['open', 'No right edge']], ol: [['none', 'None'], ['thin', 'Thin line'], ['med', 'Medium line'], ['thick', 'Thick line'], ['xthick', 'Extra thick line'], ['dashed', 'Dashed'], ['dashL', 'Long dashes'], ['dashH', 'Thick long dashes'], ['dotted', 'Dotted'], ['double', 'Double line'], ['wavy', 'Wavy'], ['zig', 'Zigzag'], ['spikes', 'Spikes'], ['scallop', 'Scalloped']] };
-    document.querySelectorAll('select[data-opts]').forEach(s => { s.innerHTML = OPTS[s.dataset.opts].map(([v, l]) => `<option value="${v}">${l}</option>`).join(''); });
     document.querySelectorAll('[data-k]').forEach(c => {
         const v = S[c.dataset.k];
         if (c.type === 'checkbox') c.checked = !!v; else c.value = v;
