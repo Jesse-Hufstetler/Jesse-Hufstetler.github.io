@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Liked Songs Reorder</title>
+<style>
+  :root { --bg:#121212; --fg:#eee; --mut:#999; --card:#1e1e1e; --acc:#1db954; --warn:#e8a33d; }
+  @media (prefers-color-scheme: light) { :root { --bg:#fafafa; --fg:#111; --mut:#666; --card:#fff; } }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--fg); font:15px system-ui, sans-serif; }
+  header { position:sticky; top:0; z-index:5; background:var(--bg); padding:12px 16px; border-bottom:1px solid #8884; display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+  h1 { font-size:18px; margin:0 8px 0 0; }
+  button, input { font:inherit; padding:7px 12px; border-radius:6px; border:1px solid #8886; background:var(--card); color:var(--fg); }
+  button { cursor:pointer; }
+  button.primary { background:var(--acc); color:#000; border-color:var(--acc); font-weight:600; }
+  button:disabled { opacity:.4; cursor:default; }
+  #status { color:var(--mut); flex:1 1 200px; }
+  #setup { max-width:560px; margin:24px auto; padding:0 16px; line-height:1.5; }
+  #setup code { background:#8883; padding:2px 5px; border-radius:4px; word-break:break-all; }
+  #setup input { width:100%; margin:8px 0; }
+  ol { list-style:none; margin:0; padding:8px 16px 80px; max-width:760px; margin-inline:auto; }
+  li { display:flex; align-items:center; gap:10px; background:var(--card); padding:6px 10px; margin:3px 0; border-radius:6px; border:1px solid transparent; cursor:grab; }
+  li.dragging { opacity:.35; }
+  li.over-top { border-top-color:var(--acc); }
+  li.over-bottom { border-bottom-color:var(--acc); }
+  li.moved { border-left:3px solid var(--warn); }
+  li .n { width:34px; text-align:right; color:var(--mut); font-variant-numeric:tabular-nums; }
+  li img { width:40px; height:40px; border-radius:3px; background:#8883; }
+  li .t { flex:1; min-width:0; }
+  li .t b, li .t span { display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  li .t span { color:var(--mut); font-size:13px; }
+  li button { padding:3px 8px; }
+  .hidden { display:none !important; }
+</style>
+</head>
+<body>
+
+<div id="setup" class="hidden">
+  <h1>Liked Songs Reorder</h1>
+  <p>One-time setup: create an app at <a href="https://developer.spotify.com/dashboard" target="_blank" rel="noopener">developer.spotify.com/dashboard</a>, add this exact Redirect URI, then paste the Client ID.</p>
+  <p>Redirect URI: <code id="redirect"></code></p>
+  <p style="color:var(--mut)">Must be https, or http://127.0.0.1:port (Spotify rejects "localhost").</p>
+  <input id="clientId" placeholder="Client ID" autocomplete="off">
+  <button class="primary" id="login">Log in with Spotify</button>
+</div>
+
+<div id="app" class="hidden">
+  <header>
+    <h1>Liked Songs</h1>
+    <button id="save" class="primary" disabled>Save order</button>
+    <button id="reset" disabled>Reset</button>
+    <button id="backup">Download backup</button>
+    <button id="logout">Log out</button>
+    <div id="status">Loading…</div>
+  </header>
+  <ol id="list"></ol>
+</div>
+
+<script>
+const SCOPES = 'user-library-read user-library-modify';
+const REDIRECT = location.origin + location.pathname;
+const $ = id => document.getElementById(id);
+const ls = {
+  get: k => { try { return localStorage.getItem(k); } catch { return null; } },
+  set: (k, v) => { try { localStorage.setItem(k, v); } catch {} },
+  del: k => { try { localStorage.removeItem(k); } catch {} }
+};
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const setStatus = t => $('status').textContent = t;
+
+let original = [];   // tracks in Spotify's current order (newest first)
+let current = [];    // tracks in the user's desired order
+let busy = false;
+
+/* ---------- PKCE auth ---------- */
+function b64url(buf) {
+  return btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+}
+async function login() {
+  const clientId = $('clientId').value.trim();
+  if (!clientId) return;
+  ls.set('clientId', clientId);
+  const verifier = b64url(crypto.getRandomValues(new Uint8Array(48)));
+  ls.set('verifier', verifier);
+  const challenge = b64url(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(verifier)));
+  const p = new URLSearchParams({ client_id: clientId, response_type: 'code', redirect_uri: REDIRECT,
+    scope: SCOPES, code_challenge_method: 'S256', code_challenge: challenge });
+  location.href = 'https://accounts.spotify.com/authorize?' + p;
+}
+async function tokenRequest(params) {
+  const r = await fetch('https://accounts.spotify.com/api/token', {
+    method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({ client_id: ls.get('clientId'), ...params })
+  });
+  if (!r.ok) throw new Error('Token error ' + r.status);
+  const j = await r.json();
+  ls.set('token', j.access_token);
+  ls.set('expires', Date.now() + (j.expires_in - 60) * 1000);
+  if (j.refresh_token) ls.set('refresh', j.refresh_token);
+}
+async function getToken() {
+  if (Date.now() < +ls.get('expires')) return ls.get('token');
+  const refresh = ls.get('refresh');
+  if (!refresh) throw new Error('Not logged in');
+  await tokenRequest({ grant_type: 'refresh_token', refresh_token: refresh });
+  return ls.get('token');
+}
+function logout() {
+  ['token','expires','refresh','verifier'].forEach(ls.del);
+  location.href = REDIRECT;
+}
+
+/* ---------- API ---------- */
+async function api(method, path, body) {
+  for (let attempt = 0; attempt < 6; attempt++) {
+    const r = await fetch('https://api.spotify.com/v1' + path, {
+      method,
+      headers: { Authorization: 'Bearer ' + await getToken(), 'Content-Type': 'application/json' },
+      body: body ? JSON.stringify(body) : undefined
+    });
+    if (r.status === 429) {
+      const wait = (+r.headers.get('Retry-After') || 2) + 1;
+      setStatus(`Rate limited, waiting ${wait}s…`);
+      await sleep(wait * 1000);
+      continue;
+    }
+    if (!r.ok) throw new Error(`${method} ${path} → ${r.status} ${await r.text()}`);
+    return r.status === 204 || method !== 'GET' ? null : r.json();
+  }
+  throw new Error('Too many rate-limit retries');
+}
+async function loadLikes() {
+  const out = [];
+  let url = '/me/tracks?limit=50';
+  while (url) {
+    const j = await api('GET', url);
+    j.items.forEach(i => i.track && out.push({
+      id: i.track.id, name: i.track.name,
+      artists: i.track.artists.map(a => a.name).join(', '),
+      img: (i.track.album.images[2] || i.track.album.images[0] || {}).url || '',
+      added: i.added_at
+    }));
+    url = j.next ? j.next.replace('https://api.spotify.com/v1', '') : null;
+    setStatus(`Loaded ${out.length} of ${j.total}…`);
+  }
+  return out;
+}
+
+/* ---------- UI ---------- */
+function render() {
+  const ol = $('list');
+  ol.innerHTML = '';
+  current.forEach((t, i) => {
+    const li = document.createElement('li');
+    li.draggable = true;
+    li.dataset.i = i;
+    if (t.id !== original[i].id) li.classList.add('moved');
+    li.innerHTML = `<span class="n">${i + 1}</span><img loading="lazy" src="${t.img}" alt="">
+      <div class="t"><b></b><span></span></div><button title="Move to top">⤒</button>`;
+    li.querySelector('b').textContent = t.name;
+    li.querySelector('.t span').textContent = t.artists;
+    li.querySelector('button').onclick = () => { current.unshift(current.splice(i, 1)[0]); render(); };
+    ol.appendChild(li);
+  });
+  const dirty = current.some((t, i) => t.id !== original[i].id);
+  $('save').disabled = !dirty || busy;
+  $('reset').disabled = !dirty || busy;
+  if (!busy) setStatus(dirty ? 'Unsaved changes (orange = moved from original position)' : `${current.length} liked songs`);
+}
+
+let dragIdx = null;
+const list = $('list');
+list.addEventListener('dragstart', e => {
+  const li = e.target.closest('li'); if (!li || busy) return e.preventDefault();
+  dragIdx = +li.dataset.i; li.classList.add('dragging');
+  e.dataTransfer.effectAllowed = 'move';
+  e.dataTransfer.setData('text/plain', dragIdx);
+});
+list.addEventListener('dragover', e => {
+  e.preventDefault();
+  const li = e.target.closest('li'); if (!li) return;
+  list.querySelectorAll('.over-top,.over-bottom').forEach(x => x.classList.remove('over-top','over-bottom'));
+  const r = li.getBoundingClientRect();
+  li.classList.add(e.clientY < r.top + r.height / 2 ? 'over-top' : 'over-bottom');
+  // auto-scroll near edges
+  if (e.clientY < 120) scrollBy(0, -14); else if (e.clientY > innerHeight - 60) scrollBy(0, 14);
+});
+list.addEventListener('drop', e => {
+  e.preventDefault();
+  const li = e.target.closest('li'); if (!li || dragIdx === null) return;
+  const r = li.getBoundingClientRect();
+  let to = +li.dataset.i + (e.clientY < r.top + r.height / 2 ? 0 : 1);
+  const [item] = current.splice(dragIdx, 1);
+  if (dragIdx < to) to--;
+  current.splice(to, 0, item);
+  dragIdx = null; render();
+});
+list.addEventListener('dragend', () => { dragIdx = null; render(); });
+
+/* ---------- Save ---------- */
+// Spotify sorts likes by added_at (newest first) with 1-second resolution. To get a target order we
+// must un-like + re-like tracks oldest→newest, ≥1.1s apart. Only the tracks above the lowest changed
+// position need this; the unchanged tail at the bottom is left alone.
+async function save() {
+  let last = -1;
+  current.forEach((t, i) => { if (t.id !== original[i].id) last = i; });
+  if (last < 0) return;
+  const queue = current.slice(0, last + 1).map(t => t.id).reverse(); // oldest first
+  if (!confirm(`This will un-like and re-like ${queue.length} songs, one every ~1.1s (about ${Math.ceil(queue.length * 1.3)}s). Keep this tab open. Continue?`)) return;
+  downloadBackup();
+  busy = true; render();
+  ls.set('pending', JSON.stringify(queue));
+  try { await runQueue(queue); } catch (e) { setStatus('Stopped: ' + e.message + ' — reload to resume.'); alert('Stopped: ' + e.message + '\nReload this page to resume where it left off.'); return; }
+  await finish();
+}
+async function runQueue(queue) {
+  for (let n = 0; n < queue.length; n++) {
+    const id = queue[n];
+    setStatus(`Re-saving ${n + 1} of ${queue.length}… don't close this tab`);
+    await api('DELETE', '/me/tracks', { ids: [id] });
+    await api('PUT', '/me/tracks', { ids: [id] });
+    ls.set('pending', JSON.stringify(queue.slice(n + 1)));
+    await sleep(1100);
+  }
+}
+async function finish() {
+  ls.del('pending');
+  setStatus('Verifying…');
+  original = await loadLikes();
+  current = original.slice();
+  busy = false; render();
+}
+async function resumeIfPending() {
+  let queue; try { queue = JSON.parse(ls.get('pending') || '[]'); } catch { queue = []; }
+  if (!queue.length) return false;
+  if (!confirm(`A previous save was interrupted with ${queue.length} songs left to re-like. Resume now?`)) { ls.del('pending'); return false; }
+  busy = true; render();
+  await runQueue(queue);
+  return true;
+}
+
+function downloadBackup() {
+  const blob = new Blob([JSON.stringify(original, null, 1)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'liked-songs-backup-' + new Date().toISOString().slice(0, 10) + '.json';
+  a.click();
+}
+
+/* ---------- Init ---------- */
+$('save').onclick = save;
+$('reset').onclick = () => { current = original.slice(); render(); };
+$('backup').onclick = downloadBackup;
+$('logout').onclick = logout;
+$('login').onclick = login;
+window.addEventListener('beforeunload', e => { if (busy) { e.preventDefault(); e.returnValue = ''; } });
+
+(async function init() {
+  $('redirect').textContent = REDIRECT;
+  $('clientId').value = ls.get('clientId') || '';
+  const params = new URLSearchParams(location.search);
+  try {
+    if (params.get('code')) {
+      await tokenRequest({ grant_type: 'authorization_code', code: params.get('code'),
+        redirect_uri: REDIRECT, code_verifier: ls.get('verifier') });
+      history.replaceState(null, '', REDIRECT);
+    }
+    if (!ls.get('refresh') && !ls.get('token')) { $('setup').classList.remove('hidden'); return; }
+    $('app').classList.remove('hidden');
+    original = await loadLikes();
+    current = original.slice();
+    render();
+    if (await resumeIfPending()) await finish();
+  } catch (e) {
+    console.error(e);
+    $('app').classList.add('hidden');
+    $('setup').classList.remove('hidden');
+    alert('Problem: ' + e.message);
+  }
+})();
+</script>
+</body>
+</html>
