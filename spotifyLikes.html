@@ -41,6 +41,7 @@
   <p>One-time setup: create an app at <a href="https://developer.spotify.com/dashboard" target="_blank" rel="noopener">developer.spotify.com/dashboard</a>, add this exact Redirect URI, then paste the Client ID.</p>
   <p>Redirect URI: <code id="redirect"></code></p>
   <p style="color:var(--mut)">Must be https, or http://127.0.0.1:port (Spotify rejects "localhost").</p>
+  <p style="color:var(--mut)">The Client ID below is pre-filled. This app is in Spotify development mode, so only allow-listed accounts can log in with it. Otherwise, create your own free Spotify app and paste your own Client ID here.</p>
   <input id="clientId" placeholder="Client ID" autocomplete="off">
   <button class="primary" id="login">Log in with Spotify</button>
 </div>
@@ -58,7 +59,9 @@
 </div>
 
 <script>
-const SCOPES = 'user-library-read user-library-modify';
+// Public Client ID (safe to expose with PKCE). Visitors can replace it with their own in the setup box.
+const DEFAULT_CLIENT_ID = '379b8494457043988ef6915b16fb00ae';
+const SCOPES ='user-library-read user-library-modify';
 const REDIRECT = location.origin + location.pathname;
 const $ = id => document.getElementById(id);
 const ls = {
@@ -258,7 +261,7 @@ window.addEventListener('beforeunload', e => { if (busy) { e.preventDefault(); e
 
 (async function init() {
   $('redirect').textContent = REDIRECT;
-  $('clientId').value = ls.get('clientId') || '';
+  $('clientId').value = ls.get('clientId') || DEFAULT_CLIENT_ID;
   const params = new URLSearchParams(location.search);
   try {
     if (params.get('code')) {
