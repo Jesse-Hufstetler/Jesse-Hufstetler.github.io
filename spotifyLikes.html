@@ -154,11 +154,13 @@ async function loadLikes() {
 function render() {
   const ol = $('list');
   ol.innerHTML = '';
+  const queue = reLikeQueue();
+  const willRelike = new Set(queue);
   current.forEach((t, i) => {
     const li = document.createElement('li');
     li.draggable = true;
     li.dataset.i = i;
-    if (t.id !== original[i].id) li.classList.add('moved');
+    if (willRelike.has(t.id)) li.classList.add('moved');
     li.innerHTML = `<span class="n">${i + 1}</span><img loading="lazy" src="${t.img}" alt="">
       <div class="t"><b></b><span></span></div><button title="Move to top">⤒</button>`;
     li.querySelector('b').textContent = t.name;
@@ -166,10 +168,10 @@ function render() {
     li.querySelector('button').onclick = () => { current.unshift(current.splice(i, 1)[0]); render(); };
     ol.appendChild(li);
   });
-  const dirty = current.some((t, i) => t.id !== original[i].id);
+  const dirty = queue.length > 0;
   $('save').disabled = !dirty || busy;
   $('reset').disabled = !dirty || busy;
-  if (!busy) setStatus(dirty ? 'Unsaved changes (orange = moved from original position)' : `${current.length} liked songs`);
+  if (!busy) setStatus(dirty ? `Unsaved: ${queue.length} song${queue.length === 1 ? '' : 's'} will be re-liked (orange)` : `${current.length} liked songs`);
 }
 
 let dragIdx = null;
@@ -228,8 +230,10 @@ async function runQueue(queue) {
   for (let n = 0; n < queue.length; n++) {
     const id = queue[n];
     setStatus(`Re-saving ${n + 1} of ${queue.length}… don't close this tab`);
-    await api('DELETE', '/me/tracks', { ids: [id] });
-    await api('PUT', '/me/tracks', { ids: [id] });
+    // /me/tracks save/remove are deprecated; /me/library takes Spotify URIs
+    const q = '?uris=' + encodeURIComponent('spotify:track:' + id);
+    await api('DELETE', '/me/library' + q);
+    await api('PUT', '/me/library' + q);
     ls.set('pending', JSON.stringify(queue.slice(n + 1)));
     await sleep(1100);
   }
