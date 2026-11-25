@@ -7,14 +7,14 @@ const KEY_STORE = 'owmKey';
 
 // ───────────── config (mirrors the LINQPad script) ─────────────
 const HORIZON_DAYS = 10;
-const TEMP_STOPS = [[-10,'#4b1d91'],[10,'#2b3fd6'],[32,'#3b8cff'],[45,'#9ad4f5'],[55,'#bfcde8'],[65,'#6fd0d0'],[75,'#6fd08a'],[85,'#f3d34a'],[95,'#f08a24'],[105,'#d61f1f'],[115,'#7a0a0a']];
+const TEMP_STOPS = [[-10,'#ffffff'],[16,'#e1c1fc'],[31,'#b0adff'],[33,'#67c1ff'],[58,'#0ed3c3'],[75,'#79cf82'],[80,'#b1c65d'],[85,'#d4b541'],[93,'#ea7311'],[100,'#ce3b33'],[106,'#7a1424'],[115,'#120202']];
 const METRICS = [
   { key:'temp',  label:'Temperature', unit:'°F',   dec:0, good:[65,75],   stops:TEMP_STOPS },
   { key:'feels', label:'Feels like',  unit:'°F',   dec:0, good:[65,75],   stops:TEMP_STOPS },
-  { key:'dew',   label:'Dew point',   unit:'°F',   dec:0, good:[40,60],   stops:[[0,'#6a7bd6'],[32,'#8fb8f0'],[40,'#6fd08a'],[60,'#6fd08a'],[65,'#f3d34a'],[70,'#f08a24'],[75,'#d61f1f'],[80,'#7a0a0a']] },
+  { key:'dew',   label:'Dew point',   unit:'°F',   dec:0, good:[40,60],   stops:[[0,'#ffffff'],[20,'#b3ceff'],[32,'#71bfff'],[35,'#00c6e1'],[40,'#6fd08a'],[60,'#6fd08a'],[63,'#b3c558'],[65,'#d2b641'],[72,'#d78832'],[76,'#8c3400'],[80,'#2f0000']] },
   { key:'wind',  label:'Wind',        unit:'mph',  dec:0, good:[0,10],    stops:[[0,'#6fd08a'],[10,'#6fd08a'],[15,'#f3d34a'],[25,'#f08a24'],[35,'#d61f1f'],[50,'#6b0a3a']] },
   { key:'gust',  label:'Gusts',       unit:'mph',  dec:0, good:[0,15],    stops:[[0,'#6fd08a'],[15,'#6fd08a'],[25,'#f3d34a'],[35,'#f08a24'],[45,'#d61f1f'],[60,'#6b0a3a']] },
-  { key:'pop',   label:'Rain chance', unit:'%',    dec:0, good:[0,15],    stops:[[0,'#6fd08a'],[15,'#6fd08a'],[35,'#c9e58a'],[50,'#6fb1ff'],[70,'#2f6be0'],[100,'#1b2a8f']] },
+  { key:'pop',   label:'Rain chance', unit:'%',    dec:0, good:[0,15],    stops:[[0,'#6fd08a'],[23,'#6dd08b'],[25,'#00cbb8'],[29,'#00b3d9'],[34,'#2b90d7'],[37,'#4170c9'],[64,'#363aaa'],[86,'#170092'],[100,'#0a0066']] },
   { key:'rain',  label:'Rain rate',   unit:'in/hr',dec:2, good:[0,0.004], stops:[[0,'#6fd08a'],[0.004,'#6fd08a'],[0.02,'#6fb1ff'],[0.1,'#2f6be0'],[0.3,'#6a2fd6'],[1,'#d61f1f']] },
   { key:'cloud', label:'Cloud cover', unit:'%',    dec:0, good:[0,100],   stops:[[0,'#6fd08a'],[50,'#a6b9ad'],[100,'#576360']] },
 ];
