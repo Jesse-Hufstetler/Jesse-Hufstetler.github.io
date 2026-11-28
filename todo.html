@@ -64,6 +64,17 @@
   .note { font-size:.8rem; color:inherit; opacity:.8; margin-top:6px; }
   .opts { display:flex; justify-content:center; align-items:center; gap:6px; margin:12px 0; font-size:.8rem; font-style:italic; color:var(--muted); opacity:.8; }
   section { margin-top:24px; }
+  /* Sections are reordered with `order` rather than moved in the DOM, which would reload the Dynalist frame. */
+  #app { display:flex; flex-direction:column; }
+  #tasks { order:1; margin-top:0; }
+  #linksSection { order:2; }
+  #dyn { order:3; }
+  .foot { order:4; }
+  #app.dyn-first #dyn { order:1; margin-top:0; }
+  #app.dyn-first #tasks { order:3; margin-top:24px; }
+  .switch { align-self:center; display:flex; gap:2px; padding:3px; margin-bottom:12px; border-radius:11px; background:rgba(127,127,127,.18); }
+  .switch button { background:none; color:var(--muted); padding:6px 14px; font-size:.85rem; }
+  .switch button[aria-pressed=true] { background:var(--accent); color:#fff; }
   h2 { font-size:1rem; margin:0 0 8px; color:var(--muted); font-weight:600; }
   .links li { display:flex; flex-wrap:wrap; align-items:center; gap:6px; padding:4px 0; }
   #confirmDialog { width:min(86vw, 320px); }
@@ -104,6 +115,12 @@
   </form>
 
   <div id="app" hidden>
+    <div class="switch" id="firstSwitch" role="group" aria-label="Show first" hidden>
+      <button type="button" data-first="tasks" aria-pressed="true">Tasks first</button>
+      <button type="button" data-first="dyn" aria-pressed="false">Dynalist first</button>
+    </div>
+
+    <section id="tasks">
     <form id="add">
       <input type="text" id="title" placeholder="New task" autocomplete="off" required>
       <button>Add</button>
@@ -111,8 +128,9 @@
 
     <ul id="list"></ul>
     <label class="opts"><input type="checkbox" id="showSnoozed"><span id="snoozeLabel">Show snoozed</span></label>
+    </section>
 
-    <section>
+    <section id="linksSection">
       <h2>Links</h2>
       <ul class="links" id="links"></ul>
     </section>
@@ -517,15 +535,45 @@ async function loadLinks() {
 // `settings` table (Settings → Dynalist), so they never appear in this file.
 let dynSrc = '';
 let dynCfg = {};
+
+// Which card is on top. Saved per user in `settings` so it follows you between computers;
+// also remembered on this device so the page doesn't jump around while loading.
+let firstChanges = 0;
+function showFirst(dynFirst) {
+  $('app').classList.toggle('dyn-first', dynFirst);
+  for (const b of $('firstSwitch').children) b.setAttribute('aria-pressed', (b.dataset.first === 'dyn') === dynFirst);
+  localStorage.setItem('todo-dyn-first', dynFirst ? '1' : '');
+}
+showFirst(!!localStorage.getItem('todo-dyn-first'));
+
+$('firstSwitch').onclick = async e => {
+  const b = e.target.closest('button');
+  if (!b) return;
+  const dynFirst = b.dataset.first === 'dyn';
+  firstChanges++;
+  showFirst(dynFirst);
+  const { data: { session } } = await db.auth.getSession();
+  const { error } = await db.from('settings').upsert({ user_id: session.user.id, dynalist_first: dynFirst });
+  firstChanges++;
+  say(error ? error.message : '');
+};
+
 async function loadDynalist() {
+  const changesBefore = firstChanges;
   const { data, error } = await db.from('settings').select().maybeSingle();
   if (error) return say(error.message);
   dynCfg = data || {};
+  // Skip if the switch was tapped while this was loading: the answer may be out of date.
+  if (firstChanges === changesBefore && typeof dynCfg.dynalist_first === 'boolean') showFirst(dynCfg.dynalist_first);
   $('dynFileId').value = dynCfg.dynalist_file_id || '';
   $('dynToken').value = dynCfg.dynalist_token || '';
-  $('dynNote').textContent = dynCfg.dynalist_token ? 'Saved.' : "Shows today's Dynalist entry below your links.";
+  $('dynNote').textContent = dynCfg.dynalist_token ? 'Saved.' : "Shows today's Dynalist entry on this page.";
   const file_id = dynCfg.dynalist_file_id, token = dynCfg.dynalist_token;
-  if (!file_id || !token) return $('dyn').hidden = true;
+  if (!file_id || !token) {
+    $('dyn').hidden = $('firstSwitch').hidden = true;   // nothing to switch between
+    return;
+  }
+  $('firstSwitch').hidden = false;
   let src = `https://dynalist.io/d/${encodeURIComponent(file_id)}`;
   try {
     const r = await (await fetch('https://dynalist.io/api/v1/doc/read', {
@@ -647,7 +695,8 @@ function refreshIfStale() {
   if (!$('app').hidden && !document.hidden && now - lastLoad > STALE_MS) load();
 }
 
-for (const type of ['mousemove', 'touchstart', 'keydown', 'focus']) {
+// 'pointerover' also fires when the pointer enters the Dynalist frame, whose mousemoves we never see.
+for (const type of ['mousemove', 'pointerover', 'touchstart', 'keydown', 'focus']) {
   window.addEventListener(type, refreshIfStale, { passive: true });
 }
 document.addEventListener('visibilitychange', () => {
